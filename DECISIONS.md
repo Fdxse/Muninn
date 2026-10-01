@@ -214,3 +214,17 @@ Nothing deploys automatically. A GitHub Actions workflow builds `muninn-<version
 production autoloader, frontend, `DEPLOY.md`, `Deploy-Api.ps1`). The frontend is uploaded by
 FTP; the API is copied to the NAS with `Deploy-Api.ps1`. Server configuration files are never
 part of the zip.
+
+## D042 — API web folder separate from the application folder
+
+**Status:** Accepted (2026-10-01)
+
+On the NAS only the API's `public/` contents (`index.php`, `.htaccess`) sit in the web root
+(`/volume1/web/muninn`). Source, vendor, migrations, config and storage live outside any web
+root (`/volume1/secrets/muninn`). `Deploy-Api.ps1` writes `app-location.php` next to
+`index.php` with the application folder's path; `.htaccess` refuses to serve that file, and
+`index.php` falls back to the parent folder when it is absent (the repository and dev layout).
+
+The API can be served from a host root (`api.dx.se`) or a sub-folder (`fehre.synology.me/muninn/`).
+The request path is made relative to the folder of `SCRIPT_NAME` (set by the web server, never by
+the client), so routes always start with `/api/v1/`.

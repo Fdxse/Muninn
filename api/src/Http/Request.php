@@ -41,6 +41,26 @@ final class Request
         }
     }
 
+    /**
+     * Removes the folder the API is installed in from the request path, so routes always
+     * start with /api/v1/ whether the API is served from a host root (https://api.dx.se/)
+     * or from a sub-folder (https://fehre.synology.me/muninn/).
+     *
+     * The install folder is taken from SCRIPT_NAME, which the web server sets to the URL of
+     * the front controller (e.g. /muninn/index.php). It is never taken from client input.
+     */
+    public static function stripInstallFolder(string $requestPath, string $scriptName): string
+    {
+        $installFolder = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+        if ($installFolder === '' || $installFolder === '.') {
+            return $requestPath;
+        }
+        if (str_starts_with($requestPath, $installFolder . '/')) {
+            return substr($requestPath, strlen($installFolder));
+        }
+        return $requestPath;
+    }
+
     /** Creates a Request from PHP's superglobals (production entry point). */
     public static function fromGlobals(): self
     {
@@ -57,10 +77,14 @@ final class Request
         }
 
         $requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+        $routablePath = self::stripInstallFolder(
+            is_string($requestPath) ? $requestPath : '/',
+            (string) ($_SERVER['SCRIPT_NAME'] ?? ''),
+        );
 
         return new self(
             method: strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')),
-            path: is_string($requestPath) ? $requestPath : '/',
+            path: $routablePath,
             headers: $requestHeaders,
             cookies: array_map('strval', $_COOKIE),
             rawBody: (string) file_get_contents('php://input'),
