@@ -1,0 +1,3 @@
+# Muninn Branding
+
+The current canonical visual reference is `reference/muninn-brand-reference.png`. Use it for visual direction only. Do not crop individual production icons from the board. Dedicated production assets may be created later. Branding work must not delay the Course MVP.
