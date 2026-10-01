@@ -1,6 +1,6 @@
 # Real configuration files hold credentials and are never committed.
 api/config/config.php
-frontend/config/config.php
+frontend/public/includes/config.php
 .env
 
 # Runtime data (logs, attachments) lives outside the repository on servers.

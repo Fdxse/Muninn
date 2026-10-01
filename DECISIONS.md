@@ -136,3 +136,81 @@ The project is called **Muninn**.
 - Long-term features may remain documented but are stretch goals unless included in Course MVP.
 - Magic Links and geotagging are preferred first stretch goals after MVP completion.
 - Week 6 is primarily a shipping, testing, documentation, and deployment week rather than a feature-expansion week.
+
+## D022 — API hostname and session transport
+
+**Status:** Accepted (2026-10-01)
+
+The API stays on the NAS but browsers reach it as `https://api.dx.se`, a DNS CNAME of
+`fehre.synology.me` with its own certificate. The frontend is `https://www.dx.se`. Because both
+share the `dx.se` site, the session cookie is first-party, which is required for Safari/iOS
+(it blocks third-party cookies) and lets `<img>` tags load authorized attachments later.
+
+Sessions are opaque 256-bit random tokens in a `__Host-muninn_session` cookie
+(`Secure; HttpOnly; SameSite=Lax; Path=/`), stored server-side only as SHA-256 hashes, with
+idle (7 days) and absolute (30 days) expiry. Rejected: bearer tokens in browser storage
+(readable by any XSS, cannot authorize image loads). Fallback if DNS is impossible: the
+www.dx.se PHP proxies API calls.
+
+## D023 — CSRF defence
+
+**Status:** Accepted (2026-10-01)
+
+Per-session synchronizer token, returned by login and `GET /auth/me`, required in the
+`X-CSRF-Token` header on every authenticated state-changing request. Additionally: exact-match
+CORS allowlist, refusal of state-changing requests from foreign `Origin`s, and refusal of
+non-JSON bodies. The CSRF token is stored raw in the `sessions` row because the API must return
+it after a page reload; it is useless without the HttpOnly session cookie.
+
+## D024 — Identifiers
+
+**Status:** Accepted (2026-10-01)
+
+User-visible resources use random UUIDv4 strings (`CHAR(36)`) as primary keys, so IDs reveal
+neither counts nor order. Purely internal tables (e.g. `auth_attempts`) may use auto-increment
+keys because their IDs are never exposed.
+
+## D025 — System administrator vs workspace roles
+
+**Status:** Accepted (2026-10-01)
+
+`users.is_system_admin` is separate from workspace roles. System administrators manage users,
+invitations and memberships but do not gain access to note content in workspaces they are not
+members of. The administrator uses a dedicated admin account, separate from their everyday
+account.
+
+## D026 — Invitation delivery
+
+**Status:** Accepted (2026-10-01)
+
+No email in the MVP. An administrator creates an invitation (optional note, default 72-hour
+expiry, maximum 30 days), copies the one-time link and sends it personally. The token travels in
+the URL fragment (`/invite.php#token=…`) so it never reaches server logs or `Referer` headers.
+The invitee chooses their username, display name and password. Used, expired, revoked and
+unknown invitations return the same response.
+
+## D027 — Password policy and hashing
+
+**Status:** Accepted (2026-10-01)
+
+`password_hash()` with Argon2id when available, otherwise bcrypt. Minimum 12 characters, no
+composition rules. With bcrypt the maximum is 72 bytes (bcrypt silently ignores the rest).
+Hashes are upgraded transparently at sign-in.
+
+## D028 — Administrator bootstrap
+
+**Status:** Accepted (2026-10-01)
+
+Administrators are created only with `php bin/create-admin.php` over SSH, with a hidden password
+prompt. There is no web setup endpoint.
+
+## D041 — Manual, zip-based deployment
+
+**Status:** Accepted (2026-10-01)
+
+(D029–D040 are reserved for the decisions proposed for Weeks 2–5 in the Week 1 plan.)
+
+Nothing deploys automatically. A GitHub Actions workflow builds `muninn-<version>.zip` (API with
+production autoloader, frontend, `DEPLOY.md`, `Deploy-Api.ps1`). The frontend is uploaded by
+FTP; the API is copied to the NAS with `Deploy-Api.ps1`. Server configuration files are never
+part of the zip.
