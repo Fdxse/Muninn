@@ -1,5 +1,6 @@
 # Real configuration files hold credentials and are never committed.
 api/config/config.php
+api/public/app-location.php
 frontend/public/includes/config.php
 .env
 

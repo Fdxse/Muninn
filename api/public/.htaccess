@@ -1,6 +1,13 @@
 # Apache (Synology Web Station "Apache 2.4" backend): route everything to index.php.
-# For the nginx backend, see docs/deployment.md.
+# Works both as a host's document root and from a sub-folder such as /muninn/.
+# For the nginx backend, see DEPLOY.md.
 Options -Indexes
+
+# app-location.php only tells index.php where the application folder is; never serve it.
+<Files "app-location.php">
+    Require all denied
+</Files>
+
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [QSA,L]

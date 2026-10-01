@@ -39,6 +39,7 @@ rm -rf "$api_build_directory"
 # --- Frontend: the public folder, without the real config. ---
 cp -R "$repository_root/frontend/public/." "$staging_directory/frontend/"
 rm -f "$staging_directory/frontend/includes/config.php"
+rm -f "$staging_directory/api/public/app-location.php"
 
 # --- Instructions and the API deploy script. ---
 cp "$repository_root/deploy/DEPLOY.md" "$repository_root/deploy/Deploy-Api.ps1" "$staging_directory/"
