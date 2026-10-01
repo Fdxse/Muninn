@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Muninn\Api\Logging;
+
+use Muninn\Api\Security\UuidGenerator;
+use PDO;
+
+/**
+ * Writes security-relevant events to the audit_log table.
+ *
+ * Details pass through the same redaction as the application log; callers must still
+ * never pass passwords or raw tokens.
+ */
+final class AuditLog
+{
+    public const LOGIN_SUCCEEDED = 'auth.login_succeeded';
+    public const LOGIN_FAILED = 'auth.login_failed';
+    public const LOGIN_RATE_LIMITED = 'auth.login_rate_limited';
+    public const LOGOUT = 'auth.logout';
+    public const INVITATION_CREATED = 'invitation.created';
+    public const INVITATION_REVOKED = 'invitation.revoked';
+    public const INVITATION_ACCEPTED = 'invitation.accepted';
+    public const USER_CREATED_BY_CLI = 'user.created_by_cli';
+
+    public function __construct(private readonly PDO $database)
+    {
+    }
+
+    /**
+     * @param array<string, mixed> $details Extra non-secret information.
+     */
+    public function record(
+        string $eventType,
+        ?string $actorUserId,
+        ?string $targetType,
+        ?string $targetId,
+        ?string $ipAddress,
+        array $details = [],
+    ): void {
+        $insertStatement = $this->database->prepare(
+            'INSERT INTO audit_log (id, event_type, actor_user_id, target_type, target_id, ip_address, details, created_at)
+             VALUES (:id, :event_type, :actor_user_id, :target_type, :target_id, :ip_address, :details, UTC_TIMESTAMP())'
+        );
+        $insertStatement->execute([
+            'id' => UuidGenerator::generate(),
+            'event_type' => $eventType,
+            'actor_user_id' => $actorUserId,
+            'target_type' => $targetType,
+            'target_id' => $targetId,
+            'ip_address' => $ipAddress,
+            'details' => json_encode(AppLogger::redact($details), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+        ]);
+    }
+}

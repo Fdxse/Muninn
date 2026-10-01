@@ -1,0 +1,6 @@
+# Apache (Synology Web Station "Apache 2.4" backend): route everything to index.php.
+# For the nginx backend, see docs/deployment.md.
+Options -Indexes
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [QSA,L]
