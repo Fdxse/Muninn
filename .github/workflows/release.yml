@@ -1,0 +1,46 @@
+# Builds the deployment zip. It never deploys anything: download the zip and follow DEPLOY.md.
+#
+#   - Push a tag like v0.1.0 → a GitHub release is created with the zip attached.
+#   - Or run it manually (Actions → Release → Run workflow) → the zip is a workflow artifact.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Work out the version label
+        id: version
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "label=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "label=manual-$(date -u +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the zip
+        run: deploy/build-release.sh "${{ steps.version.outputs.label }}"
+
+      - name: Keep the zip as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: muninn-${{ steps.version.outputs.label }}
+          path: build/muninn-${{ steps.version.outputs.label }}.zip
+
+      - name: Attach the zip to a GitHub release (tags only)
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" "build/muninn-${GITHUB_REF_NAME}.zip" \
+            --title "Muninn ${GITHUB_REF_NAME}" \
+            --notes "Download the zip and follow DEPLOY.md inside it."

@@ -1,0 +1,9 @@
+# Muninn frontend (Apache). Serve the web app manifest with the right type and keep the
+# service worker uncached so updates are picked up.
+AddType application/manifest+json .webmanifest
+Options -Indexes
+<IfModule mod_headers.c>
+    <Files "service-worker.js">
+        Header set Cache-Control "no-cache"
+    </Files>
+</IfModule>

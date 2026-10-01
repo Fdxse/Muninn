@@ -1,0 +1,2 @@
+# Server-side include files only: never serve them directly.
+Require all denied

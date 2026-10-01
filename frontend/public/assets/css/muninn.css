@@ -1,0 +1,137 @@
+/*
+ * Muninn design tokens and base styles.
+ *
+ * Colours are sampled from assets/branding/reference/muninn-brand-reference.png:
+ * near-black navy, slate blue, off-white, and muted gold used sparingly for accents.
+ * Tokens are CSS variables so a dark theme can be added later without touching components.
+ */
+
+:root {
+    --muninn-navy-950: #050d16;
+    --muninn-navy-900: #0b1724;
+    --muninn-navy-800: #13263a;
+    --muninn-slate-600: #3d5170;
+    --muninn-slate-400: #7a8ca6;
+    --muninn-offwhite: #f6f4ef;
+    --muninn-white: #ffffff;
+    --muninn-gold-500: #c8a36a;
+    /* Darker gold for text/borders on light backgrounds (keeps WCAG AA contrast). */
+    --muninn-gold-700: #8a6a35;
+
+    --muninn-surface: var(--muninn-offwhite);
+    --muninn-surface-raised: var(--muninn-white);
+    --muninn-text: var(--muninn-navy-900);
+    --muninn-text-muted: #4a5a70;
+    --muninn-accent: var(--muninn-gold-500);
+    --muninn-focus-ring: 0 0 0 0.25rem rgba(200, 163, 106, 0.5);
+
+    /* Map onto Bootstrap's own variables so its components follow the brand. */
+    --bs-body-bg: var(--muninn-surface);
+    --bs-body-color: var(--muninn-text);
+    --bs-primary: var(--muninn-navy-900);
+    --bs-primary-rgb: 11, 23, 36;
+    --bs-link-color: var(--muninn-slate-600);
+    --bs-link-color-rgb: 61, 81, 112;
+    --bs-link-hover-color: var(--muninn-navy-900);
+    --bs-border-radius: 0.6rem;
+}
+
+body {
+    min-height: 100vh;
+    background: var(--muninn-surface);
+    color: var(--muninn-text);
+}
+
+/* Skip link becomes visible on keyboard focus. */
+.muninn-skip-link:focus {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 1100;
+    padding: 0.5rem 1rem;
+    background: var(--muninn-white);
+    border-radius: var(--bs-border-radius);
+}
+
+/* Primary buttons in brand navy with a gold focus ring. */
+.btn-primary {
+    --bs-btn-bg: var(--muninn-navy-900);
+    --bs-btn-border-color: var(--muninn-navy-900);
+    --bs-btn-hover-bg: var(--muninn-navy-800);
+    --bs-btn-hover-border-color: var(--muninn-navy-800);
+    --bs-btn-active-bg: var(--muninn-navy-950);
+    --bs-btn-active-border-color: var(--muninn-navy-950);
+    --bs-btn-disabled-bg: var(--muninn-slate-600);
+    --bs-btn-disabled-border-color: var(--muninn-slate-600);
+}
+
+.btn:focus-visible,
+.form-control:focus,
+.form-select:focus {
+    box-shadow: var(--muninn-focus-ring);
+    border-color: var(--muninn-gold-500);
+}
+
+/* Touch-friendly controls: at least 44px high. */
+.btn,
+.form-control,
+.form-select {
+    min-height: 2.75rem;
+}
+
+/* Top navigation bar. */
+.muninn-navbar {
+    background: var(--muninn-navy-900);
+}
+
+.muninn-navbar .navbar-brand,
+.muninn-navbar .nav-link,
+.muninn-navbar .navbar-text {
+    color: var(--muninn-offwhite);
+}
+
+.muninn-navbar .nav-link:hover,
+.muninn-navbar .nav-link:focus-visible {
+    color: var(--muninn-gold-500);
+}
+
+.muninn-wordmark {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* Sign-in / invitation screens: dark brand backdrop with a light card. */
+.muninn-auth-backdrop {
+    min-height: 100vh;
+    background: linear-gradient(180deg, var(--muninn-navy-800) 0%, var(--muninn-navy-950) 100%);
+    color: var(--muninn-offwhite);
+}
+
+.muninn-auth-card {
+    width: 100%;
+    max-width: 26rem;
+    background: var(--muninn-surface-raised);
+    color: var(--muninn-text);
+}
+
+.muninn-auth-brand {
+    color: var(--muninn-offwhite);
+}
+
+.muninn-tagline {
+    color: var(--muninn-gold-500);
+    font-size: 0.8rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+}
+
+/* The one-time invitation link: long, so it wraps anywhere. */
+.muninn-one-time-link {
+    word-break: break-all;
+    font-family: var(--bs-font-monospace);
+}
+
+.text-muted-brand {
+    color: var(--muninn-text-muted);
+}

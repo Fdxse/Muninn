@@ -1,8 +1,40 @@
-# Muninn — Claude Starter Pack
+# Muninn
 
-This directory is the project bootstrap and delivery contract for Muninn.
+**Your notes. Your knowledge.** A self-hosted, multi-user, mobile-first note application
+(PHP 8 + MariaDB API, Bootstrap 5.3 + vanilla JavaScript PWA).
 
-## Read order
+Current state: **Course MVP Week 1** — invitation-only accounts, sign-in/sign-out, invitation
+administration, installable PWA shell. Notes and workspaces start in Week 2.
+
+## Where things are
+
+| | |
+|---|---|
+| `api/` | REST-style JSON API (deployed to the NAS as `https://api.dx.se`) |
+| `frontend/public/` | Web frontend (deployed to `https://www.dx.se`) |
+| `deploy/` | Release zip builder, `Deploy-Api.ps1`, [`DEPLOY.md`](deploy/DEPLOY.md) |
+| [`docs/architecture.md`](docs/architecture.md) | How the pieces fit together |
+| [`docs/api-conventions.md`](docs/api-conventions.md) | Response format, status codes, endpoints |
+| [`docs/setup-dev.md`](docs/setup-dev.md) | Running it locally and running the tests |
+| [`docs/security-checklist.md`](docs/security-checklist.md) | Security controls and the tests that prove them |
+| [`docs/known-limitations.md`](docs/known-limitations.md) | What is not there yet |
+
+## Quick start (local)
+
+```sh
+cd api && composer install && cp config/config.example.php config/config.php   # then edit
+php bin/migrate.php && php bin/create-admin.php
+php -S localhost:8000 -t public dev-router.php
+# in another terminal
+cd frontend/public && cp includes/config.example.php includes/config.php       # api_base_url → http://localhost:8000
+php -S localhost:8080
+```
+
+Full instructions: [`docs/setup-dev.md`](docs/setup-dev.md). Tests: `cd api && vendor/bin/phpunit`.
+
+## Project documents
+
+Read in this order before architectural changes:
 
 1. `CLAUDE.md` — how Claude must work.
 2. `COURSE-MVP.md` — active six-week scope and Definition of Done.
@@ -11,14 +43,9 @@ This directory is the project bootstrap and delivery contract for Muninn.
 5. `DECISIONS.md` — accepted decisions.
 6. `ROADMAP.md` — six-week summary plus long-term product roadmap.
 
-## Recommended first prompt to Claude
-
-> Read CLAUDE.md, COURSE-MVP.md, PROJECT.md, SECURITY.md, DECISIONS.md and ROADMAP.md in full. Treat COURSE-MVP.md as the authoritative delivery scope for the next six weeks. Do not implement the complete application and do not start stretch goals. First review the specifications for contradictions, missing decisions, security concerns and delivery risks. Then propose a concrete repository structure and a Week 1 implementation plan only. Include explicit acceptance criteria and identify anything that could threaten the six-week Definition of Done. Do not create code until I approve the plan.
-
 ## Branding
 
-The current concept board is stored under `assets/branding/reference/muninn-brand-reference.png`. It is a visual reference, not a sprite sheet. Production icons/logos may be added later without blocking the Course MVP.
-
-## Guiding principle
+The concept board is `assets/branding/reference/muninn-brand-reference.png` (visual reference,
+not a sprite sheet). PWA icons are placeholders for now; see `assets/branding/ASSET-MANIFEST.md`.
 
 **Ship the secure, useful MVP first. Extend Muninn second.**

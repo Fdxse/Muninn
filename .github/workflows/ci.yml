@@ -1,0 +1,60 @@
+# Continuous integration: lint all PHP and JavaScript, then run the PHPUnit suite against a
+# throwaway MariaDB that matches the NAS (10.11). Runs on every pull request and on main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: muninn_test
+          MARIADB_USER: muninn_test
+          MARIADB_PASSWORD: muninn_test
+          MARIADB_ROOT_PASSWORD: root_for_ci_only
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The runner image ships PHP 8.3 and Composer; show versions for the log.
+      - name: Show tool versions
+        run: php --version && composer --version && node --version
+
+      - name: Install PHP dev dependencies
+        working-directory: api
+        run: composer install --no-interaction --no-progress
+
+      - name: Lint PHP
+        run: find api/src api/public api/bin api/tests frontend -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Lint JavaScript
+        run: find frontend/public/assets/js frontend/public/service-worker.js -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Run tests
+        working-directory: api
+        env:
+          MUNINN_TEST_DB_HOST: 127.0.0.1
+          MUNINN_TEST_DB_PORT: 3306
+          MUNINN_TEST_DB_NAME: muninn_test
+          MUNINN_TEST_DB_USER: muninn_test
+          MUNINN_TEST_DB_PASSWORD: muninn_test
+        run: vendor/bin/phpunit
+
+      - name: Check the release zip builds
+        run: deploy/build-release.sh ci-check
