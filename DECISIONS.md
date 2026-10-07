@@ -204,11 +204,46 @@ Hashes are upgraded transparently at sign-in.
 Administrators are created only with `php bin/create-admin.php` over SSH, with a hidden password
 prompt. There is no web setup endpoint.
 
+## D029 — Workspace role permissions
+
+**Status:** Accepted (2026-10-07, Week 1 plan default)
+
+Reader: read notes (later also history and search). Editor: also create, edit and delete
+(trash) notes. Admin: also add, change and remove Editors and Readers. Owner: also manage Admins
+and Owners, rename and delete the workspace. A workspace always keeps at least one Owner; any
+member may leave unless they are the last Owner. The matrix lives only in
+`Workspaces\WorkspaceRole` and `Workspaces\WorkspacePermission`, and every workspace and note
+endpoint checks it through `Workspaces\WorkspaceAuthorizer`. Callers who are not members get
+404; members with too weak a role get 403.
+
+## D030 — Who creates shared workspaces
+
+**Status:** Accepted (2026-10-07, Week 1 plan default)
+
+Any active everyday user may create a shared workspace and becomes its Owner. Members are added
+by username; unknown, disabled and administrator accounts all get the same answer. Every user
+also gets one personal workspace, created automatically, that cannot be shared or deleted.
+
+## D031 — Disabling users
+
+**Status:** Accepted (2026-10-07, Week 1 plan default)
+
+Accounts are disabled, never deleted, in the MVP. Disabling revokes all of the user's sessions
+and blocks sign-in; their workspaces, memberships and notes stay untouched. An administrator
+cannot disable their own account. Hard delete is deferred together with export.
+
+## D032 — Notes do not move between workspaces
+
+**Status:** Accepted (2026-10-07, Week 1 plan default)
+
+A note's workspace is fixed at creation in the MVP. This keeps attachments and version history
+authorized by a single, unchanging workspace.
+
 ## D041 — Manual, zip-based deployment
 
 **Status:** Accepted (2026-10-01)
 
-(D029–D040 are reserved for the decisions proposed for Weeks 2–5 in the Week 1 plan.)
+(D033–D040 are reserved for the decisions proposed for Weeks 3–5 in the Week 1 plan.)
 
 Nothing deploys automatically. A GitHub Actions workflow builds `muninn-<version>.zip` (API with
 production autoloader, frontend, `DEPLOY.md`, `Deploy-Api.ps1`). The frontend is uploaded by
@@ -228,6 +263,26 @@ root (`/volume1/secrets/muninn`). `Deploy-Api.ps1` writes `app-location.php` nex
 The API can be served from a host root (`api.dx.se`) or a sub-folder (`fehre.synology.me/muninn/`).
 The request path is made relative to the folder of `SCRIPT_NAME` (set by the web server, never by
 the client), so routes always start with `/api/v1/`.
+
+## D044 — Administrator accounts have no workspaces
+
+**Status:** Accepted (2026-10-07)
+
+Following D025, system administrator accounts get no personal workspace, cannot create shared
+workspaces and cannot be added as members. `WorkspaceAuthorizer` refuses administrators even if
+a membership row exists, so an administrator account can never read notes.
+
+## D045 — Deleting a note moves it to Trash from the start
+
+**Status:** Accepted (2026-10-07)
+
+`DELETE /api/v1/notes/{id}` sets `notes.trashed_at` instead of removing the row, so no Week 2
+delete is permanent and Editors never destroy data (D029 reserves permanent deletion). Trashed
+notes are invisible through the API until Week 4 adds the Trash view, restore and purge. A
+shared workspace can only be deleted when it holds no notes at all, Trash included.
+
+The `notes.revision` column for optimistic concurrency (D010) is part of the Week 2 schema:
+every update must name the revision it was based on and a stale one is refused with 409.
 
 ## D043 — Brand colour palette
 

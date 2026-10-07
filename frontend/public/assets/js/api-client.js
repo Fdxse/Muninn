@@ -150,6 +150,53 @@
         return parsedDate.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
     }
 
+    /** Creates an element with optional class names and text (never parses HTML). */
+    function createElement(tagName, classNames, textContent) {
+        var newElement = document.createElement(tagName);
+        if (classNames) {
+            newElement.className = classNames;
+        }
+        if (textContent !== undefined && textContent !== null) {
+            newElement.textContent = textContent;
+        }
+        return newElement;
+    }
+
+    /** Reads a value from the page's query string, or null. */
+    function queryParameter(parameterName) {
+        return new URLSearchParams(window.location.search).get(parameterName);
+    }
+
+    var lastWorkspaceStorageKey = 'muninn.lastWorkspaceId';
+
+    /**
+     * Remembers the workspace the user last opened (a per-browser convenience only; the API
+     * decides access). Storage can be blocked, e.g. in private windows, so failures are ignored.
+     */
+    function rememberWorkspace(workspaceId) {
+        try {
+            window.localStorage.setItem(lastWorkspaceStorageKey, workspaceId);
+        } catch (storageError) {
+            // Not remembering is harmless.
+        }
+    }
+
+    /** Returns the remembered workspace ID, or null. */
+    function rememberedWorkspace() {
+        try {
+            return window.localStorage.getItem(lastWorkspaceStorageKey);
+        } catch (storageError) {
+            return null;
+        }
+    }
+
+    /** Human-readable role names for the UI. */
+    var roleLabels = { owner: 'Owner', admin: 'Admin', editor: 'Editor', reader: 'Reader' };
+
+    function roleLabel(roleValue) {
+        return roleLabels[roleValue] || roleValue;
+    }
+
     window.MuninnApi = {
         ApiError: ApiError,
         request: request,
@@ -159,5 +206,10 @@
         showFieldErrors: showFieldErrors,
         showAlert: showAlert,
         formatDateTime: formatDateTime,
+        createElement: createElement,
+        queryParameter: queryParameter,
+        rememberWorkspace: rememberWorkspace,
+        rememberedWorkspace: rememberedWorkspace,
+        roleLabel: roleLabel,
     };
 })();
