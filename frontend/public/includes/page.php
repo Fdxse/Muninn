@@ -137,7 +137,7 @@ function renderAppNavbar(string $assetPrefix = ''): void
 <nav class="navbar navbar-expand muninn-navbar" aria-label="Main">
     <div class="container-fluid px-3">
         <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $assetPrefix ?>index.php">
-            <img src="<?= $assetPrefix ?>assets/icons/icon-192.png" alt="" width="32" height="32" class="rounded-2">
+            <img src="<?= $assetPrefix ?>assets/icons/muninn-mark-small.svg" alt="" width="32" height="32">
             <span class="muninn-wordmark">Muninn</span>
         </a>
         <ul class="navbar-nav ms-auto align-items-center gap-1">

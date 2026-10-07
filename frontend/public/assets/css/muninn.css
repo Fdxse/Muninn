@@ -10,6 +10,27 @@
  * Tokens are CSS variables so a dark theme can be added later without touching components.
  */
 
+/*
+ * Brand fonts, self-hosted (no Google Fonts requests; the CSP only allows fonts from this site).
+ * Variable-weight Latin subsets from Fontsource, SIL Open Font License; see the LICENSE file
+ * next to each font. Latin covers English and the Nordic letters (å, ä, ö, æ, ø).
+ */
+@font-face {
+    font-family: "Merriweather";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300 900;
+    src: url("../vendor/fonts/merriweather-5.3.0/merriweather-latin-wght-normal.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url("../vendor/fonts/inter-5.3.0/inter-latin-wght-normal.woff2") format("woff2");
+}
+
 :root {
     /* Brand palette (values straight from the brand sheet). */
     --muninn-navy-900: #0b1a2b;
@@ -31,10 +52,10 @@
     /* Darker gray for muted text on the light page background (#6B7280 there is only 4:1). */
     --muninn-gray-600: #4b5563;
 
-    /* Fonts. The sheet suggests Merriweather (headings) and Inter (body); until those font files
-       are approved and self-hosted, system fonts with the same character are used. */
-    --muninn-font-heading: Georgia, "Times New Roman", serif;
-    --muninn-font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* Fonts from the brand sheet: Merriweather for headings, Inter for body text.
+       The system fonts after them are only used while the font files load or if they fail. */
+    --muninn-font-heading: "Merriweather", Georgia, "Times New Roman", serif;
+    --muninn-font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
     /* Semantic roles used by the components below. */
     --muninn-surface: var(--muninn-background-light);
@@ -132,7 +153,9 @@ body {
 
 /* Bootstrap fills inputs with the page background; keep them white so they read as fields on cards. */
 .form-control,
-.form-select {
+.form-select,
+.form-control:focus,
+.form-select:focus {
     background-color: var(--muninn-surface-raised);
 }
 
@@ -161,7 +184,7 @@ body {
 
 .muninn-wordmark {
     font-family: var(--muninn-font-heading);
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.02em;
 }
 

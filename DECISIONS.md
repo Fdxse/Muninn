@@ -242,5 +242,11 @@ A few derived shades are added where the sheet colours alone would fail WCAG AA 
 gold for gold text on light backgrounds, a darker gray for muted text on the `#E6E9EE` page, pale
 tints with dark text for alerts, and navy text on the bright status badges.
 
-The sheet suggests Merriweather (headings) and Inter (body). Those are not bundled until the
-project owner approves adding the font files; system serif/sans-serif stacks are used meanwhile.
+Headings use Merriweather and body text uses Inter, as on the sheet (approved by the project
+owner 2026-10-07). Both are self-hosted under `frontend/public/assets/vendor/fonts/` (variable
+weight, Latin subset, SIL Open Font License) so the CSP stays `font-src 'self'` and no request
+goes to Google.
+
+The sheet's logos, icons and splash screens exist only as previews on one image. Until final
+artwork exists, the app icons are simple vector raven icons drawn from the sheet
+(`assets/branding/source/*.svg`), approved as interim by the project owner.

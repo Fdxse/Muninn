@@ -46,6 +46,7 @@ Read in this order before architectural changes:
 ## Branding
 
 The concept board is `assets/branding/reference/muninn-brand-reference.png` (visual reference,
-not a sprite sheet). PWA icons are placeholders for now; see `assets/branding/ASSET-MANIFEST.md`.
+not a sprite sheet); `muninn-brand-sheet.png` holds the colour palette. PWA icons are interim
+vector icons (`assets/branding/source/`); see `assets/branding/ASSET-MANIFEST.md`.
 
 **Ship the secure, useful MVP first. Extend Muninn second.**
