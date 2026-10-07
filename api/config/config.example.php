@@ -46,6 +46,8 @@ return [
 
     'frontend' => [
         // REQUIRED. Base URL of the frontend, used to build invitation links.
+        // Include the subfolder if the frontend is not at the domain root,
+        // e.g. 'https://www.dx.se/muninn' (invite links become <base_url>/invite.php#token=...).
         'base_url' => 'https://www.dx.se',
     ],
 

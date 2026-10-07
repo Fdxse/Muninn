@@ -71,7 +71,9 @@ Copy `config/config.example.php` to `config/config.php` in the application folde
 
 - `database`: `muninn_app` credentials; `migrations`: `muninn_migrate` credentials;
 - `cors.allowed_origins`: `['https://www.dx.se']`;
-- `frontend.base_url`: `https://www.dx.se`;
+- `cors.allowed_origins` is the bare origin (no path), even if the frontend lives in a subfolder;
+- `frontend.base_url`: the full URL of the frontend folder, including any subfolder, e.g.
+  `https://www.dx.se/muninn` (invitation links are built from it);
 - `logging.file_path`: e.g. `/volume1/secrets/muninn/storage/api.log`;
 - `security.trusted_proxies`: the reverse proxy's IP **only if** you put Synology's reverse
   proxy in front of Web Station; otherwise leave it empty.
