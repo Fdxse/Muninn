@@ -284,6 +284,22 @@ shared workspace can only be deleted when it holds no notes at all, Trash includ
 The `notes.revision` column for optimistic concurrency (D010) is part of the Week 2 schema:
 every update must name the revision it was based on and a stale one is refused with 409.
 
+## D046 — Resetting test data from the command line
+
+**Status:** Proposed (2026-10-07)
+
+`bin/reset-data.php` resets an installation to "system administrators only": it deletes every
+non-admin account with its sessions, plus all workspaces, memberships, notes (Trash included),
+invitations and sign-in attempt records, in one transaction. Administrator accounts and their
+sessions, the audit log and the schema are kept, and the reset itself is audited as
+`system.data_reset`. It refuses to run when no administrator exists, always shows row counts
+first, offers `--dry-run`, and deletes only after the exact phrase `DELETE ALL USER DATA` is typed.
+
+This is a server-operator tool for clearing out test data, not account deletion: D031 still
+holds for the web interface (accounts are disabled, never deleted), and there is deliberately no
+API endpoint, so a stolen admin session can never wipe the system. Attachment files will need to
+be included once attachments exist (Week 3).
+
 ## D043 — Brand colour palette
 
 **Status:** Accepted (2026-10-07)

@@ -26,7 +26,7 @@ the session cookie works in every browser, including Safari on iOS (decision D02
 | `api/public/` | API web root: `index.php` front controller and `.htaccess` only |
 | `api/src/` | Application code, namespace `Muninn\Api\`, grouped by feature |
 | `api/migrations/` | Numbered forward-only SQL migrations |
-| `api/bin/` | CLI tools: `migrate.php`, `create-admin.php` |
+| `api/bin/` | CLI tools: `migrate.php`, `create-admin.php`, `reset-data.php` |
 | `api/config/` | `config.example.php` (committed) and `config.php` (server only, git-ignored) |
 | `api/tests/` | PHPUnit unit and integration tests |
 | `frontend/public/` | Everything uploaded to www.dx.se |

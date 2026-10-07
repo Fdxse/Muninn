@@ -32,6 +32,7 @@ final class AuditLog
     public const WORKSPACE_MEMBER_ROLE_CHANGED = 'workspace.member_role_changed';
     public const WORKSPACE_MEMBER_REMOVED = 'workspace.member_removed';
     public const NOTE_TRASHED = 'note.trashed';
+    public const SYSTEM_DATA_RESET = 'system.data_reset';
 
     public function __construct(private readonly PDO $database)
     {

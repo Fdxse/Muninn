@@ -30,6 +30,7 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | API security headers (`nosniff`, `no-store`, CSP `default-src 'none'`, HSTS) | `HttpConventionsTest::testSecurityHeadersArePresent` |
 | Frontend CSP without inline scripts; DOM updates via `textContent` only | manual review; e2e check found no CSP violations |
 | Admin accounts only via CLI; no web setup endpoint | `bin/create-admin.php` |
+| Data reset only via CLI, keeps admins and audit log, all-or-nothing, refuses without an admin (D046) | `DataResetTest` |
 | Parameterised SQL everywhere | code review (no string-built SQL with input) |
 | Secrets never committed; config files git-ignored and excluded from release zips | `.gitignore`, `deploy/build-release.sh` safety check |
 
