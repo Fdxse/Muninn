@@ -99,6 +99,7 @@ function renderPageStart(string $pageTitle, string $assetPrefix = ''): void
     <meta name="muninn-site-root" content="<?= escapeHtml($assetPrefix === '' ? './' : $assetPrefix) ?>">
     <link rel="manifest" href="<?= $assetPrefix ?>manifest.webmanifest">
     <link rel="icon" href="<?= $assetPrefix ?>assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="<?= $assetPrefix ?>assets/icons/favicon-16.png" sizes="16x16" type="image/png">
     <link rel="apple-touch-icon" href="<?= $assetPrefix ?>assets/icons/apple-touch-icon.png">
     <link rel="stylesheet" href="<?= $assetPrefix ?>assets/vendor/bootstrap-5.3.8/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= $assetPrefix ?>assets/vendor/bootstrap-icons-1.13.1/bootstrap-icons.min.css">
@@ -137,7 +138,7 @@ function renderAppNavbar(string $assetPrefix = ''): void
 <nav class="navbar navbar-expand muninn-navbar" aria-label="Main">
     <div class="container-fluid px-3">
         <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $assetPrefix ?>index.php">
-            <img src="<?= $assetPrefix ?>assets/icons/muninn-mark-small.svg" alt="" width="32" height="32">
+            <img src="<?= $assetPrefix ?>assets/icons/muninn-symbol-64.png" alt="" width="32" height="32" class="rounded-circle">
             <span class="muninn-wordmark">Muninn</span>
         </a>
         <ul class="navbar-nav ms-auto align-items-center gap-1">

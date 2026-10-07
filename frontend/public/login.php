@@ -13,9 +13,11 @@ renderPageStart('Sign in');
 ?>
 <main id="main-content" class="muninn-auth-backdrop d-flex flex-column align-items-center justify-content-center px-3 py-5">
     <div class="text-center mb-4 muninn-auth-brand">
-        <img src="assets/icons/icon-192.png" alt="" width="72" height="72" class="mb-3 rounded-3">
-        <h1 class="muninn-wordmark display-5 mb-1">Muninn</h1>
-        <p class="muninn-tagline mb-0">Your notes. Your knowledge.</p>
+        <!-- The logo image contains the name and tagline; the heading text comes from its alt text. -->
+        <h1 class="mb-0">
+            <img src="assets/branding/muninn-logo-horizontal-dark.webp" alt="Muninn" width="400" height="160" class="muninn-auth-logo">
+        </h1>
+        <p class="visually-hidden">Your notes. Your knowledge.</p>
     </div>
 
     <div class="card muninn-auth-card shadow border-0">

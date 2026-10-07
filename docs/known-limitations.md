@@ -7,8 +7,8 @@ Current state after Week 1. Updated as the MVP grows.
 - **No email.** Administrators copy invitation links and send them themselves.
 - **No user management UI.** Disabling a user currently means editing `users.status` in the
   database; the admin UI for this comes with the MVP administration work.
-- **Interim icons.** PWA icons and favicons are simple vector raven icons drawn from the brand
-  sheet, not final artwork. Logos and splash images do not exist yet
+- **Splash and hero images are stored but not used yet.** iOS needs one startup image per device
+  size; Android builds its splash from the icon and the manifest colour
   (`assets/branding/ASSET-MANIFEST.md`).
 - **iPhone sign-in needs `api.dx.se`.** Calling the API as `fehre.synology.me` from www.dx.se
   works on desktop Chrome but not on iOS, because the cookie would be third-party.

@@ -1,15 +1,15 @@
 # App icons
 
-Interim icons drawn as vectors from the brand sheet (raven, gold ring, mountains, navy sky).
-They are not final artwork; replace them when a designer delivers production icons, keeping the
-same file names and sizes so no code needs to change.
+Copies of the production images in `assets/branding/production/` (supplied 2026-10-07). To update
+an icon, replace the file in `production/` and copy it here under the same name; no code changes.
 
-| File | Size | Exported from |
+| File | Size | Copied from |
 |---|---|---|
-| `icon-512.png`, `icon-192.png`, `apple-touch-icon.png` | 512, 192, 180 | `assets/branding/source/muninn-icon.svg` |
-| `icon-maskable-512.png` | 512 | `assets/branding/source/muninn-icon-maskable.svg` (artwork inside the 80% safe zone) |
-| `favicon-32.png`, `favicon-16.png` | 32, 16 | `assets/branding/source/muninn-icon-small.svg` |
-| `muninn-mark-small.svg` | vector | copy of `muninn-icon-small.svg`, used in the navigation bar |
+| `icon-512.png`, `icon-192.png` | 512, 192 | `production/app-icons/` (same names) |
+| `apple-touch-icon.png` | 180 | `production/app-icons/icon-180.png` |
+| `icon-maskable-512.png` | 512 | `production/app-icons/icon-maskable-512.png` |
+| `favicon-32.png`, `favicon-16.png` | 32, 16 | `production/favicons/` (same names) |
+| `muninn-symbol-64.png` | 64 | `production/favicons/favicon-master.png`, resized; navigation bar (shown at 32px) |
 
-The PNGs were exported by opening each SVG at the target size in headless Chromium and taking a
-screenshot. Any SVG exporter (Inkscape, a browser) gives the same result.
+The sign-in logo is `../branding/muninn-logo-horizontal-dark.webp`, an 800x320 WebP of
+`production/logos/muninn-logo-horizontal-dark.png`.
