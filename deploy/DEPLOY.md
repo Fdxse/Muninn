@@ -121,6 +121,8 @@ admin account; invite yourself a separate everyday account from the admin page (
 
 - **Sign-in works on a computer but not on an iPhone:** the frontend is calling
   `fehre.synology.me` instead of `api.dx.se`; check `includes/config.php` on www.dx.se.
+- **Health check returns a 503 `not_set_up`:** the API is deployed but
+  `config/config.php` does not exist yet; follow "API configuration" above.
 - **Health check returns a 500 "temporarily unavailable":** the API cannot read
   `config/config.php` or reach the database; see the web server's PHP error log on the NAS.
 - **Health check returns `server_misconfigured`:** `app-location.php` in the web folder points

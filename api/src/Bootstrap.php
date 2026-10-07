@@ -16,9 +16,10 @@ use Throwable;
 /**
  * Builds the Application from a config file and handles one request.
  *
- * Startup failures (missing config, database unreachable) are reported to PHP's own error
- * log and answered with a generic 500 JSON body, so a misconfigured server never leaks
- * paths or credentials to clients.
+ * A fresh install without config/config.php answers 503 "not_set_up", so a first deploy shows
+ * plainly that setup is unfinished. Other startup failures (invalid config, database
+ * unreachable) are reported to PHP's own error log and answered with a generic 500 JSON body.
+ * Neither response ever leaks paths or credentials to clients.
  */
 final class Bootstrap
 {
@@ -35,6 +36,15 @@ final class Bootstrap
     /** Builds the application and handles one request. Separate from run() so tests can call it. */
     public static function handle(string $configFilePath, Request $request): Response
     {
+        // No config file at all means the server has not been set up yet. That is an expected
+        // state on a first deploy, not a crash, so say so instead of a bare 500.
+        if (!is_file($configFilePath)) {
+            error_log('Muninn API is not set up: create config/config.php from config/config.example.php.');
+            $notSetUpResponse = Response::error(503, 'not_set_up', 'The service has not been set up yet.');
+
+            return SecurityHeaders::apply($notSetUpResponse);
+        }
+
         try {
             $config = Config::fromFile($configFilePath);
             $database = self::connect($config);

@@ -84,6 +84,6 @@ return [
 
     'logging' => [
         // REQUIRED. Absolute path of the application log file. Must be OUTSIDE the web root.
-        'file_path' => '/volume1/muninn/storage/logs/api.log',
+        'file_path' => '/volume1/secrets/muninn/storage/api.log',
     ],
 ];

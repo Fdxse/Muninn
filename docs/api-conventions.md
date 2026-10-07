@@ -37,6 +37,7 @@ in the message so a user can quote it, and the same ID is in the server log.
 | 422 | Semantically invalid input | `validation_failed` |
 | 429 | Rate limited (with `Retry-After`) | `rate_limited` |
 | 500 | Internal error, details only in the log | `internal_error` |
+| 503 | Fresh install: `config/config.php` does not exist yet | `not_set_up` |
 
 Admin endpoints answer **404** to signed-in non-admins so they are not advertised. Used,
 expired, revoked and unknown invitation tokens all give the same 404 body.
