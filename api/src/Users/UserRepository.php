@@ -76,4 +76,28 @@ final class UserRepository
         $updateStatement = $this->database->prepare('UPDATE users SET last_login_at = UTC_TIMESTAMP() WHERE id = :id');
         $updateStatement->execute(['id' => $userId]);
     }
+
+    /**
+     * Lists every account for the admin overview, newest first. Never returns password hashes.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function listForAdmin(): array
+    {
+        return $this->database->query(
+            'SELECT id, username, display_name, is_system_admin, status, created_at, last_login_at
+             FROM users
+             ORDER BY created_at DESC, id
+             LIMIT 500'
+        )->fetchAll();
+    }
+
+    /** Sets an account to 'active' or 'disabled' (decision D031: accounts are disabled, never deleted). */
+    public function setStatus(string $userId, string $newStatus): void
+    {
+        $updateStatement = $this->database->prepare(
+            'UPDATE users SET status = :status, updated_at = UTC_TIMESTAMP() WHERE id = :id'
+        );
+        $updateStatement->execute(['status' => $newStatus, 'id' => $userId]);
+    }
 }

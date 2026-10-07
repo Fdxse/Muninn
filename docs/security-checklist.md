@@ -33,9 +33,28 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Parameterised SQL everywhere | code review (no string-built SQL with input) |
 | Secrets never committed; config files git-ignored and excluded from release zips | `.gitignore`, `deploy/build-release.sh` safety check |
 
+## Week 2 — workspaces, roles and notes
+
+| Control | Verified by |
+|---|---|
+| One central authorization check (`WorkspaceAuthorizer`) for every workspace and note endpoint | code review; `DataIsolationTest` |
+| Role matrix D029 pinned | `WorkspaceRoleTest` (unit), `WorkspaceRolesTest` (API) |
+| User A cannot read, edit or trash user B's note | `DataIsolationTest::testUserCannotReadUpdateOrTrashAnotherUsersNote` |
+| Inaccessible, unknown and malformed IDs give an identical 404 body | `DataIsolationTest::assertLooksNonexistent`, `testMalformedAndRandomIdsGiveTheSame404` |
+| Listings never include other users' workspaces or notes | `DataIsolationTest::testListingsNeverIncludeOtherUsersWorkspacesOrNotes` |
+| Reader cannot write; Editor cannot manage members or the workspace; Admin cannot touch Owners/Admins | `WorkspaceRolesTest` |
+| A workspace always keeps one Owner (checked under a row lock) | `WorkspaceRolesTest::testWorkspaceAlwaysKeepsOneOwner` |
+| Removed members lose access immediately | `DataIsolationTest::testRemovedMemberLosesAccessImmediately` |
+| System administrators have no note access, even with a planted membership row (D025, D044) | `DataIsolationTest::testSystemAdministratorHasNoWorkspaceOrNoteAccess` |
+| Stale revision refused with 409; nothing silently overwritten | `NoteTest::testStaleRevisionIsRefusedAndNothingIsOverwritten` |
+| Delete moves to Trash; trashed notes invisible; workspace deletion never deletes notes | `DataIsolationTest::testTrashedNoteDisappearsFromReadsAndListings`, `WorkspaceRolesTest::testOnlyEmptySharedWorkspacesCanBeDeleted` |
+| Disabling a user revokes all sessions and blocks sign-in | `UserAdminTest` |
+| CSRF required on workspace and note changes | `DataIsolationTest::testStateChangesWithoutCsrfTokenAreRefused` |
+| Note content shown with `textContent` only (no HTML interpretation) | e2e check: `<b>` shown as text |
+| Membership and note-trash events audited | `WorkspaceRolesTest::testMembershipChangesAreAudited`, `NoteTest` |
+
 ## Open items for later weeks
 
-- Workspace authorization policy and its regression tests (Week 2).
 - Markdown sanitisation, upload validation and attachment authorization (Week 3).
 - Search and history authorization tests (Week 4).
 - Full security review against this list (Week 5).

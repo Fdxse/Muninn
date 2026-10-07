@@ -17,7 +17,8 @@ final class MigrationTest extends TestCase
 
         $firstRunVersions = $migrator->migrate();
         self::assertContains('0001_initial_auth', $firstRunVersions);
-        foreach (['users', 'sessions', 'invitations', 'auth_attempts', 'audit_log', 'schema_migrations'] as $expectedTable) {
+        self::assertContains('0002_workspaces_and_notes', $firstRunVersions);
+        foreach (['users', 'sessions', 'invitations', 'auth_attempts', 'audit_log', 'workspaces', 'workspace_members', 'notes', 'schema_migrations'] as $expectedTable) {
             self::assertContains($expectedTable, TestDatabase::tableNames());
         }
 

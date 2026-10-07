@@ -17,6 +17,8 @@ use Muninn\Api\Logging\AuditLog;
 use Muninn\Api\Security\SecretToken;
 use Muninn\Api\Security\UuidGenerator;
 use Muninn\Api\Users\UserInputRules;
+use Muninn\Api\Users\UserRepository;
+use Muninn\Api\Workspaces\WorkspaceService;
 
 /**
  * Admin endpoints (system admins only):
@@ -41,6 +43,8 @@ final class InvitationController
         private readonly string $frontendBaseUrl,
         private readonly int $defaultExpiryHours,
         private readonly int $maxExpiryHours,
+        private readonly WorkspaceService $workspaceService,
+        private readonly UserRepository $userRepository,
     ) {
     }
 
@@ -169,6 +173,12 @@ final class InvitationController
             $acceptedInvitation['invitation_id'],
             $context->clientIp,
         );
+
+        // Every new user starts with their own personal workspace (Course MVP item 2).
+        $acceptedUser = $this->userRepository->findById($acceptedInvitation['user_id']);
+        if ($acceptedUser !== null) {
+            $this->workspaceService->ensurePersonalWorkspace($acceptedUser);
+        }
 
         $newSession = $this->sessionService->create($acceptedInvitation['user_id'], $context->clientIp, $request->header('User-Agent'));
         $newUser = [

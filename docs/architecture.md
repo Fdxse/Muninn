@@ -1,4 +1,4 @@
-# Muninn architecture (Week 1)
+# Muninn architecture (Week 2)
 
 ## Overview
 
@@ -51,7 +51,7 @@ security check:
 Each route declares its access level (`public`, `user`, `system_admin`) where it is registered
 in `Application::registerRoutes()`.
 
-## Data model (migration 0001)
+## Data model (migrations 0001 and 0002)
 
 - `users`: UUID id, lowercase unique username, display name, password hash
   (Argon2id or bcrypt), `is_system_admin`, `status` (active/disabled).
@@ -59,6 +59,23 @@ in `Application::registerRoutes()`.
 - `invitations`: SHA-256 of the invitation token, creator, note, expiry, acceptance, revocation.
 - `auth_attempts`: recent login and invitation attempts for rate limiting (pruned after 24 h).
 - `audit_log`: security events with actor, target, IP and non-secret details.
+- `workspaces`: name, kind (`personal`/`shared`); `personal_owner_user_id` is unique, so each
+  user has exactly one personal workspace (created by the API on first use).
+- `workspace_members`: (workspace, user) → role `owner`/`admin`/`editor`/`reader`. The only
+  source of access to a workspace and its notes.
+- `notes`: workspace (fixed, D032), title, Markdown `content`, `revision` for optimistic
+  concurrency, creator/updater, and `trashed_at` for Trash (D045).
+
+## Authorization (Week 2)
+
+Every workspace and note handler first calls `WorkspaceAuthorizer::requireWorkspacePermission()`
+with the signed-in user, the workspace ID and a `WorkspacePermission`. For a note, its workspace
+is looked up first and the caller's membership of *that* workspace is required. The result is a
+`WorkspaceMembership`, and the services (`WorkspaceService`, `NoteService`) only accept that
+object and scope every query to its workspace. Non-members get 404 (indistinguishable from a
+missing resource), members with too weak a role get 403, and system administrators never get
+access (D025, D044). The role matrix (D029) is defined once in `WorkspaceRole` and
+`WorkspacePermission`.
 
 All timestamps are UTC `DATETIME`; the PDO connection pins `time_zone = '+00:00'`.
 

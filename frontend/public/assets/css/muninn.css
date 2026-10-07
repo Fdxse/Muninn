@@ -224,3 +224,20 @@ body {
 .text-muted-brand {
     color: var(--muninn-text-muted);
 }
+
+/* Notes: the Markdown source is shown as-is until rendering arrives in Week 3. */
+.muninn-note-source {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* A comfortable editor on phones; grows with the screen on larger devices. */
+.muninn-note-editor {
+    min-height: 50vh;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.95rem;
+}
+
+.muninn-note-page {
+    max-width: 52rem;
+}

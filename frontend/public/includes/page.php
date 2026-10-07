@@ -142,6 +142,20 @@ function renderAppNavbar(string $assetPrefix = ''): void
             <span class="muninn-wordmark">Muninn</span>
         </a>
         <ul class="navbar-nav ms-auto align-items-center gap-1">
+            <li class="nav-item d-none" id="nav-workspaces-item">
+                <a class="nav-link" href="<?= $assetPrefix ?>workspaces.php">
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Workspaces</span>
+                    <span class="visually-hidden d-sm-none">Workspaces</span>
+                </a>
+            </li>
+            <li class="nav-item d-none" id="nav-admin-users-item">
+                <a class="nav-link" href="<?= $assetPrefix ?>admin/users.php">
+                    <i class="bi bi-person-gear" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Users</span>
+                    <span class="visually-hidden d-sm-none">Users</span>
+                </a>
+            </li>
             <li class="nav-item d-none" id="nav-admin-item">
                 <a class="nav-link" href="<?= $assetPrefix ?>admin/invitations.php">
                     <i class="bi bi-person-plus" aria-hidden="true"></i>

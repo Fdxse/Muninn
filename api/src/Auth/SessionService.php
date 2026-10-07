@@ -120,4 +120,13 @@ final class SessionService
         );
         $revokeStatement->execute(['token_hash' => SecretToken::hash($rawToken)]);
     }
+
+    /** Revokes every open session of a user (used when an account is disabled). */
+    public function revokeAllForUser(string $userId): void
+    {
+        $revokeStatement = $this->database->prepare(
+            'UPDATE sessions SET revoked_at = UTC_TIMESTAMP() WHERE user_id = :user_id AND revoked_at IS NULL'
+        );
+        $revokeStatement->execute(['user_id' => $userId]);
+    }
 }
