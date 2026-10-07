@@ -35,4 +35,32 @@ final class PasswordServiceTest extends TestCase
         self::assertTrue($passwordService->verify('a sufficiently long password', $passwordHash));
         self::assertFalse($passwordService->verify('a different long password', $passwordHash));
     }
+
+    public function testPreferredAlgorithmIsSupportedByThisBuild(): void
+    {
+        $preferredAlgorithm = PasswordService::preferredAlgorithm();
+
+        self::assertContains($preferredAlgorithm, password_algos());
+    }
+
+    public function testSourceNeverUsesArgon2ConstantDirectly(): void
+    {
+        // Regression: PASSWORD_ARGON2ID is undefined on PHP builds without Argon2 support
+        // (e.g. Synology with sodium off), and a bare reference is a fatal error there.
+        // It may only appear as a quoted string, inside defined()/constant().
+        $sourceFolder = dirname(__DIR__, 2) . '/src';
+        $sourceFiles = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($sourceFolder, \FilesystemIterator::SKIP_DOTS));
+        foreach ($sourceFiles as $sourceFile) {
+            // Tokenize so that comments and string literals are ignored; only bare identifiers count.
+            foreach (token_get_all((string) file_get_contents($sourceFile->getPathname())) as $sourceToken) {
+                if (is_array($sourceToken) && $sourceToken[0] === T_STRING) {
+                    self::assertStringStartsNotWith(
+                        'PASSWORD_ARGON2',
+                        $sourceToken[1],
+                        $sourceFile->getFilename() . ' must check PASSWORD_ARGON2* with defined() and read it with constant().'
+                    );
+                }
+            }
+        }
+    }
 }

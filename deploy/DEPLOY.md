@@ -127,6 +127,10 @@ admin account; invite yourself a separate everyday account from the admin page (
   `config/config.php` or reach the database; see the web server's PHP error log on the NAS.
 - **Health check returns `server_misconfigured`:** `app-location.php` in the web folder points
   to a folder PHP cannot see. Check `-ServerAppPath` and the PHP profile's `open_basedir`.
+- **Health check gives a bare 500 and the Web Station log says `open_basedir restriction in effect`:**
+  the PHP profile only allows the web folder. Add the application folder to `open_basedir`
+  (for the single-folder layout, `/volume1/Muninn` covers both). The Web Station log is under
+  Web Station > Web Service > (your service) > Log; startup errors never reach `api.log`.
 - **Health check returns 404 HTML from the NAS:** the folder is served by nginx or `.htaccess`
   is ignored; switch the service to Apache 2.4 (step 2.5).
 - **Every sign-in attempt says "Too many attempts":** behind a reverse proxy, set
