@@ -1,0 +1,17 @@
+Muninn – omritat bildpaket
+
+Bilderna har ritats om med varumärkesbladet som referens. De är nya renderingar, inte utsnitt eller återställda original. Detaljer och typografi kan därför skilja sig från bladet.
+
+Exportmått:
+Horisontella logotyper: 2000 x 800 px
+Kvadratiska logotyper och symboler: 1024 x 1024 px
+PWA: 512 x 512, 192 x 192, 180 x 180 px
+Maskable: 512 x 512 px
+Social: 1024 x 1024 px
+Mobile splash: 1080 x 1920 px
+Desktop splash och hero: 1920 x 1080 px
+Favicon: 32 x 32, 16 x 16 och riktig ICO med flera upplösningar
+UI-ikoner: SVG och transparent PNG 256 x 256 px
+Övriga referensbilder har egna lämpliga exportmått.
+
+Slutlig storleksanpassning har gjorts med högkvalitativ omsampling från de nya renderingarna. SVG-ikonerna är vektorer och kan skalas fritt. Färgpaletten är utelämnad.

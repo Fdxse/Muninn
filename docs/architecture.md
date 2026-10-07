@@ -69,5 +69,5 @@ page loads `api-client.js` (fetch wrapper with CSRF handling) and its own script
 inserted into the DOM with `textContent`, never `innerHTML`. A strict CSP allows scripts and
 styles from the site itself only, and network calls to the site and the API.
 
-The PWA is a manifest, interim raven icons and a service worker that caches nothing
+The PWA is a manifest, the raven app icons and a service worker that caches nothing
 (installability only, per CLAUDE.md).

@@ -45,12 +45,14 @@
     --muninn-white: #ffffff;
 
     /* Derived shades. */
-    --muninn-navy-950: #060f19; /* pressed buttons, bottom of the sign-in gradient */
-    --muninn-navy-800: #16293f; /* hover on navy buttons, top of the sign-in gradient */
+    --muninn-navy-950: #060f19; /* pressed navy buttons */
+    --muninn-navy-800: #16293f; /* hover on navy buttons */
     /* Darker gold for gold text/borders on light backgrounds (the sheet gold is only 2:1 on white). */
     --muninn-gold-700: #76592c;
     /* Darker gray for muted text on the light page background (#6B7280 there is only 4:1). */
     --muninn-gray-600: #4b5563;
+    /* The exact background colour baked into the dark logo images, so they sit seamlessly on it. */
+    --muninn-logo-backdrop: #03111b;
 
     /* Fonts from the brand sheet: Merriweather for headings, Inter for body text.
        The system fonts after them are only used while the font files load or if they fail. */
@@ -191,7 +193,7 @@ body {
 /* Sign-in / invitation screens: dark brand backdrop with a light card. */
 .muninn-auth-backdrop {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--muninn-navy-800) 0%, var(--muninn-navy-950) 100%);
+    background: var(--muninn-logo-backdrop);
     color: var(--muninn-text-on-dark);
 }
 
@@ -202,15 +204,15 @@ body {
     color: var(--muninn-text);
 }
 
-.muninn-auth-brand {
-    color: var(--muninn-text-on-dark);
+/* Horizontal logo on the sign-in screens: full width on phones, 400px wide at most. */
+.muninn-auth-logo {
+    width: 100%;
+    max-width: 25rem;
+    height: auto;
 }
 
-.muninn-tagline {
-    color: var(--muninn-gold-500);
-    font-size: 0.8rem;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
+.muninn-auth-brand {
+    color: var(--muninn-text-on-dark);
 }
 
 /* The one-time invitation link: long, so it wraps anywhere. */

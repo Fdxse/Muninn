@@ -15,9 +15,8 @@ renderPageStart('Accept invitation');
 ?>
 <main id="main-content" class="muninn-auth-backdrop d-flex flex-column align-items-center justify-content-center px-3 py-5">
     <div class="text-center mb-4 muninn-auth-brand">
-        <img src="assets/icons/icon-192.png" alt="" width="72" height="72" class="mb-3 rounded-3">
-        <h1 class="muninn-wordmark display-6 mb-1">Welcome to Muninn</h1>
-        <p class="muninn-tagline mb-0">Your notes. Your knowledge.</p>
+        <img src="assets/branding/muninn-logo-horizontal-dark.webp" alt="" width="400" height="160" class="muninn-auth-logo mb-2">
+        <h1 class="muninn-wordmark h3 mb-0">Welcome to Muninn</h1>
     </div>
 
     <div class="card muninn-auth-card shadow border-0">

@@ -247,6 +247,7 @@ owner 2026-10-07). Both are self-hosted under `frontend/public/assets/vendor/fon
 weight, Latin subset, SIL Open Font License) so the CSP stays `font-src 'self'` and no request
 goes to Google.
 
-The sheet's logos, icons and splash screens exist only as previews on one image. Until final
-artwork exists, the app icons are simple vector raven icons drawn from the sheet
-(`assets/branding/source/*.svg`), approved as interim by the project owner.
+The production image set (logos, app icons, favicons, splash, hero and UI icons) was supplied by
+the project owner on 2026-10-07 and is kept unchanged in `assets/branding/production/`. The
+frontend uses copies of the app icons and favicons, a 64px navigation-bar symbol and an 800px
+WebP of the dark horizontal logo; the full-size originals are not deployed.
