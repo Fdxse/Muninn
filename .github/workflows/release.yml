@@ -1,7 +1,8 @@
 # Builds the deployment zip. It never deploys anything: download the zip and follow DEPLOY.md.
 #
 #   - Push a tag like v0.1.0 → a GitHub release is created with the zip attached.
-#   - Or run it manually (Actions → Release → Run workflow) → the zip is a workflow artifact.
+#   - Or run it manually (Actions → Release → Run workflow) → download the zip from the run's
+#     Artifacts section; it unzips straight to the release folder (no zip inside a zip).
 name: Release
 
 on:
@@ -30,11 +31,18 @@ jobs:
       - name: Build the zip
         run: deploy/build-release.sh "${{ steps.version.outputs.label }}"
 
-      - name: Keep the zip as a workflow artifact
+      # GitHub always wraps a workflow artifact in a zip of its own, so uploading our zip would
+      # give a zip inside a zip. Upload the staged release folder instead: the download is then
+      # muninn-<version>.zip with the muninn-<version>/ folder inside, the same layout as the
+      # zip attached to tagged releases (and what Deploy-Api.ps1 expects).
+      - name: Keep the release folder as a workflow artifact
         uses: actions/upload-artifact@v6
         with:
           name: muninn-${{ steps.version.outputs.label }}
-          path: build/muninn-${{ steps.version.outputs.label }}.zip
+          path: |
+            build/
+            !build/*.zip
+          if-no-files-found: error
 
       - name: Attach the zip to a GitHub release (tags only)
         if: github.ref_type == 'tag'

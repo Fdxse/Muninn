@@ -102,7 +102,9 @@ admin account; invite yourself a separate everyday account from the admin page (
 
 ## Every release
 
-1. Download `muninn-<version>.zip` from the GitHub release (or the workflow run's artifacts).
+1. Download `muninn-<version>.zip` from the GitHub release (or from the **Artifacts** section
+   of a manual Release workflow run). Either way it is one zip with a `muninn-<version>/`
+   folder inside; pass the downloaded zip straight to `Deploy-Api.ps1`.
 2. API: in PowerShell, run
    ```powershell
    .\Deploy-Api.ps1 -ZipPath .\muninn-<version>.zip `
