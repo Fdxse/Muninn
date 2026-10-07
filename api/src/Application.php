@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Muninn\Api;
 
+use Muninn\Api\Admin\UserAdminController;
 use Muninn\Api\Auth\AuthController;
 use Muninn\Api\Auth\PasswordService;
 use Muninn\Api\Auth\RateLimiter;
@@ -23,7 +24,12 @@ use Muninn\Api\Invitations\InvitationController;
 use Muninn\Api\Invitations\InvitationService;
 use Muninn\Api\Logging\AppLogger;
 use Muninn\Api\Logging\AuditLog;
+use Muninn\Api\Notes\NoteController;
+use Muninn\Api\Notes\NoteService;
 use Muninn\Api\Users\UserRepository;
+use Muninn\Api\Workspaces\WorkspaceAuthorizer;
+use Muninn\Api\Workspaces\WorkspaceController;
+use Muninn\Api\Workspaces\WorkspaceService;
 use PDO;
 use Throwable;
 
@@ -150,6 +156,10 @@ final class Application
             $this->config->getInt('security.invitation_max_failures_per_ip'),
         );
 
+        // Every workspace and note endpoint goes through this one authorizer (SECURITY.md).
+        $workspaceAuthorizer = new WorkspaceAuthorizer($this->database);
+        $workspaceService = new WorkspaceService($this->database, $userRepository);
+
         $authController = new AuthController(
             $userRepository,
             $passwordService,
@@ -168,7 +178,12 @@ final class Application
             $this->config->getString('frontend.base_url'),
             $this->config->getInt('invitations.default_expiry_hours'),
             $this->config->getInt('invitations.max_expiry_hours'),
+            $workspaceService,
+            $userRepository,
         );
+        $userAdminController = new UserAdminController($userRepository, $this->sessionService, $auditLog);
+        $workspaceController = new WorkspaceController($workspaceService, $workspaceAuthorizer, $auditLog);
+        $noteController = new NoteController(new NoteService($this->database), $workspaceAuthorizer, $auditLog);
 
         // Health check: reveals nothing about versions or the database.
         $this->router->add('GET', '/api/v1/health', fn (): Response => Response::data(['status' => 'ok']), Router::ACCESS_PUBLIC);
@@ -186,5 +201,28 @@ final class Application
         $this->router->add('GET', '/api/v1/admin/invitations', $invitationController->list(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/invitations', $invitationController->create(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('DELETE', '/api/v1/admin/invitations/{id}', $invitationController->revoke(...), Router::ACCESS_SYSTEM_ADMIN);
+
+        // Account administration (system admins only; accounts are disabled, never deleted).
+        $this->router->add('GET', '/api/v1/admin/users', $userAdminController->list(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/users/{id}/disable', $userAdminController->disable(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/users/{id}/enable', $userAdminController->enable(...), Router::ACCESS_SYSTEM_ADMIN);
+
+        // Workspaces and members. Signed-in users only; WorkspaceAuthorizer checks membership and role.
+        $this->router->add('GET', '/api/v1/workspaces', $workspaceController->list(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/workspaces', $workspaceController->create(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/workspaces/{id}', $workspaceController->show(...), Router::ACCESS_USER);
+        $this->router->add('PATCH', '/api/v1/workspaces/{id}', $workspaceController->rename(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/workspaces/{id}', $workspaceController->delete(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/workspaces/{id}/members', $workspaceController->listMembers(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/workspaces/{id}/members', $workspaceController->addMember(...), Router::ACCESS_USER);
+        $this->router->add('PATCH', '/api/v1/workspaces/{id}/members/{userId}', $workspaceController->changeMemberRole(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/workspaces/{id}/members/{userId}', $workspaceController->removeMember(...), Router::ACCESS_USER);
+
+        // Notes. Access always comes from a membership of the note's workspace.
+        $this->router->add('GET', '/api/v1/workspaces/{id}/notes', $noteController->list(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/workspaces/{id}/notes', $noteController->create(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/notes/{id}', $noteController->show(...), Router::ACCESS_USER);
+        $this->router->add('PATCH', '/api/v1/notes/{id}', $noteController->update(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/notes/{id}', $noteController->trash(...), Router::ACCESS_USER);
     }
 }

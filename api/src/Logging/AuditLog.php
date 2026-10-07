@@ -23,6 +23,15 @@ final class AuditLog
     public const INVITATION_REVOKED = 'invitation.revoked';
     public const INVITATION_ACCEPTED = 'invitation.accepted';
     public const USER_CREATED_BY_CLI = 'user.created_by_cli';
+    public const USER_DISABLED = 'user.disabled';
+    public const USER_ENABLED = 'user.enabled';
+    public const WORKSPACE_CREATED = 'workspace.created';
+    public const WORKSPACE_RENAMED = 'workspace.renamed';
+    public const WORKSPACE_DELETED = 'workspace.deleted';
+    public const WORKSPACE_MEMBER_ADDED = 'workspace.member_added';
+    public const WORKSPACE_MEMBER_ROLE_CHANGED = 'workspace.member_role_changed';
+    public const WORKSPACE_MEMBER_REMOVED = 'workspace.member_removed';
+    public const NOTE_TRASHED = 'note.trashed';
 
     public function __construct(private readonly PDO $database)
     {
