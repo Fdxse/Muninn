@@ -30,9 +30,9 @@ function drawPlaceholderIcon(int $sizeInPixels, bool $isMaskable, string $fontPa
 {
     $icon = imagecreatetruecolor($sizeInPixels, $sizeInPixels);
     imageantialias($icon, true);
-    $navyColour = imagecolorallocate($icon, 0x0b, 0x17, 0x24);
-    $goldColour = imagecolorallocate($icon, 0xc8, 0xa3, 0x6a);
-    $offWhiteColour = imagecolorallocate($icon, 0xf6, 0xf4, 0xef);
+    $navyColour = imagecolorallocate($icon, 0x0b, 0x1a, 0x2b);
+    $goldColour = imagecolorallocate($icon, 0xd4, 0xaf, 0x7c);
+    $offWhiteColour = imagecolorallocate($icon, 0xe6, 0xe9, 0xee);
     imagefill($icon, 0, 0, $navyColour);
 
     $contentScale = $isMaskable ? 0.62 : 0.8;

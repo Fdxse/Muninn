@@ -93,7 +93,7 @@ function renderPageStart(string $pageTitle, string $assetPrefix = ''): void
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= escapeHtml($pageTitle) ?> · Muninn</title>
     <meta name="description" content="Muninn — Your notes. Your knowledge.">
-    <meta name="theme-color" content="#0b1724">
+    <meta name="theme-color" content="#0b1a2b">
     <!-- The API address is passed to JavaScript through a meta tag, so no inline script is needed. -->
     <meta name="muninn-api-base" content="<?= escapeHtml($apiBaseUrl) ?>">
     <meta name="muninn-site-root" content="<?= escapeHtml($assetPrefix === '' ? './' : $assetPrefix) ?>">
