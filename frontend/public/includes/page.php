@@ -93,7 +93,7 @@ function renderPageStart(string $pageTitle, string $assetPrefix = ''): void
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= escapeHtml($pageTitle) ?> · Muninn</title>
     <meta name="description" content="Muninn — Your notes. Your knowledge.">
-    <meta name="theme-color" content="#0b1724">
+    <meta name="theme-color" content="#0b1a2b">
     <!-- The API address is passed to JavaScript through a meta tag, so no inline script is needed. -->
     <meta name="muninn-api-base" content="<?= escapeHtml($apiBaseUrl) ?>">
     <meta name="muninn-site-root" content="<?= escapeHtml($assetPrefix === '' ? './' : $assetPrefix) ?>">
@@ -137,7 +137,7 @@ function renderAppNavbar(string $assetPrefix = ''): void
 <nav class="navbar navbar-expand muninn-navbar" aria-label="Main">
     <div class="container-fluid px-3">
         <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $assetPrefix ?>index.php">
-            <img src="<?= $assetPrefix ?>assets/icons/icon-192.png" alt="" width="32" height="32" class="rounded-2">
+            <img src="<?= $assetPrefix ?>assets/icons/muninn-mark-small.svg" alt="" width="32" height="32">
             <span class="muninn-wordmark">Muninn</span>
         </a>
         <ul class="navbar-nav ms-auto align-items-center gap-1">

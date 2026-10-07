@@ -1,39 +1,118 @@
 /*
  * Muninn design tokens and base styles.
  *
- * Colours are sampled from assets/branding/reference/muninn-brand-reference.png:
- * near-black navy, slate blue, off-white, and muted gold used sparingly for accents.
+ * The palette comes from the brand sheet (assets/branding/reference/muninn-brand-sheet.png):
+ *   #0B1A2B primary dark blue   #2F4B6E secondary blue   #D4AF7C accent gold
+ *   #E6E9EE background light    #1F2937 text primary     #6B7280 text secondary
+ *   #10B981 success             #EF4444 error            #F59E0B warning
+ * Shades marked "derived" are not on the sheet; they are darker/lighter steps of a sheet colour,
+ * added for hover states and to keep text at WCAG AA contrast (4.5:1).
  * Tokens are CSS variables so a dark theme can be added later without touching components.
  */
 
-:root {
-    --muninn-navy-950: #050d16;
-    --muninn-navy-900: #0b1724;
-    --muninn-navy-800: #13263a;
-    --muninn-slate-600: #3d5170;
-    --muninn-slate-400: #7a8ca6;
-    --muninn-offwhite: #f6f4ef;
-    --muninn-white: #ffffff;
-    --muninn-gold-500: #c8a36a;
-    /* Darker gold for text/borders on light backgrounds (keeps WCAG AA contrast). */
-    --muninn-gold-700: #8a6a35;
+/*
+ * Brand fonts, self-hosted (no Google Fonts requests; the CSP only allows fonts from this site).
+ * Variable-weight Latin subsets from Fontsource, SIL Open Font License; see the LICENSE file
+ * next to each font. Latin covers English and the Nordic letters (å, ä, ö, æ, ø).
+ */
+@font-face {
+    font-family: "Merriweather";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300 900;
+    src: url("../vendor/fonts/merriweather-5.3.0/merriweather-latin-wght-normal.woff2") format("woff2");
+}
 
-    --muninn-surface: var(--muninn-offwhite);
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url("../vendor/fonts/inter-5.3.0/inter-latin-wght-normal.woff2") format("woff2");
+}
+
+:root {
+    /* Brand palette (values straight from the brand sheet). */
+    --muninn-navy-900: #0b1a2b;
+    --muninn-slate-600: #2f4b6e;
+    --muninn-gold-500: #d4af7c;
+    --muninn-background-light: #e6e9ee;
+    --muninn-ink-800: #1f2937;
+    --muninn-gray-500: #6b7280;
+    --muninn-success: #10b981;
+    --muninn-error: #ef4444;
+    --muninn-warning: #f59e0b;
+    --muninn-white: #ffffff;
+
+    /* Derived shades. */
+    --muninn-navy-950: #060f19; /* pressed buttons, bottom of the sign-in gradient */
+    --muninn-navy-800: #16293f; /* hover on navy buttons, top of the sign-in gradient */
+    /* Darker gold for gold text/borders on light backgrounds (the sheet gold is only 2:1 on white). */
+    --muninn-gold-700: #76592c;
+    /* Darker gray for muted text on the light page background (#6B7280 there is only 4:1). */
+    --muninn-gray-600: #4b5563;
+
+    /* Fonts from the brand sheet: Merriweather for headings, Inter for body text.
+       The system fonts after them are only used while the font files load or if they fail. */
+    --muninn-font-heading: "Merriweather", Georgia, "Times New Roman", serif;
+    --muninn-font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Semantic roles used by the components below. */
+    --muninn-surface: var(--muninn-background-light);
     --muninn-surface-raised: var(--muninn-white);
-    --muninn-text: var(--muninn-navy-900);
-    --muninn-text-muted: #4a5a70;
+    --muninn-text: var(--muninn-ink-800);
+    --muninn-text-muted: var(--muninn-gray-600);
+    --muninn-text-on-dark: var(--muninn-background-light);
     --muninn-accent: var(--muninn-gold-500);
-    --muninn-focus-ring: 0 0 0 0.25rem rgba(200, 163, 106, 0.5);
+    --muninn-focus-ring: 0 0 0 0.25rem rgba(212, 175, 124, 0.55);
 
     /* Map onto Bootstrap's own variables so its components follow the brand. */
     --bs-body-bg: var(--muninn-surface);
     --bs-body-color: var(--muninn-text);
+    --bs-body-font-family: var(--muninn-font-body);
+    --bs-emphasis-color: var(--muninn-navy-900);
+    --bs-secondary-color: var(--muninn-text-muted);
     --bs-primary: var(--muninn-navy-900);
-    --bs-primary-rgb: 11, 23, 36;
+    --bs-primary-rgb: 11, 26, 43;
+    --bs-secondary: var(--muninn-gray-500);
+    --bs-secondary-rgb: 107, 114, 128;
+    --bs-success: var(--muninn-success);
+    --bs-success-rgb: 16, 185, 129;
+    --bs-danger: var(--muninn-error);
+    --bs-danger-rgb: 239, 68, 68;
+    --bs-warning: var(--muninn-warning);
+    --bs-warning-rgb: 245, 158, 11;
     --bs-link-color: var(--muninn-slate-600);
-    --bs-link-color-rgb: 61, 81, 112;
+    --bs-link-color-rgb: 47, 75, 110;
     --bs-link-hover-color: var(--muninn-navy-900);
+    --bs-link-hover-color-rgb: 11, 26, 43;
     --bs-border-radius: 0.6rem;
+
+    /* Alerts use a pale tint of each status colour with dark text of the same hue (derived). */
+    --bs-success-text-emphasis: #065f46;
+    --bs-success-bg-subtle: #d1fae5;
+    --bs-success-border-subtle: #6ee7b7;
+    --bs-danger-text-emphasis: #991b1b;
+    --bs-danger-bg-subtle: #fee2e2;
+    --bs-danger-border-subtle: #fca5a5;
+    --bs-warning-text-emphasis: #92400e;
+    --bs-warning-bg-subtle: #fef3c7;
+    --bs-warning-border-subtle: #fcd34d;
+}
+
+/*
+ * Bootstrap's .text-bg-* helpers always use white text, which is unreadable on the bright brand
+ * status colours. Dark navy text keeps the badges above 4.5:1 contrast.
+ */
+.text-bg-success,
+.text-bg-warning,
+.text-bg-danger {
+    color: var(--muninn-navy-900) !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: var(--muninn-font-heading);
 }
 
 body {
@@ -72,6 +151,14 @@ body {
     border-color: var(--muninn-gold-500);
 }
 
+/* Bootstrap fills inputs with the page background; keep them white so they read as fields on cards. */
+.form-control,
+.form-select,
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--muninn-surface-raised);
+}
+
 /* Touch-friendly controls: at least 44px high. */
 .btn,
 .form-control,
@@ -87,7 +174,7 @@ body {
 .muninn-navbar .navbar-brand,
 .muninn-navbar .nav-link,
 .muninn-navbar .navbar-text {
-    color: var(--muninn-offwhite);
+    color: var(--muninn-text-on-dark);
 }
 
 .muninn-navbar .nav-link:hover,
@@ -96,8 +183,8 @@ body {
 }
 
 .muninn-wordmark {
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 600;
+    font-family: var(--muninn-font-heading);
+    font-weight: 700;
     letter-spacing: 0.02em;
 }
 
@@ -105,7 +192,7 @@ body {
 .muninn-auth-backdrop {
     min-height: 100vh;
     background: linear-gradient(180deg, var(--muninn-navy-800) 0%, var(--muninn-navy-950) 100%);
-    color: var(--muninn-offwhite);
+    color: var(--muninn-text-on-dark);
 }
 
 .muninn-auth-card {
@@ -116,7 +203,7 @@ body {
 }
 
 .muninn-auth-brand {
-    color: var(--muninn-offwhite);
+    color: var(--muninn-text-on-dark);
 }
 
 .muninn-tagline {

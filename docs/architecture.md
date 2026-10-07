@@ -31,7 +31,6 @@ the session cookie works in every browser, including Safari on iOS (decision D02
 | `api/tests/` | PHPUnit unit and integration tests |
 | `frontend/public/` | Everything uploaded to www.dx.se |
 | `frontend/public/includes/` | PHP helpers and config, blocked from direct access |
-| `frontend/tools/` | Developer scripts (placeholder icon generator) |
 | `deploy/` | Release zip builder, `Deploy-Api.ps1`, `DEPLOY.md` |
 | `docs/` | Architecture, conventions, setup, security checklist, limitations |
 
@@ -70,5 +69,5 @@ page loads `api-client.js` (fetch wrapper with CSRF handling) and its own script
 inserted into the DOM with `textContent`, never `innerHTML`. A strict CSP allows scripts and
 styles from the site itself only, and network calls to the site and the API.
 
-The PWA is a manifest, placeholder icons and a service worker that caches nothing
+The PWA is a manifest, interim raven icons and a service worker that caches nothing
 (installability only, per CLAUDE.md).

@@ -228,3 +228,25 @@ root (`/volume1/secrets/muninn`). `Deploy-Api.ps1` writes `app-location.php` nex
 The API can be served from a host root (`api.dx.se`) or a sub-folder (`fehre.synology.me/muninn/`).
 The request path is made relative to the folder of `SCRIPT_NAME` (set by the web server, never by
 the client), so routes always start with `/api/v1/`.
+
+## D043 — Brand colour palette
+
+**Status:** Accepted (2026-10-07)
+
+The colour values on the brand sheet (`assets/branding/reference/muninn-brand-sheet.png`) are the
+production palette: `#0B1A2B` primary, `#2F4B6E` secondary, `#D4AF7C` accent gold, `#E6E9EE`
+page background, `#1F2937`/`#6B7280` text, `#10B981`/`#EF4444`/`#F59E0B` status. They live as CSS
+variables in `frontend/public/assets/css/muninn.css` and are mapped onto Bootstrap 5.3's variables.
+
+A few derived shades are added where the sheet colours alone would fail WCAG AA contrast: darker
+gold for gold text on light backgrounds, a darker gray for muted text on the `#E6E9EE` page, pale
+tints with dark text for alerts, and navy text on the bright status badges.
+
+Headings use Merriweather and body text uses Inter, as on the sheet (approved by the project
+owner 2026-10-07). Both are self-hosted under `frontend/public/assets/vendor/fonts/` (variable
+weight, Latin subset, SIL Open Font License) so the CSP stays `font-src 'self'` and no request
+goes to Google.
+
+The sheet's logos, icons and splash screens exist only as previews on one image. Until final
+artwork exists, the app icons are simple vector raven icons drawn from the sheet
+(`assets/branding/source/*.svg`), approved as interim by the project owner.
