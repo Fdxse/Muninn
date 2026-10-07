@@ -28,8 +28,22 @@ final class PasswordService
 
     public function __construct(?string $forcedAlgorithm = null)
     {
-        $this->algorithm = $forcedAlgorithm
-            ?? (in_array(PASSWORD_ARGON2ID, password_algos(), true) ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT);
+        $this->algorithm = $forcedAlgorithm ?? self::preferredAlgorithm();
+    }
+
+    /**
+     * Argon2id when this PHP build supports it, otherwise bcrypt.
+     *
+     * PASSWORD_ARGON2ID is only defined when PHP has Argon2 support (libargon2 or the sodium
+     * extension), so it must be checked with defined() before use. Referencing it directly
+     * is a fatal error on builds without it, e.g. a Synology PHP profile with sodium disabled.
+     */
+    public static function preferredAlgorithm(): string
+    {
+        $argon2idIsAvailable = defined('PASSWORD_ARGON2ID')
+            && in_array(constant('PASSWORD_ARGON2ID'), password_algos(), true);
+
+        return $argon2idIsAvailable ? (string) constant('PASSWORD_ARGON2ID') : PASSWORD_BCRYPT;
     }
 
     public function hash(string $plainPassword): string
