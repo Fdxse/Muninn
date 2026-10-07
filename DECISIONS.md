@@ -206,7 +206,7 @@ prompt. There is no web setup endpoint.
 
 ## D029 — Workspace role permissions
 
-**Status:** Accepted (2026-10-07, Week 1 plan default)
+**Status:** Accepted (2026-10-07, confirmed by the project owner)
 
 Reader: read notes (later also history and search). Editor: also create, edit and delete
 (trash) notes. Admin: also add, change and remove Editors and Readers. Owner: also manage Admins
@@ -218,7 +218,7 @@ endpoint checks it through `Workspaces\WorkspaceAuthorizer`. Callers who are not
 
 ## D030 — Who creates shared workspaces
 
-**Status:** Accepted (2026-10-07, Week 1 plan default)
+**Status:** Accepted (2026-10-07, confirmed by the project owner)
 
 Any active everyday user may create a shared workspace and becomes its Owner. Members are added
 by username; unknown, disabled and administrator accounts all get the same answer. Every user
@@ -226,7 +226,7 @@ also gets one personal workspace, created automatically, that cannot be shared o
 
 ## D031 — Disabling users
 
-**Status:** Accepted (2026-10-07, Week 1 plan default)
+**Status:** Accepted (2026-10-07, confirmed by the project owner)
 
 Accounts are disabled, never deleted, in the MVP. Disabling revokes all of the user's sessions
 and blocks sign-in; their workspaces, memberships and notes stay untouched. An administrator
@@ -234,7 +234,7 @@ cannot disable their own account. Hard delete is deferred together with export.
 
 ## D032 — Notes do not move between workspaces
 
-**Status:** Accepted (2026-10-07, Week 1 plan default)
+**Status:** Accepted (2026-10-07, confirmed by the project owner)
 
 A note's workspace is fixed at creation in the MVP. This keeps attachments and version history
 authorized by a single, unchanging workspace.
