@@ -102,6 +102,10 @@
         renameCard.classList.toggle('d-none', !(workspace.permissions.manage_workspace && workspace.kind === 'shared'));
         deleteCard.classList.toggle('d-none', !(workspace.permissions.manage_workspace && workspace.kind === 'shared'));
         membersCard.classList.toggle('d-none', workspace.kind === 'personal');
+        // Magic Links (D059) are managed by Admins and Owners, in personal workspaces too.
+        var canManageLinks = workspace.your_role === 'owner' || workspace.your_role === 'admin';
+        document.getElementById('magic-links-card').classList.toggle('d-none', !canManageLinks);
+        document.getElementById('magic-links-button').href = 'magic-links.php?workspace=' + encodeURIComponent(workspace.id);
         addMemberForm.classList.toggle('d-none', !workspace.permissions.manage_members);
 
         memberRoleSelect.replaceChildren();

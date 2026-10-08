@@ -19,6 +19,8 @@ final class Router
     public const ACCESS_USER = 'user';
     /** A signed-in system administrator is required; others get 404. */
     public const ACCESS_SYSTEM_ADMIN = 'system_admin';
+    /** A browser that opened a Magic Link (the visit cookie) is required; sign-in does not count (D059). */
+    public const ACCESS_MAGIC_LINK = 'magic_link';
 
     /** @var list<array{method: string, pattern: string, regex: string, handler: callable, access: string}> */
     private array $routes = [];
@@ -30,6 +32,12 @@ final class Router
      */
     public function add(string $method, string $pattern, callable $handler, string $access): void
     {
+        // Deny by default: a typo in an access level must fail loudly at startup, never leave a
+        // route without its checks.
+        if (!in_array($access, [self::ACCESS_PUBLIC, self::ACCESS_USER, self::ACCESS_SYSTEM_ADMIN, self::ACCESS_MAGIC_LINK], true)) {
+            throw new \InvalidArgumentException('Unknown access level for ' . $pattern . ': ' . $access);
+        }
+
         // Turn "{id}" into a named capture group that matches one path segment.
         $patternRegex = preg_replace('#\{([a-zA-Z_]+)\}#', '(?P<$1>[^/]+)', $pattern);
 

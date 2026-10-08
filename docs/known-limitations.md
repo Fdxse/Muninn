@@ -1,8 +1,15 @@
 # Known limitations
 
 State at the end of the Course MVP (Week 6), updated for sub-folders, syntax highlighting and
-image removal (D054–D056). The stretch goals in `COURSE-MVP.md` (Magic Links, geotagging, ntfy,
-API tokens, export/backup, offline editing, real-time collaboration) are not built.
+image removal (D054–D056), administrator notifications (D057, D058) and Magic Links (D059). The
+other stretch goals in `COURSE-MVP.md` (geotagging, API tokens, export/backup, offline editing,
+real-time collaboration) are not built.
+
+- **Magic Link edits carry the link creator's name.** Notes saved or created through a write
+  link show the link's creator as the last editor (in the list and the history); the audit log
+  records that the save came through the link. Write links never delete, move or re-tag notes.
+- **Magic Links cannot be edited.** To change a link's hours or end date, revoke it and create a
+  new one (the old URL then stops working).
 
 - **Only images can be attached** (PNG, JPEG, GIF, WebP up to 10 MB). Other file types, and
   images from other websites, are not shown in notes (D036: an outside image appears as a link).

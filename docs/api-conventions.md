@@ -28,9 +28,9 @@ in the message so a user can quote it, and the same ID is in the server log.
 | 201 | Created | invitation created, invitation accepted |
 | 204 | Success without a body | logout, revoke |
 | 400 | Malformed request | `malformed_json` |
-| 401 | Not signed in, or failed login | `unauthenticated`, `invalid_credentials` |
-| 403 | Signed in but the request is not acceptable | `csrf_failed`, `origin_not_allowed`, `insufficient_role`, `admin_account` |
-| 404 | Not found **or not yours to know about** | `not_found`, `invitation_invalid` |
+| 401 | Not signed in, or failed login; a Magic Link visit that no longer works | `unauthenticated`, `invalid_credentials`, `link_unavailable` |
+| 403 | Signed in but the request is not acceptable | `csrf_failed`, `origin_not_allowed`, `insufficient_role`, `admin_account`, `link_read_only`, `link_cannot_create`, `link_outside_hours` |
+| 404 | Not found **or not yours to know about** | `not_found`, `invitation_invalid`, `link_unavailable` |
 | 405 | Wrong method (with `Allow` header) | `method_not_allowed` |
 | 409 | State conflict | `invitation_not_pending`, `revision_conflict`, `last_owner`, `already_member`, `personal_workspace`, `workspace_not_empty`, `cannot_disable_self`, `folder_name_taken`, `folder_limit`, `attachment_limit` |
 | 413 | Upload too large | `file_too_large` |
@@ -119,6 +119,32 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | GET | `/api/v1/notes/{id}/attachments` | Reader+ | the note's attachments |
 | GET | `/api/v1/attachments/{id}/content` | Reader+ | the image itself (used by `<img>` tags) |
 | DELETE | `/api/v1/attachments/{id}` | Editor+ | remove one image for good (204); the note's text is not changed |
+| GET | `/api/v1/workspaces/{id}/magic-links` | Admin+ | the workspace's Magic Links (D059) with `status`, `target_name`, `use_count`; never tokens; plus `timezone`, `default_valid_days`, `max_valid_days` |
+| POST | `/api/v1/workspaces/{id}/magic-links` | Admin+ | `{label, target_type: workspace\|folder\|note, target_id?, permission?: read\|write, valid_from?, valid_until?, daily_start_time?, daily_end_time?}` → 201 with one-time `link_url` |
+| DELETE | `/api/v1/magic-links/{id}` | Admin+ | revoke (204); stops open visits at once |
+| GET | `/api/v1/admin/magic-links` | system admin | every link: workspace, kind of target, creator, status; no labels, folder names or note titles |
+| DELETE | `/api/v1/admin/magic-links/{id}` | system admin | revoke any link (204) |
+
+### Magic Link visitors (D059)
+
+A browser that opened a Magic Link uses only these endpoints. `POST /link/open` sets the
+`__Host-muninn_link` visit cookie and returns a `csrf_token` for state changes. The sign-in
+cookie does not work here, and the visit cookie works nowhere else. Every request checks the
+link again (revoked, dates, daily hours, creator still Admin/Owner, target still there) and
+answers 401 `link_unavailable` once it stops. Notes and folders outside the link give 404.
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| POST | `/api/v1/link/open` | public | `{token}` → link description + `csrf_token`, sets the visit cookie; 404 `link_unavailable`, 403 `link_outside_hours`, 429 after guesses |
+| GET | `/api/v1/link/me` | visit | what the link opens (`target_type`, `target_name`, `permission`, `valid_until`) + `csrf_token` |
+| POST | `/api/v1/link/close` | visit | end the visit (204) |
+| GET | `/api/v1/link/folders` | visit | folders the link reaches, in tree order |
+| GET | `/api/v1/link/notes` | visit | notes the link reaches, without content or member names; `?folder=<id>` (inside the link) or `?folder=none` (workspace links) |
+| GET | `/api/v1/link/notes/{id}` | visit | one note with `content`; no member names or history counter |
+| POST | `/api/v1/link/notes` | write visit | `{title?, content?, folder_id?}` → 201; workspace and folder links only (else 403 `link_cannot_create`) |
+| PATCH | `/api/v1/link/notes/{id}` | write visit | `{revision, title?, content?}`; stale revision → 409 `revision_conflict` |
+| POST | `/api/v1/link/notes/{id}/attachments` | write visit | raw image bytes, same checks as the signed-in upload → 201 |
+| GET | `/api/v1/link/attachments/{id}/content` | visit | an image of a note the link reaches |
 
 ### Folders and tags
 

@@ -125,10 +125,13 @@ Deliverables:
 
 ## Phase 7 — Magic Links
 
+Built after the Course MVP (D059), with whole-workspace links added at the project owner's request.
+
 Deliverables:
 
 - Magic Link for note
 - Magic Link for folder
+- Magic Link for a whole workspace (D059)
 - Read permission
 - Optional Write permission
 - Start/end validity

@@ -34,6 +34,11 @@ use Muninn\Api\Invitations\InvitationRequestService;
 use Muninn\Api\Invitations\InvitationService;
 use Muninn\Api\Logging\AppLogger;
 use Muninn\Api\Logging\AuditLog;
+use Muninn\Api\MagicLinks\LinkVisitorController;
+use Muninn\Api\MagicLinks\MagicLinkAccess;
+use Muninn\Api\MagicLinks\MagicLinkController;
+use Muninn\Api\MagicLinks\MagicLinkScope;
+use Muninn\Api\MagicLinks\MagicLinkService;
 use Muninn\Api\Notes\ExpiredTrashCleanup;
 use Muninn\Api\Notes\NoteController;
 use Muninn\Api\Notes\NoteHistory;
@@ -52,6 +57,7 @@ use Muninn\Api\Users\UserRepository;
 use Muninn\Api\Workspaces\WorkspaceAuthorizer;
 use Muninn\Api\Workspaces\WorkspaceController;
 use Muninn\Api\Workspaces\WorkspaceService;
+use DateTimeZone;
 use PDO;
 use Throwable;
 
@@ -75,6 +81,9 @@ final class Application
     private ExpiredTrashCleanup $expiredTrashCleanup;
     private AdminNotifier $adminNotifier;
     private NtfyTransport $ntfyTransport;
+    private MagicLinkService $magicLinkService;
+    /** The cookie a browser gets after opening a Magic Link (D059); separate from the sign-in cookie. */
+    private SessionCookie $magicLinkVisitCookie;
 
     /** Set once the current request is signed in; housekeeping only follows such requests. */
     private bool $housekeepingDue = false;
@@ -99,6 +108,16 @@ final class Application
             $config->getString('session.cookie_name'),
             $config->getBool('session.cookie_secure'),
             $config->getInt('session.absolute_timeout_hours'),
+        );
+        $this->magicLinkService = new MagicLinkService(
+            $database,
+            new DateTimeZone($config->getString('magic_links.timezone')),
+            $config->getInt('magic_links.visit_hours'),
+        );
+        $this->magicLinkVisitCookie = new SessionCookie(
+            $config->getString('magic_links.cookie_name'),
+            $config->getBool('session.cookie_secure'),
+            $config->getInt('magic_links.visit_hours'),
         );
         $this->router = new Router();
         $this->registerRoutes();
@@ -187,8 +206,15 @@ final class Application
             throw HttpException::forbidden('origin_not_allowed', 'This origin is not allowed.');
         }
 
+        // Magic Link visitor routes (D059) accept only the visit cookie, never a sign-in, and the
+        // link behind it is checked again (revoked, dates, daily window, creator, target) right here.
+        $magicLinkAccess = null;
+        if ($matchedRoute['access'] === Router::ACCESS_MAGIC_LINK) {
+            $magicLinkAccess = $this->requireMagicLinkVisit($request);
+        }
+
         $currentSession = null;
-        if ($matchedRoute['access'] !== Router::ACCESS_PUBLIC) {
+        if ($matchedRoute['access'] === Router::ACCESS_USER || $matchedRoute['access'] === Router::ACCESS_SYSTEM_ADMIN) {
             $currentSession = $this->sessionService->findActive($request->cookie($this->sessionCookie->name()));
             if ($currentSession === null) {
                 throw HttpException::unauthenticated();
@@ -213,9 +239,33 @@ final class Application
             requestId: $requestId,
             clientIp: $this->clientIpResolver->resolve($request),
             session: $currentSession,
+            magicLinkAccess: $magicLinkAccess,
         );
 
         return ($matchedRoute['handler'])($routedRequest, $context);
+    }
+
+    /**
+     * Resolves the Magic Link visit cookie and applies the CSRF check to state changes, exactly
+     * like a signed-in session (D023), but with the visit's own token.
+     *
+     * @throws HttpException 401 when there is no usable visit (the link may have been revoked,
+     *                       expired, left its daily window, or lost its creator or target).
+     */
+    private function requireMagicLinkVisit(Request $request): MagicLinkAccess
+    {
+        $magicLinkAccess = $this->magicLinkService->findActiveVisit($request->cookie($this->magicLinkVisitCookie->name()));
+        if ($magicLinkAccess === null) {
+            throw new HttpException(401, 'link_unavailable', 'This link no longer works here. Open it again, or ask for a new one.');
+        }
+        if ($request->isStateChanging()) {
+            $submittedCsrfToken = (string) $request->header('X-CSRF-Token');
+            if (!hash_equals($magicLinkAccess->csrfToken, $submittedCsrfToken)) {
+                throw HttpException::forbidden('csrf_failed', 'The security token is missing or invalid. Reload and try again.');
+            }
+        }
+
+        return $magicLinkAccess;
     }
 
     private function registerRoutes(): void
@@ -322,6 +372,28 @@ final class Application
             $this->config->getInt('attachments.max_upload_bytes'),
         );
 
+        // Magic Links (D059): managed by workspace Admins and Owners, overseen by system administrators,
+        // and used by visitors through their own /link/ endpoints.
+        $magicLinkController = new MagicLinkController(
+            $this->magicLinkService,
+            $workspaceAuthorizer,
+            $auditLog,
+            $this->config->getString('frontend.base_url'),
+            $this->config->getInt('magic_links.default_valid_days'),
+            $this->config->getInt('magic_links.max_valid_days'),
+        );
+        $linkVisitorController = new LinkVisitorController(
+            $this->magicLinkService,
+            new MagicLinkScope($this->database),
+            $noteService,
+            new FolderService($this->database),
+            new AttachmentService($this->database, $attachmentStorage),
+            $rateLimiter,
+            $this->magicLinkVisitCookie,
+            $auditLog,
+            $this->config->getInt('attachments.max_upload_bytes'),
+        );
+
         // Health check: reveals nothing about versions or the database.
         $this->router->add('GET', '/api/v1/health', fn (): Response => Response::data(['status' => 'ok']), Router::ACCESS_PUBLIC);
 
@@ -417,5 +489,25 @@ final class Application
         $this->router->add('POST', '/api/v1/notes/{id}/attachments', $attachmentController->upload(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/attachments/{id}/content', $attachmentController->content(...), Router::ACCESS_USER);
         $this->router->add('DELETE', '/api/v1/attachments/{id}', $attachmentController->delete(...), Router::ACCESS_USER);
+
+        // Magic Link management (D059): Admin+ of the workspace; WorkspaceAuthorizer checks the role.
+        $this->router->add('GET', '/api/v1/workspaces/{id}/magic-links', $magicLinkController->list(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/workspaces/{id}/magic-links', $magicLinkController->create(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/magic-links/{id}', $magicLinkController->revoke(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/admin/magic-links', $magicLinkController->listForAdministrator(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('DELETE', '/api/v1/admin/magic-links/{id}', $magicLinkController->revokeAsAdministrator(...), Router::ACCESS_SYSTEM_ADMIN);
+
+        // Magic Link visitors (D059): opening is public and rate limited (token in the JSON body,
+        // never in a URL the server sees); everything else needs the visit cookie.
+        $this->router->add('POST', '/api/v1/link/open', $linkVisitorController->open(...), Router::ACCESS_PUBLIC);
+        $this->router->add('GET', '/api/v1/link/me', $linkVisitorController->me(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('POST', '/api/v1/link/close', $linkVisitorController->close(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('GET', '/api/v1/link/folders', $linkVisitorController->folders(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('GET', '/api/v1/link/notes', $linkVisitorController->notes(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('POST', '/api/v1/link/notes', $linkVisitorController->createNote(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('GET', '/api/v1/link/notes/{id}', $linkVisitorController->showNote(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('PATCH', '/api/v1/link/notes/{id}', $linkVisitorController->updateNote(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('POST', '/api/v1/link/notes/{id}/attachments', $linkVisitorController->uploadAttachment(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('GET', '/api/v1/link/attachments/{id}/content', $linkVisitorController->attachmentContent(...), Router::ACCESS_MAGIC_LINK);
     }
 }

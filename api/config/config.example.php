@@ -99,6 +99,20 @@ return [
         'retention_days' => 30,
     ],
 
+    'magic_links' => [
+        // OPTIONAL. Magic Links (D059): links that open a workspace, folder or note without signing in.
+        // Cookie a browser gets after opening a link (separate from the sign-in cookie). Like
+        // session.cookie_name it needs a name without the __Host- prefix on plain-http development.
+        'cookie_name' => '__Host-muninn_link',
+        // Time zone of the optional daily window (e.g. 07:00-18:00). Never the server's own zone.
+        'timezone' => 'Europe/Stockholm',
+        // Lifetime of a new link when no end date is chosen, and the longest allowed (days).
+        'default_valid_days' => 30,
+        'max_valid_days' => 365,
+        // Hours one opening of a link lasts in a browser before the link must be opened again (1-168).
+        'visit_hours' => 12,
+    ],
+
     'ntfy' => [
         // OPTIONAL. Push notifications to the administrator through your own ntfy server
         // (D057): new invitation requests and blocked sign-ins. Off until enabled.

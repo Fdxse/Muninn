@@ -613,42 +613,53 @@ with the sender's display name and username in the title.
 Not in this version: answering inside Muninn (an inbox for the administrator and replies the
 user sees on their next visit). That would need a table and pages of its own.
 
-## D059 — Magic Links: design for the first version
+## D059 — Magic Links: first version
 
-**Status:** Proposed (2026-10-08, design asked for by the project owner; not built yet)
+**Status:** Proposed (2026-10-08). The project owner chose to build it with whole-workspace links
+and the defaults below; awaiting review in the PR.
 
-Builds on D019 (Accepted). Items marked **[decide]** change the security posture and need the
-project owner's answer before they are built.
+Builds on D019 (Accepted) and adds a third target: a whole workspace.
 
-- **Targets.** A note, a folder (including its sub-folders, D055), and **[decide]** a whole
-  workspace, which D019 does not include. A workspace link is what "use a workspace without
-  signing in" needs.
-- **Who creates them. [decide]** Workspace Admins and Owners only, since a link is like adding
-  a member. A link can never grant more than its creator has. System administrators see an
-  overview of all links and can revoke any of them, but do not create them (D044).
-- **Access.** Read by default. Optional Write = edit existing notes and create new notes inside
-  the target. Never delete, trash, move, history restore, members, tags admin or sharing.
-  Read covers note text and the images attached to those notes, nothing outside the target.
-- **Validity.** Valid-from (default now) and valid-until are both required. **[decide]**
-  Default 30 days, maximum 365 days; no links that never expire. Optional daily window (for
-  example 07:00-18:00) evaluated in a configured timezone, `magic_links.timezone`, default
-  `Europe/Stockholm`, never the server's local time. Stored timestamps stay UTC.
-- **Revoking.** The creator and the workspace's Admins/Owners can revoke at any time; revoking
-  is immediate. A link also stops working when its creator is disabled, leaves the workspace
-  or drops below the role needed, and when its target is trashed or deleted.
-- **Token.** 256-bit random, base64url. Only its SHA-256 hash is stored (the token is random
-  and long, so a slow password hash adds nothing), compared through an indexed lookup on the
-  hash. The full link is shown once at creation and never again; never logged.
-- **How the browser uses it.** The link is `https://www.dx.se/muninn/link.php#<token>`. The
-  token sits after `#`, so it never reaches web server logs or `Referer` headers. The page
-  posts it once to `POST /api/v1/magic-links/session`, which sets a separate
-  `__Host-muninn_link` cookie (same flags as D022) valid for at most 12 hours. Every request
-  made with that cookie re-checks the link: revoked, validity, daily window, target, permission.
-- **Rate limit.** Token exchange is rate limited per IP like sign-in.
-- **Audit.** Created, revoked and first use per day are audited; `last_used_at` and a use count
-  are shown in the link list. Notes edited through a link record "via Magic Link <label>"
-  as the author of the version.
-- **Database.** New migration `magic_links` (id, workspace, target type and id, label,
-  permission, token hash, valid-from/until, daily window start/end, created by/at, revoked
-  by/at, last used at, use count) and `magic_link_sessions` (hashed cookie token, link,
-  expires).
+- **Targets.** A whole workspace, a folder (including its sub-folders, D055), or one note. A link
+  reaches nothing outside its target: other folders, notes, history, Trash, search, tags,
+  members and other workspaces all answer 404 as if they did not exist. Personal workspaces may
+  have links too (their Owner decides).
+- **Who creates them.** Workspace Admins and Owners only (the same role as managing members,
+  since a link lets people in much like a member). A link works only while its creator is an
+  active account and still an Admin or Owner of the workspace. System administrators have an
+  overview (`admin/magic-links.php`) and can revoke any link, but cannot create links, and the
+  overview shows no link names, folder names or note titles (like D050).
+- **Access.** Read by default. Write = edit the title and content of reachable notes, create
+  notes (workspace and folder links), and add images through the normal upload checks. Never
+  delete, trash, archive, move, change tags, restore history or manage anything (D019).
+  Visitors never see member names. Saves go into the note's history like any other save and are
+  recorded under the link's creator (the database needs an account), with the link's ID in the
+  audit log (`magic_link.note_updated`, `magic_link.note_created`).
+- **Validity.** Every link has a start (default now) and an end (default 30 days, at most 365
+  days from today; configurable as `magic_links.default_valid_days` / `max_valid_days`). There
+  are no links that never expire. Optional daily window (e.g. 07:00-18:00, or 22:00-06:00 over
+  midnight), start included and end excluded, evaluated in `magic_links.timezone` (default
+  `Europe/Stockholm`), never the server's own zone. Stored timestamps stay UTC; the API refuses
+  timestamps without an explicit offset instead of guessing.
+- **Revoking.** Any Admin or Owner of the workspace can revoke a link; it stops at once, also in
+  browsers that have it open. A link also stops when its folder is deleted or its note is
+  trashed. Revoked and expired links stay listed.
+- **Token.** 256-bit random, base64url. Only its SHA-256 hash is stored and looked up through a
+  unique index (the token is random and long, so a slow password hash adds nothing). The full
+  link is shown once at creation and never again, and never logged. Hashing does not make it
+  single-use: the link is reusable until it expires or is revoked.
+- **How the browser uses it.** The link is `<frontend>/link.php#token=<token>`. The token sits
+  after `#`, so it never reaches web server logs or `Referer` headers, and it stays in the
+  address bar so the page can be bookmarked. The page posts it to `POST /api/v1/link/open`,
+  which sets a separate `__Host-muninn_link` cookie (same flags as D022) for at most
+  `magic_links.visit_hours` (default 12) and never beyond the link's end. The visit cookie works
+  only on the `/api/v1/link/` endpoints and the sign-in cookie never works there. Every request
+  checks the link again: revoked, dates, daily window, creator, target. State changes need the
+  visit's own CSRF token (D023).
+- **Rate limit.** Unknown tokens count towards the same per-IP limit as invitation tokens.
+  Unknown, revoked, expired and not-yet-valid links give the same 404; only a working link
+  outside its hours says so (403 with its hours), which only a token holder can learn.
+- **Audit.** Created, revoked and every opening are audited; the list shows when a link was
+  last opened and how many times.
+- **Database.** Migration `0007_magic_links`: `magic_links` and `magic_link_sessions` (hashed
+  visit tokens). `bin/reset-data.php` removes both.

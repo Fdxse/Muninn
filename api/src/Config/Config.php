@@ -54,6 +54,18 @@ final class Config
             // Days a note stays in Trash before the API deletes it for good (D012, D039).
             'retention_days' => 30,
         ],
+        'magic_links' => [
+            // Magic Links (D059). The cookie a browser gets after opening a link; separate from
+            // the sign-in cookie. Needs a name without the __Host- prefix on plain-http development.
+            'cookie_name' => '__Host-muninn_link',
+            // Time zone of the optional daily window ("07:00-18:00"). Never the server's own zone.
+            'timezone' => 'Europe/Stockholm',
+            // Lifetime of a new link when the creator picks no end date, and the longest allowed.
+            'default_valid_days' => 30,
+            'max_valid_days' => 365,
+            // How long one opening of a link lasts in a browser before the link must be opened again.
+            'visit_hours' => 12,
+        ],
         'ntfy' => [
             // Push notifications to the administrator (D057). Off until configured.
             'enabled' => false,
@@ -184,9 +196,37 @@ final class Config
         }
 
         $this->validateNtfy();
+        $this->validateMagicLinks();
 
         if ($this->isProduction() && !$this->getBool('session.cookie_secure')) {
             throw new ConfigException('session.cookie_secure must be true in production.');
+        }
+    }
+
+    /**
+     * Checks the Magic Link section (D059): a real time zone and sensible lifetimes.
+     *
+     * @throws ConfigException
+     */
+    private function validateMagicLinks(): void
+    {
+        if (!in_array($this->getString('magic_links.timezone'), \DateTimeZone::listIdentifiers(), true)) {
+            throw new ConfigException('magic_links.timezone must be a time zone name like Europe/Stockholm.');
+        }
+        $maximumValidDays = $this->get('magic_links.max_valid_days');
+        if (!is_int($maximumValidDays) || $maximumValidDays < 1 || $maximumValidDays > 3650) {
+            throw new ConfigException('magic_links.max_valid_days must be a whole number from 1 to 3650.');
+        }
+        $defaultValidDays = $this->get('magic_links.default_valid_days');
+        if (!is_int($defaultValidDays) || $defaultValidDays < 1 || $defaultValidDays > $maximumValidDays) {
+            throw new ConfigException('magic_links.default_valid_days must be a whole number from 1 to magic_links.max_valid_days.');
+        }
+        $visitHours = $this->get('magic_links.visit_hours');
+        if (!is_int($visitHours) || $visitHours < 1 || $visitHours > 168) {
+            throw new ConfigException('magic_links.visit_hours must be a whole number from 1 to 168.');
+        }
+        if (!preg_match('/^[A-Za-z0-9_\-]{1,64}$/', $this->getString('magic_links.cookie_name'))) {
+            throw new ConfigException('magic_links.cookie_name must be 1-64 letters, digits, "-" or "_".');
         }
     }
 

@@ -37,7 +37,7 @@
         var requestHeaders = { 'Accept': 'application/json' };
 
         if (isStateChanging && csrfToken === null && !isPublicPath(path)) {
-            await loadCurrentUser();
+            await loadCsrfTokenFor(path);
         }
         if (isStateChanging && csrfToken !== null) {
             requestHeaders['X-CSRF-Token'] = csrfToken;
@@ -93,7 +93,7 @@
      */
     async function uploadFile(path, fileBlob, fileName) {
         if (csrfToken === null) {
-            await loadCurrentUser();
+            await loadCsrfTokenFor(path);
         }
         var requestHeaders = {
             'Accept': 'application/json',
@@ -137,8 +137,17 @@
     /** Endpoints that work without a session, so no CSRF token is needed first. */
     function isPublicPath(path) {
         return path === '/api/v1/auth/login'
+            || path === '/api/v1/link/open'
             || path.indexOf('/api/v1/invitations/') === 0
             || path.indexOf('/api/v1/password-resets/') === 0;
+    }
+
+    /**
+     * Fetches the CSRF token that belongs to the cookie a path uses: the Magic Link visit
+     * (D059) for /api/v1/link/ paths, the signed-in session for everything else.
+     */
+    function loadCsrfTokenFor(path) {
+        return path.indexOf('/api/v1/link/') === 0 ? request('GET', '/api/v1/link/me') : loadCurrentUser();
     }
 
     /** Returns {user, csrf_token} for the signed-in user; rejects with status 401 otherwise. */

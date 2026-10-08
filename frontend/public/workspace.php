@@ -79,6 +79,17 @@ renderAppNavbar();
             </div>
         </div>
 
+        <!-- Owners and Admins only (D059) -->
+        <div id="magic-links-card" class="card border-0 shadow-sm mb-4 d-none">
+            <div class="card-body">
+                <h2 class="h5 mb-2">Magic Links</h2>
+                <p class="small mb-3">Open this workspace, a folder or a note without signing in, for example on a shared tablet. Links can be read-only, time-limited and revoked at any time.</p>
+                <a class="btn btn-outline-dark" id="magic-links-button" href="magic-links.php">
+                    <i class="bi bi-link-45deg" aria-hidden="true"></i> Manage Magic Links
+                </a>
+            </div>
+        </div>
+
         <!-- Owners only, shared workspaces only -->
         <div id="delete-card" class="card border-danger-subtle shadow-sm d-none">
             <div class="card-body">

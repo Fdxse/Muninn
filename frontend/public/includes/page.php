@@ -80,8 +80,9 @@ function sendSecurityHeaders(): void
  *
  * @param string $pageTitle Shown in the browser tab.
  * @param string $assetPrefix Relative path back to the site root ('' or '../').
+ * @param bool $isMagicLinkPage True for link.php, whose images come from the Magic Link endpoints.
  */
-function renderPageStart(string $pageTitle, string $assetPrefix = ''): void
+function renderPageStart(string $pageTitle, string $assetPrefix = '', bool $isMagicLinkPage = false): void
 {
     sendSecurityHeaders();
     $apiBaseUrl = (string) muninnConfig()['api_base_url'];
@@ -102,6 +103,10 @@ function renderPageStart(string $pageTitle, string $assetPrefix = ''): void
     <!-- The API address is passed to JavaScript through a meta tag, so no inline script is needed. -->
     <meta name="muninn-api-base" content="<?= escapeHtml($apiBaseUrl) ?>">
     <meta name="muninn-site-root" content="<?= escapeHtml($assetPrefix === '' ? './' : $assetPrefix) ?>">
+<?php if ($isMagicLinkPage): ?>
+    <!-- Magic Link page (D059): note images load through the visitor endpoint, not the signed-in one. -->
+    <meta name="muninn-attachment-path" content="/api/v1/link/attachments/">
+<?php endif; ?>
     <link rel="manifest" href="<?= $assetPrefix ?>manifest.webmanifest">
     <link rel="icon" href="<?= $assetPrefix ?>assets/icons/favicon-32.png" sizes="32x32" type="image/png">
     <link rel="icon" href="<?= $assetPrefix ?>assets/icons/favicon-16.png" sizes="16x16" type="image/png">
