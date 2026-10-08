@@ -150,3 +150,16 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | The sub-folder filter only walks folders of the listed workspace | `NoteService::listInWorkspace` (workspace condition on both parts of the recursive query); `SubFolderTest::testFilteringByAFolderIncludesItsSubFolders` |
 | Readers cannot create or move folders | `SubFolderTest::testReadersCannotCreateOrMoveSubFolders` |
 | Highlighted code still goes through DOMPurify; highlight.js escapes the code and adds only `span` classes | `markdown-renderer.js` code review; local check that `<script>` in a code block stays text |
+
+## After the MVP — administrator notifications (ntfy)
+
+| Control | Verified by |
+|---|---|
+| ntfy address, topic and token are server-side only; nothing about ntfy reaches the frontend | `Config`, `AdminNotifier`; no frontend change |
+| Settings validated at startup: no credentials or query in the URL, safe topic names, bounded timeout | `AdminNotificationTest::testNtfySettingsAreValidatedWhenSwitchedOn` |
+| Messages are sent after the response; ntfy failures never break a request and are logged without the token | `AdminNotificationTest::testUnreachableNtfyNeverBreaksARequestAndIsLoggedWithoutTheToken`, `testInvitationRequestNotifiesTheAdministratorAfterTheResponse` |
+| Messages carry no passwords, tokens, note content or invitation request notes | `AdminNotificationTest::testInvitationRequestNotifiesTheAdministratorAfterTheResponse`, `testBlockedSignInsNotifyOncePerBlock` |
+| Anonymous sign-in failures cannot flood the administrator: one alert per block, at most 10 per hour | `AdminNotificationTest::testBlockedSignInsNotifyOncePerBlock`, `testSignInAlertsAreCappedPerHour` |
+| User-typed text (usernames) has control characters removed; messages are JSON, so nothing can inject ntfy headers | `AdminNotificationTest::testControlCharactersInUsernamesAreRemoved`; `HttpNtfyTransport` |
+| The token only goes to the configured server: redirects are not followed | `HttpNtfyTransport` (`CURLOPT_FOLLOWLOCATION` off, `follow_location` 0) |
+| Nothing is sent or recorded when ntfy is off | `AdminNotificationTest::testNothingIsSentWhenNtfyIsOff` |

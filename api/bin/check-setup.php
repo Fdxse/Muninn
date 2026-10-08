@@ -118,6 +118,20 @@ foreach ($config->getStringList('cors.allowed_origins') as $allowedOrigin) {
 $frontendBaseUrl = $config->getString('frontend.base_url');
 report(str_starts_with($frontendBaseUrl, 'https://') ? 'OK' : 'WARN', 'Frontend address for invitation and reset links: ' . $frontendBaseUrl);
 
+// Administrator push notifications (D057) are optional. Only the address is shown, never the token.
+if (!$config->getBool('ntfy.enabled')) {
+    report('INFO', 'ntfy notifications are off (ntfy.enabled). Send a test with bin/send-test-notification.php once configured.');
+} else {
+    $ntfyServerUrl = $config->getString('ntfy.server_url');
+    $ntfyHost = (string) parse_url($ntfyServerUrl, PHP_URL_HOST);
+    $ntfyIsLocal = in_array($ntfyHost, ['127.0.0.1', 'localhost', '::1'], true);
+    // A token sent over plain HTTP to another machine could be read on the way.
+    $tokenTravelsInClear = $config->getString('ntfy.access_token') !== '' && str_starts_with($ntfyServerUrl, 'http://') && !$ntfyIsLocal;
+    report($tokenTravelsInClear ? 'WARN' : 'OK', 'ntfy notifications go to ' . $ntfyServerUrl . ', topic ' . $config->getString('ntfy.topic')
+        . ($tokenTravelsInClear ? '; the access token travels unencrypted, use https:// or the local address.' : '.'));
+    report(function_exists('curl_init') || ini_get('allow_url_fopen') ? 'OK' : 'FAIL', 'PHP can make HTTP requests to ntfy (curl or allow_url_fopen).');
+}
+
 // 3. Database: the app account connects, the schema is current, an administrator exists.
 try {
     $database = Bootstrap::connect($config);

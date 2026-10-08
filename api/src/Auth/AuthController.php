@@ -10,6 +10,7 @@ use Muninn\Api\Http\Request;
 use Muninn\Api\Http\RequestContext;
 use Muninn\Api\Http\Response;
 use Muninn\Api\Logging\AuditLog;
+use Muninn\Api\Notifications\AdminNotifier;
 use Muninn\Api\Users\UserInputRules;
 use Muninn\Api\Users\UserRepository;
 
@@ -28,6 +29,7 @@ final class AuthController
         private readonly SessionCookie $sessionCookie,
         private readonly RateLimiter $rateLimiter,
         private readonly AuditLog $auditLog,
+        private readonly AdminNotifier $adminNotifier,
     ) {
     }
 
@@ -61,6 +63,11 @@ final class AuthController
         if (!$credentialsAreValid) {
             $this->rateLimiter->recordAttempt(RateLimiter::TYPE_LOGIN, $normalisedUsername, $context->clientIp, false);
             $this->auditLog->record(AuditLog::LOGIN_FAILED, $candidateUser?->id, null, null, $context->clientIp, ['username' => $normalisedUsername]);
+            // Tell the administrator once, when this failure is the one that blocks further tries (D057).
+            $reachedLimit = $this->rateLimiter->loginLimitJustReached($normalisedUsername, $context->clientIp);
+            if ($reachedLimit !== null) {
+                $this->adminNotifier->signInBlocked($reachedLimit['username'], $context->clientIp, $reachedLimit['failure_count'], $this->rateLimiter->windowMinutes());
+            }
             throw new HttpException(401, 'invalid_credentials', self::INVALID_CREDENTIALS_MESSAGE);
         }
 

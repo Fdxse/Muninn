@@ -84,6 +84,8 @@ Copy `config/config.example.php` to `config/config.php` in `/volume1/Muninn/conf
   Web Station (then its IP address).
 - `attachments` (optional): `storage_path` defaults to `storage/attachments` in the API folder;
   `max_upload_bytes` defaults to `10000000` (10 MB).
+- `ntfy` (optional, D057): push notifications to the administrator. See "Administrator
+  notifications (ntfy)" in `docs/deployment.md`.
 
 Make `config.php` readable only by its owner and the web server (`sudo chmod 640 config/config.php`).
 It is never in a release zip, so later deploys never overwrite it.

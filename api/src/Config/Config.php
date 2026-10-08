@@ -54,6 +54,14 @@ final class Config
             // Days a note stays in Trash before the API deletes it for good (D012, D039).
             'retention_days' => 30,
         ],
+        'ntfy' => [
+            // Push notifications to the administrator (D057). Off until configured.
+            'enabled' => false,
+            'server_url' => '',
+            'topic' => '',
+            'access_token' => '',
+            'timeout_seconds' => 3,
+        ],
     ];
 
     /** @var array<string, mixed> */
@@ -175,8 +183,34 @@ final class Config
             throw new ConfigException('trash.retention_days must be a whole number of days from 1 to 3650.');
         }
 
+        $this->validateNtfy();
+
         if ($this->isProduction() && !$this->getBool('session.cookie_secure')) {
             throw new ConfigException('session.cookie_secure must be true in production.');
+        }
+    }
+
+    /**
+     * Checks the ntfy section when notifications are switched on (D057).
+     *
+     * @throws ConfigException
+     */
+    private function validateNtfy(): void
+    {
+        if (!$this->getBool('ntfy.enabled')) {
+            return;
+        }
+        // A plain base URL: no user name or password in it (use access_token), no query string.
+        if (!preg_match('#^https?://[A-Za-z0-9.\-]+(:\d{1,5})?(/[A-Za-z0-9._~\-/]*)?$#', $this->getString('ntfy.server_url'))) {
+            throw new ConfigException('ntfy.server_url must be a URL like http://127.0.0.1:2586 (no user name, password or query).');
+        }
+        // ntfy topic names: letters, digits, "-" and "_", at most 64 characters.
+        if (!preg_match('/^[A-Za-z0-9_\-]{1,64}$/', $this->getString('ntfy.topic'))) {
+            throw new ConfigException('ntfy.topic must be 1-64 letters, digits, "-" or "_".');
+        }
+        $timeoutSeconds = $this->get('ntfy.timeout_seconds');
+        if (!is_int($timeoutSeconds) || $timeoutSeconds < 1 || $timeoutSeconds > 10) {
+            throw new ConfigException('ntfy.timeout_seconds must be a whole number from 1 to 10.');
         }
     }
 }

@@ -99,6 +99,23 @@ return [
         'retention_days' => 30,
     ],
 
+    'ntfy' => [
+        // OPTIONAL. Push notifications to the administrator through your own ntfy server
+        // (D057): new invitation requests and blocked sign-ins. Off until enabled.
+        'enabled' => false,
+        // Address the API uses to reach ntfy. When ntfy runs on the same NAS, use the local
+        // address, e.g. 'http://127.0.0.1:2586', so messages never leave the machine.
+        'server_url' => '',
+        // Topic to publish to; subscribe to it in the ntfy app. Letters, digits, - and _.
+        'topic' => 'muninn-admin',
+        // Access token ("tk_...") when your ntfy requires sign-in to publish, else ''.
+        // A secret: keep it only in this file on the server, never in the repository.
+        'access_token' => '',
+        // Seconds to wait for ntfy before giving up (1-10). Sending happens after the
+        // response, so this never slows down users.
+        'timeout_seconds' => 3,
+    ],
+
     'logging' => [
         // REQUIRED. Absolute path of the application log file. Must be OUTSIDE the web root.
         'file_path' => '/volume1/secrets/muninn/storage/api.log',

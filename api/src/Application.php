@@ -40,6 +40,9 @@ use Muninn\Api\Notes\NoteHistory;
 use Muninn\Api\Notes\NotePurger;
 use Muninn\Api\Notes\NoteService;
 use Muninn\Api\Notes\TrashController;
+use Muninn\Api\Notifications\AdminNotifier;
+use Muninn\Api\Notifications\HttpNtfyTransport;
+use Muninn\Api\Notifications\NtfyTransport;
 use Muninn\Api\Search\SearchController;
 use Muninn\Api\Search\SearchService;
 use Muninn\Api\Tags\TagController;
@@ -69,6 +72,8 @@ final class Application
     private SessionService $sessionService;
     private SessionCookie $sessionCookie;
     private ExpiredTrashCleanup $expiredTrashCleanup;
+    private AdminNotifier $adminNotifier;
+    private NtfyTransport $ntfyTransport;
 
     /** Set once the current request is signed in; housekeeping only follows such requests. */
     private bool $housekeepingDue = false;
@@ -77,7 +82,10 @@ final class Application
         private readonly Config $config,
         private readonly PDO $database,
         private readonly AppLogger $logger,
+        ?NtfyTransport $ntfyTransport = null,
     ) {
+        // Tests pass a transport that records messages instead of sending them.
+        $this->ntfyTransport = $ntfyTransport ?? new HttpNtfyTransport();
         $this->cors = new Cors($config->getStringList('cors.allowed_origins'));
         $this->errorHandler = new ErrorHandler($logger);
         $this->clientIpResolver = new ClientIpResolver($config->getStringList('security.trusted_proxies'));
@@ -128,6 +136,18 @@ final class Application
         $response = $this->cors->withCorsHeaders($request, $response);
 
         return SecurityHeaders::apply($response)->withHeader('X-Request-Id', $requestId);
+    }
+
+    /**
+     * Sends the administrator notifications queued while answering the request (D057). Runs
+     * after the response has been sent, like housekeeping, so ntfy never delays a request.
+     * Never throws.
+     *
+     * @return int Notifications ntfy accepted.
+     */
+    public function sendQueuedNotifications(): int
+    {
+        return $this->adminNotifier->sendQueued();
     }
 
     /**
@@ -202,6 +222,18 @@ final class Application
         $passwordService = new PasswordService();
         $userRepository = new UserRepository($this->database);
         $auditLog = new AuditLog($this->database);
+        $this->adminNotifier = new AdminNotifier(
+            $this->database,
+            $auditLog,
+            $this->logger,
+            $this->ntfyTransport,
+            $this->config->getBool('ntfy.enabled'),
+            rtrim($this->config->getString('ntfy.server_url'), '/'),
+            $this->config->getString('ntfy.topic'),
+            $this->config->getString('ntfy.access_token'),
+            $this->config->getInt('ntfy.timeout_seconds'),
+            rtrim($this->config->getString('frontend.base_url'), '/'),
+        );
         $rateLimiter = new RateLimiter(
             $this->database,
             $this->config->getInt('security.rate_limit_window_minutes'),
@@ -221,6 +253,7 @@ final class Application
             $this->sessionCookie,
             $rateLimiter,
             $auditLog,
+            $this->adminNotifier,
         );
         $invitationService = new InvitationService($this->database, $userRepository);
         $invitationController = new InvitationController(
@@ -241,6 +274,7 @@ final class Application
             $auditLog,
             $this->config->getString('frontend.base_url'),
             $this->config->getInt('invitations.default_expiry_hours'),
+            $this->adminNotifier,
         );
         $passwordResetService = new PasswordResetService($this->database);
         $passwordResetController = new PasswordResetController(
