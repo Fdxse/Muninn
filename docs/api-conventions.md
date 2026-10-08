@@ -108,20 +108,25 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/trash/{noteId}/restore` | Editor+ | bring a trashed note back → the note |
 | DELETE | `/api/v1/trash/{noteId}` | Admin+ | delete one trashed note for good (204) |
 | GET | `/api/v1/search?q=<words>` | user | notes in every workspace the caller can read; `&archived=1` includes the Archive; → `results`, `terms`, `limited` |
-| GET | `/api/v1/workspaces/{id}/folders` | Reader+ | folders with `note_count` (active notes) |
-| POST | `/api/v1/workspaces/{id}/folders` | Editor+ | `{name}` → 201; duplicate name → 409 `folder_name_taken` |
-| PATCH | `/api/v1/folders/{id}` | Editor+ | `{name}` rename |
-| DELETE | `/api/v1/folders/{id}` | Editor+ | delete (204); its notes move to "No folder" |
+| GET | `/api/v1/workspaces/{id}/folders` | Reader+ | folders in tree order with `parent_id`, `level`, `note_count` (active notes directly in it) and `total_note_count` (sub-folders included) |
+| POST | `/api/v1/workspaces/{id}/folders` | Editor+ | `{name, parent_id?}` → 201; duplicate name → 409 `folder_name_taken` |
+| PATCH | `/api/v1/folders/{id}` | Editor+ | `{name?, parent_id?}` rename and/or move (`parent_id: null` = top level) |
+| DELETE | `/api/v1/folders/{id}` | Editor+ | delete (204); its notes and sub-folders move up one level |
 | GET | `/api/v1/workspaces/{id}/tags` | Reader+ | tags used by active notes, with `note_count` |
 | POST | `/api/v1/notes/{id}/attachments` | Editor+ | raw image bytes as the body → 201 with the attachment and its `markdown` |
 | GET | `/api/v1/notes/{id}/attachments` | Reader+ | the note's attachments |
 | GET | `/api/v1/attachments/{id}/content` | Reader+ | the image itself (used by `<img>` tags) |
+| DELETE | `/api/v1/attachments/{id}` | Editor+ | remove one image for good (204); the note's text is not changed |
 
 ### Folders and tags
 
-Folders are flat and belong to one workspace (D033). `folder_id` on a note may be a folder of the
-same workspace or `null` ("No folder"); any other ID, including another workspace's folder, gives
-422 on `folder_id`. Leaving `folder_id` out of a PATCH keeps the folder.
+Folders belong to one workspace (D033) and can sit inside each other, at most 3 levels deep
+(D055). `parent_id` must be a folder of the same workspace; another workspace's folder, a folder
+inside the one being moved, the folder itself, or a place that would make any folder deeper than
+level 3 gives 422 on `parent_id`. `?folder=<id>` on the note list includes the sub-folders' notes.
+`folder_id` on a note may be a folder of the same workspace or `null` ("No folder"); any other
+ID, including another workspace's folder, gives 422 on `folder_id`. Leaving `folder_id` out of a
+PATCH keeps the folder.
 
 Tags belong to one workspace (D034) and are set through the note: `tags` is a list of names
 (1–50 characters, no commas, at most 20 per note). A leading `#` is dropped, duplicates are
@@ -179,6 +184,11 @@ IDs, other workspaces' attachments and attachments of trashed notes all give the
 served with the detected `Content-Type`, `nosniff`, `Content-Disposition: inline`,
 `Cache-Control: private, max-age=300`, an `ETag` (SHA-256, so `If-None-Match` gives 304) and
 `Cross-Origin-Resource-Policy: same-site`.
+
+`DELETE /api/v1/attachments/{id}` removes one image of an active note for good (D056): the row
+and the file, recorded in the audit log as `attachment.deleted`. It needs Editor or higher;
+unknown IDs, other workspaces' attachments and attachments of trashed notes give the same 404.
+The note's text is left alone: the editor takes the image's Markdown out and the user saves.
 
 Workspace roles follow D029: Admins may only add, change and remove Editors and Readers; Owners
 manage everyone. Removing or demoting the last Owner gives 409 `last_owner`. A caller who is not
