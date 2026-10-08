@@ -10,7 +10,7 @@ namespace Muninn\Api\Workspaces;
  * Holding an instance means "this user is an active member of this workspace with this role";
  * nothing else in the code creates one from client input. The one exception is
  * WorkspaceAuthorizer::requireAdministratorMemberManagement(), which gives a system administrator
- * Owner rights over a shared workspace's members only (never its notes).
+ * Owner rights over the members of a shared workspace without an active Owner (never its notes).
  */
 final class WorkspaceMembership
 {

@@ -111,8 +111,9 @@ final class WorkspaceService
     }
 
     /**
-     * Every shared workspace for the system administrator: names, member counts and Owners only.
-     * No note titles, note counts or other content metadata (decision D025).
+     * Every shared workspace for the system administrator (D050): names, member counts and Owners
+     * only. No note titles, note counts or other content metadata (D025). Only the ones without an
+     * active Owner can be managed (see WorkspaceAuthorizer::requireAdministratorMemberManagement).
      *
      * @return list<array<string, mixed>>
      */
@@ -138,7 +139,7 @@ final class WorkspaceService
             'name' => $workspaceRow['name'],
             'member_count' => (int) $workspaceRow['member_count'],
             'owners' => $workspaceRow['owner_usernames'] === null ? [] : explode(',', (string) $workspaceRow['owner_usernames']),
-            // Zero means nobody can manage the members except an administrator.
+            // Zero means only an administrator can manage the members now.
             'active_owner_count' => (int) $workspaceRow['active_owner_count'],
             'created_at' => UtcTimestamp::toIso((string) $workspaceRow['created_at']),
         ], $workspaceRows);

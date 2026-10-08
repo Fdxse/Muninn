@@ -28,7 +28,8 @@ Current state after Week 5. Updated as the MVP grows.
   whether an active username exists; there is no user directory or autocomplete.
 - **A disabled user stays listed as a member** of their workspaces (marked "disabled account").
   If they were a shared workspace's only Owner, a system administrator gives the workspace a new
-  Owner on the admin Workspaces page (D050).
+  Owner on the admin Workspaces page (D050); administrators cannot change workspaces that still
+  have an active Owner.
 - **No self-service password reset.** Someone who forgot their password asks an administrator
   for a one-time reset link (D040).
 - **No email.** Administrators copy invitation and reset links and send them themselves; users

@@ -7,7 +7,8 @@ namespace Muninn\Api\Tests\Integration;
 use Muninn\Api\Tests\Support\WorkspaceTestCase;
 
 /**
- * System administrators manage shared workspace members (D050) without any note access (D025).
+ * System administrators manage members of shared workspaces without an active Owner (D050),
+ * without any note access (D025).
  */
 final class WorkspaceAdminTest extends WorkspaceTestCase
 {
@@ -26,43 +27,59 @@ final class WorkspaceAdminTest extends WorkspaceTestCase
         $this->bob = $this->signedInUser('bob');
     }
 
-    public function testListShowsSharedWorkspacesWithoutContent(): void
+    public function testListShowsEverySharedWorkspaceWithoutContent(): void
     {
-        $teamWorkspaceId = $this->createSharedWorkspace($this->alice, 'Team');
-        $this->createNote($this->alice, $teamWorkspaceId, 'Secret plan', 'Top secret content');
+        $orphanedWorkspaceId = $this->createSharedWorkspace($this->alice, 'Orphaned');
+        $this->createNote($this->alice, $orphanedWorkspaceId, 'Secret plan', 'Top secret content');
+        $this->createSharedWorkspace($this->bob, 'Healthy');
         $this->createNote($this->alice, $this->personalWorkspaceId($this->alice), 'Diary', 'Personal content');
+        $this->sendAs($this->admin, 'POST', '/api/v1/admin/users/' . $this->alice['user_id'] . '/disable');
 
         $listResponse = $this->sendAs($this->admin, 'GET', '/api/v1/admin/workspaces');
         self::assertSame(200, $listResponse->statusCode(), $listResponse->body());
 
-        // Only the shared workspace, with its Owners; personal workspaces and notes stay invisible.
-        $listedWorkspaces = $listResponse->json()['data']['workspaces'];
-        self::assertSame(['Team'], array_column($listedWorkspaces, 'name'));
-        self::assertSame(['alice'], $listedWorkspaces[0]['owners']);
-        self::assertSame(1, $listedWorkspaces[0]['active_owner_count']);
+        // Every shared workspace with its Owners and whether one is active; personal ones and notes stay invisible.
+        $listedWorkspaces = array_column($listResponse->json()['data']['workspaces'], null, 'name');
+        self::assertSame(['Healthy', 'Orphaned'], array_keys($listedWorkspaces));
+        self::assertSame(['alice'], $listedWorkspaces['Orphaned']['owners']);
+        self::assertSame(0, $listedWorkspaces['Orphaned']['active_owner_count']);
+        self::assertSame(1, $listedWorkspaces['Healthy']['active_owner_count']);
         foreach (['Secret plan', 'Top secret', 'Diary', 'Personal'] as $hiddenText) {
             self::assertStringNotContainsString($hiddenText, $listResponse->body());
         }
+    }
+
+    public function testWorkspacesWithAnActiveOwnerAreNotManageable(): void
+    {
+        $teamWorkspaceId = $this->createSharedWorkspace($this->alice, 'Team');
+        $membersPath = '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members';
+
+        // Same answer as for a workspace that does not exist; nothing changes.
+        $this->assertError($this->sendAs($this->admin, 'GET', $membersPath), 404, 'not_found');
+        $this->assertError($this->sendAs($this->admin, 'POST', $membersPath, ['username' => 'bob', 'role' => 'owner']), 404, 'not_found');
+        $this->assertError($this->sendAs($this->admin, 'PATCH', $membersPath . '/' . $this->alice['user_id'], ['role' => 'reader']), 404, 'not_found');
+        $this->assertError($this->sendAs($this->admin, 'DELETE', $membersPath . '/' . $this->alice['user_id']), 404, 'not_found');
+        self::assertSame(1, (int) $this->scalar('SELECT COUNT(*) FROM workspace_members WHERE workspace_id = :id', ['id' => $teamWorkspaceId]));
     }
 
     public function testAdminRescuesWorkspaceWhoseOnlyOwnerIsDisabled(): void
     {
         $teamWorkspaceId = $this->createSharedWorkspace($this->alice, 'Team');
         $this->sendAs($this->admin, 'POST', '/api/v1/admin/users/' . $this->alice['user_id'] . '/disable');
+        $membersPath = '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members';
 
-        $listedWorkspaces = $this->sendAs($this->admin, 'GET', '/api/v1/admin/workspaces')->json()['data']['workspaces'];
-        self::assertSame(0, $listedWorkspaces[0]['active_owner_count']);
+        $membersResponse = $this->sendAs($this->admin, 'GET', $membersPath);
+        self::assertSame(['alice'], array_column($membersResponse->json()['data']['members'], 'username'));
 
-        // Add Bob as Owner, then remove the disabled Owner.
-        $addResponse = $this->sendAs($this->admin, 'POST', '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members', ['username' => 'bob', 'role' => 'owner']);
+        // Add Bob as Owner: the workspace has an active Owner again, so the admin can no longer change it.
+        $addResponse = $this->sendAs($this->admin, 'POST', $membersPath, ['username' => 'bob', 'role' => 'owner']);
         self::assertSame(201, $addResponse->statusCode(), $addResponse->body());
-        self::assertSame(204, $this->sendAs($this->admin, 'DELETE', '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members/' . $this->alice['user_id'])->statusCode());
+        self::assertSame(1, (int) $this->scalar('SELECT COUNT(*) FROM audit_log WHERE details LIKE \'%by_system_admin%\''));
+        self::assertSame(1, $this->sendAs($this->admin, 'GET', '/api/v1/admin/workspaces')->json()['data']['workspaces'][0]['active_owner_count']);
+        $this->assertError($this->sendAs($this->admin, 'DELETE', $membersPath . '/' . $this->alice['user_id']), 404, 'not_found');
 
-        $membersResponse = $this->sendAs($this->admin, 'GET', '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members');
-        self::assertSame(['bob'], array_column($membersResponse->json()['data']['members'], 'username'));
-        self::assertSame(2, (int) $this->scalar('SELECT COUNT(*) FROM audit_log WHERE details LIKE \'%by_system_admin%\''));
-
-        // Bob now manages it himself.
+        // Bob now manages it himself, including removing the disabled Owner.
+        self::assertSame(204, $this->sendAs($this->bob, 'DELETE', '/api/v1/workspaces/' . $teamWorkspaceId . '/members/' . $this->alice['user_id'])->statusCode());
         $this->createUser('carol');
         self::assertSame(201, $this->addMember($this->bob, $teamWorkspaceId, 'carol', 'reader')->statusCode());
     }
@@ -70,7 +87,9 @@ final class WorkspaceAdminTest extends WorkspaceTestCase
     public function testLastOwnerRuleStillApplies(): void
     {
         $teamWorkspaceId = $this->createSharedWorkspace($this->alice, 'Team');
+        $this->sendAs($this->admin, 'POST', '/api/v1/admin/users/' . $this->alice['user_id'] . '/disable');
 
+        // Even a disabled Owner cannot be removed or demoted while they are the only Owner.
         $this->assertError($this->sendAs($this->admin, 'DELETE', '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members/' . $this->alice['user_id']), 409, 'last_owner');
         $this->assertError($this->sendAs($this->admin, 'PATCH', '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members/' . $this->alice['user_id'], ['role' => 'reader']), 409, 'last_owner');
     }
@@ -87,9 +106,10 @@ final class WorkspaceAdminTest extends WorkspaceTestCase
     {
         $teamWorkspaceId = $this->createSharedWorkspace($this->alice, 'Team');
         $note = $this->createNote($this->alice, $teamWorkspaceId);
+        $this->sendAs($this->admin, 'POST', '/api/v1/admin/users/' . $this->alice['user_id'] . '/disable');
 
         // Managing members gives no way into the notes.
-        $this->sendAs($this->admin, 'GET', '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members');
+        self::assertSame(200, $this->sendAs($this->admin, 'GET', '/api/v1/admin/workspaces/' . $teamWorkspaceId . '/members')->statusCode());
         $this->assertError($this->sendAs($this->admin, 'GET', '/api/v1/workspaces/' . $teamWorkspaceId . '/notes'), 404, 'not_found');
         $this->assertError($this->sendAs($this->admin, 'GET', '/api/v1/notes/' . $note['id']), 404, 'not_found');
         $searchResponse = $this->getAs($this->admin, '/api/v1/search', ['q' => 'Secret']);

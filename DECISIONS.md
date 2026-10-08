@@ -461,20 +461,17 @@ complete. An invitation stops working when the account that created it is disabl
 ever see their own requests; administrator accounts invite directly and cannot file requests.
 The invited person chooses their own username, as with every invitation.
 
-## D050 — System administrators manage shared workspace members
+## D050 — System administrators rescue shared workspaces without an Owner
 
-**Status:** Proposed (2026-10-08)
+**Status:** Accepted (2026-10-08, chosen by the project owner)
 
 D025 says administrators manage memberships without note access. The admin Workspaces page lists
-every shared workspace with its Owners and member count (never note titles, counts or content)
-and lets an administrator add members, change roles and remove members with the same rules as an
-Owner, including "a workspace keeps at least one Owner". The main use is a workspace whose only
-Owner was disabled. Administrators still cannot be members themselves (D044) and the note, search
-and attachment endpoints still refuse them. Personal workspaces are never listed or manageable.
-Every change is audited with `by_system_admin`.
-
-Trade-off: because an administrator can add any everyday account to any shared workspace, an
-administrator who also has an everyday account could give that account access to a workspace's
-notes. The audit log records it, but it is not prevented. The narrower alternative is to allow
-administrator changes only while a workspace has no active Owner.
-
+every shared workspace with its Owners, member count and whether it has an active Owner (never
+note titles, counts or content). An administrator can manage the members only of a workspace
+with no active Owner left, typically because its only Owner was disabled: add members, change
+roles and remove members with the same rules as an Owner, including "a workspace keeps at least
+one Owner". As soon as the workspace has an active Owner again, its member endpoints answer 404 to
+administrators and its Owners take over. So an administrator who also has an everyday account
+cannot add that account to a workspace that has a working Owner. Administrators still cannot be
+members themselves (D044), the note, search and attachment endpoints still refuse them, and
+personal workspaces are never listed or manageable. Every change is audited with `by_system_admin`.

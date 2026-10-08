@@ -16,16 +16,19 @@ use Muninn\Api\Workspaces\WorkspaceRole;
 use Muninn\Api\Workspaces\WorkspaceService;
 
 /**
- * Shared workspace membership administration for system administrators (decision D050):
+ * Shared workspace overview and membership administration for system administrators (D050).
+ * The list shows every shared workspace; members can only be managed in a workspace with no
+ * active Owner left, for example because its only Owner was disabled:
  *   GET    /api/v1/admin/workspaces
  *   GET    /api/v1/admin/workspaces/{id}/members
  *   POST   /api/v1/admin/workspaces/{id}/members            {"username": "...", "role": "owner"}
  *   PATCH  /api/v1/admin/workspaces/{id}/members/{userId}   {"role": "owner"}
  *   DELETE /api/v1/admin/workspaces/{id}/members/{userId}
  *
- * Administrators manage members with Owner rights, so a workspace whose only Owner was disabled
- * can be given a new Owner. They never see notes, note counts or any other content (D025).
- * The same rules as for Owners apply, including "a workspace keeps at least one Owner".
+ * Administrators act with Owner rights over members only and never see notes, note counts or
+ * any other content (D025). As soon as the workspace has an active Owner again, its member
+ * endpoints answer 404 and its Owners take over, so an administrator cannot add an account
+ * of their own to a workspace that has a working Owner.
  */
 final class WorkspaceAdminController
 {

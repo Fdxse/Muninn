@@ -81,8 +81,8 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/admin/invitation-requests/{id}/approve` | system admin | pending → approved |
 | POST | `/api/v1/admin/invitation-requests/{id}/decline` | system admin | pending or unused approval → declined; revokes its link |
 | GET | `/api/v1/admin/workspaces` | system admin | shared workspaces with `owners`, `member_count`, `active_owner_count`; no note data (D050) |
-| GET/POST | `/api/v1/admin/workspaces/{id}/members` | system admin | list, or `{username, role}` add, with Owner rules |
-| PATCH/DELETE | `/api/v1/admin/workspaces/{id}/members/{userId}` | system admin | `{role}` change, or remove; last Owner → 409 |
+| GET/POST | `/api/v1/admin/workspaces/{id}/members` | system admin | only workspaces with no active Owner (else 404): list, or `{username, role}` add, with Owner rules |
+| PATCH/DELETE | `/api/v1/admin/workspaces/{id}/members/{userId}` | system admin | same restriction; `{role}` change, or remove; last Owner → 409 |
 | GET | `/api/v1/workspaces` | user | the caller's workspaces with `your_role` and `permissions` |
 | POST | `/api/v1/workspaces` | user | `{name}` → 201, new shared workspace, caller is Owner |
 | GET | `/api/v1/workspaces/{id}` | Reader+ | one workspace |

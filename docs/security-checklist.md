@@ -107,6 +107,7 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Requested links are ordinary single-use invitations; a new link revokes the old one | `InvitationRequestTest::testNewLinkReplacesTheOldOne`, `testFullFlowFromRequestToNewAccount` |
 | Request state changes lock the request and invitation rows (no decline/accept race) | `InvitationRequestService::lockRequest` code review |
 | Admin workspace pages show no note titles, counts or content; personal workspaces are not reachable | `WorkspaceAdminTest::testListShowsSharedWorkspacesWithoutContent`, `testPersonalWorkspacesAreNotManageable` |
+| Admins manage members only of workspaces without an active Owner; others answer 404 | `WorkspaceAdminTest::testWorkspacesWithAnActiveOwnerAreNotManageable`, `testAdminRescuesWorkspaceWhoseOnlyOwnerIsDisabled` |
 | Member management by admins keeps the one-Owner rule, is audited, and grants admins no note access | `WorkspaceAdminTest` |
 | Admin workspace endpoints are 404 for everyday users, including the workspace's own Owner | `WorkspaceAdminTest::testEverydayUsersCannotUseAdminWorkspaceEndpoints` |
 | No new password or token reaches the log file or any table; new events audited | `AuditAndSecretsTest::testPasswordResetAndRequestedInvitationLeakNoSecrets` |
@@ -120,6 +121,7 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 - Reviewed every route in `Application::registerRoutes` against SECURITY.md: each protected route
   is behind the session check in the pipeline, admin routes are 404 for everyone else, every
   state change needs the CSRF token, and every workspace route goes through `WorkspaceAuthorizer`.
-- Accepted trade-off D050: administrators can add any everyday account to a shared workspace.
+- D050: administrators can only change members of a shared workspace with no active Owner, so they
+  cannot give their own everyday account access to a workspace that has a working Owner.
 - Out of the application's reach (hosting): HTTPS redirect and HSTS for the frontend on one.com,
   and backups of the NAS database (see known limitations).

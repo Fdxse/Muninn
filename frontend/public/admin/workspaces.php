@@ -2,8 +2,8 @@
 
 /**
  * Shared workspace administration for system administrators (D050): see every shared workspace
- * with its Owners, and manage its members, e.g. when its only Owner was disabled. Administrators
- * never see notes. Non-admins get 404 from the API and this page then shows "not available".
+ * with its Owners, and manage the members of those without an active Owner (e.g. when the only
+ * Owner was disabled). Administrators never see notes. Non-admins get 404 from the API and this page then shows "not available".
  */
 
 declare(strict_types=1);
@@ -24,8 +24,9 @@ renderAppNavbar('../');
     <section id="shell-content" class="d-none" aria-labelledby="workspaces-heading">
         <h1 id="workspaces-heading" class="h3 mb-1">Shared workspaces</h1>
         <p class="small text-muted-brand mb-3">
-            You can manage the members of any shared workspace, for example when its only Owner was disabled.
-            You cannot see the notes. Personal workspaces are not listed.
+            Every shared workspace and its Owners. You can manage the members only of a workspace that has
+            no active Owner, for example because its only Owner was disabled: give it a new Owner, who then
+            takes over. You cannot see the notes. Personal workspaces are not listed.
         </p>
         <div id="workspaces-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
         <p id="workspaces-empty" class="text-muted-brand d-none">No shared workspaces yet.</p>

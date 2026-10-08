@@ -1,5 +1,6 @@
 /*
- * Shared workspace administration (D050): list shared workspaces and manage their members.
+ * Shared workspace administration (D050): list every shared workspace, and manage the members of
+ * those without an active Owner.
  * The API applies the same rules as for Owners, e.g. a workspace always keeps one Owner.
  * All data is inserted with textContent, never innerHTML.
  */
@@ -41,13 +42,16 @@
             listItem.appendChild(MuninnApi.createElement('span', 'badge text-bg-danger', 'No active Owner'));
         }
 
-        var manageButton = MuninnApi.createElement('button', 'btn btn-outline-primary btn-sm', 'Members');
-        manageButton.type = 'button';
-        manageButton.setAttribute('aria-label', 'Manage the members of ' + workspace.name);
-        manageButton.addEventListener('click', function () {
-            openMembers(workspace);
-        });
-        listItem.appendChild(manageButton);
+        // Administrators may only manage workspaces without an active Owner (D050); the API enforces it.
+        if (workspace.active_owner_count === 0) {
+            var manageButton = MuninnApi.createElement('button', 'btn btn-outline-primary btn-sm', 'Members');
+            manageButton.type = 'button';
+            manageButton.setAttribute('aria-label', 'Manage the members of ' + workspace.name);
+            manageButton.addEventListener('click', function () {
+                openMembers(workspace);
+            });
+            listItem.appendChild(manageButton);
+        }
 
         return listItem;
     }
@@ -111,9 +115,16 @@
     /** Reloads the members and the overview (Owner counts change with roles). */
     async function reloadAll() {
         try {
-            await loadMembers();
             await loadWorkspaces();
+            await loadMembers();
         } catch (reloadError) {
+            if (reloadError.status === 404) {
+                // The workspace has an active Owner again, so its Owners manage it from now on.
+                membersCard.classList.add('d-none');
+                MuninnApi.showAlert(workspacesErrorAlert, openWorkspace.name + ' has an active Owner again. Its Owners manage the members from now on.');
+                openWorkspace = null;
+                return;
+            }
             MuninnApi.showAlert(membersErrorAlert, reloadError.message);
         }
     }
