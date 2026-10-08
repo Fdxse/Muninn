@@ -47,6 +47,23 @@ final class Response
         return $response->withHeader('Content-Type', 'application/json; charset=utf-8');
     }
 
+    /**
+     * A successful binary response, e.g. an attachment's bytes. The media type must come from
+     * the server's own detection, never from the client.
+     */
+    public static function file(string $fileBytes, string $mediaType): self
+    {
+        $response = new self(200, $fileBytes);
+
+        return $response->withHeader('Content-Type', $mediaType);
+    }
+
+    /** 304 Not Modified (for conditional requests carrying a matching ETag). */
+    public static function notModified(): self
+    {
+        return new self(304, '');
+    }
+
     /** 204 No Content. */
     public static function noContent(): self
     {

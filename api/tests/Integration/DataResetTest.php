@@ -20,8 +20,16 @@ final class DataResetTest extends WorkspaceTestCase
         $alice = $this->signedInUser('alice');
         $bob = $this->signedInUser('bob');
 
-        // Content in personal and shared workspaces, including a trashed note and memberships.
-        $this->createNote($alice, $this->personalWorkspaceId($alice));
+        // Content in personal and shared workspaces, including a trashed note and memberships,
+        // a folder, a tag and an attachment with its file on disk.
+        $aliceNote = $this->createNote($alice, $this->personalWorkspaceId($alice));
+        $aliceFolder = $this->createFolder($alice, $this->personalWorkspaceId($alice));
+        self::assertSame(200, $this->sendAs($alice, 'PATCH', '/api/v1/notes/' . $aliceNote['id'], [
+            'revision' => 1,
+            'folder_id' => $aliceFolder['id'],
+            'tags' => ['secret'],
+        ])->statusCode());
+        self::assertSame(201, $this->uploadAttachment($alice, $aliceNote['id'], self::tinyPng())->statusCode());
         $sharedWorkspaceId = $this->createSharedWorkspace($alice);
         self::assertSame(201, $this->addMember($alice, $sharedWorkspaceId, 'bob', 'editor')->statusCode());
         $trashedNote = $this->createNote($bob, $sharedWorkspaceId);
@@ -31,10 +39,12 @@ final class DataResetTest extends WorkspaceTestCase
         self::assertSame(201, $this->sendAs($admin, 'POST', '/api/v1/admin/invitations', ['note' => 'test'])->statusCode());
         $auditRowsBefore = (int) $this->scalar('SELECT COUNT(*) FROM audit_log');
 
-        $resetService = new DataResetService(TestDatabase::connection());
+        $resetService = new DataResetService(TestDatabase::connection(), $this->attachmentStorage());
         $countsBefore = $resetService->countRowsToDelete();
         self::assertSame(2, $countsBefore['user accounts (non-admin)']);
         self::assertSame(1, $countsBefore['invitations (all states)']);
+        self::assertSame(1, $countsBefore['attachments']);
+        self::assertSame(1, $countsBefore[DataResetService::ATTACHMENT_FILES_LABEL]);
 
         $deletedRowCounts = $resetService->resetToAdministratorsOnly();
         // The preview must match what is actually deleted (the two lists are in different orders).
@@ -44,9 +54,11 @@ final class DataResetTest extends WorkspaceTestCase
 
         // Only the admin remains, and nothing else is left over.
         self::assertSame(['sysadmin'], array_column(TestDatabase::connection()->query('SELECT username FROM users')->fetchAll(), 'username'));
-        foreach (['notes', 'workspace_members', 'workspaces', 'invitations', 'auth_attempts'] as $emptiedTable) {
+        foreach (['notes', 'folders', 'tags', 'note_tags', 'attachments', 'workspace_members', 'workspaces', 'invitations', 'auth_attempts'] as $emptiedTable) {
             self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM ' . $emptiedTable), $emptiedTable . ' should be empty');
         }
+
+        self::assertSame(0, $this->attachmentStorage()->countFiles(), 'Attachment files are deleted too.');
 
         // The audit log is untouched by the reset itself.
         self::assertSame($auditRowsBefore, (int) $this->scalar('SELECT COUNT(*) FROM audit_log'));
@@ -67,7 +79,7 @@ final class DataResetTest extends WorkspaceTestCase
         $this->createNote($alice, $this->personalWorkspaceId($alice));
 
         try {
-            (new DataResetService(TestDatabase::connection()))->resetToAdministratorsOnly();
+            (new DataResetService(TestDatabase::connection(), $this->attachmentStorage()))->resetToAdministratorsOnly();
             self::fail('Reset must refuse to run without an administrator.');
         } catch (RuntimeException) {
             // Expected.

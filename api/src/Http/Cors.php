@@ -17,7 +17,7 @@ final class Cors
     private const ALLOWED_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
 
     /** Request headers the frontend may send. */
-    private const ALLOWED_HEADERS = 'Content-Type, X-CSRF-Token';
+    private const ALLOWED_HEADERS = 'Content-Type, X-CSRF-Token, X-Filename';
 
     /** How long browsers may cache a preflight answer, in seconds. */
     private const PREFLIGHT_MAX_AGE_SECONDS = '600';
