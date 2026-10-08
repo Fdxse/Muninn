@@ -162,6 +162,15 @@
         var safeFragment = window.DOMPurify.sanitize(renderedHtml, sanitiserSettings);
         container.replaceChildren(safeFragment);
 
+        // An image that no longer exists (removed, or an old version's image) shows a short
+        // note instead of the browser's broken-image icon.
+        Array.prototype.forEach.call(container.querySelectorAll('img.muninn-note-image'), function (noteImage) {
+            noteImage.addEventListener('error', function () {
+                var missingLabel = (noteImage.getAttribute('alt') || 'Image') + ' (image removed)';
+                noteImage.replaceWith(MuninnApi.createElement('span', 'muninn-missing-image', missingLabel));
+            });
+        });
+
         var taskCheckboxes = container.querySelectorAll('input[type="checkbox"]');
         // Only allow ticking when every checkbox maps to exactly one source line.
         var canToggle = typeof onTaskToggle === 'function'

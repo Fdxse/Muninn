@@ -376,5 +376,6 @@ final class Application
         $this->router->add('GET', '/api/v1/notes/{id}/attachments', $attachmentController->list(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/notes/{id}/attachments', $attachmentController->upload(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/attachments/{id}/content', $attachmentController->content(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/attachments/{id}', $attachmentController->delete(...), Router::ACCESS_USER);
     }
 }

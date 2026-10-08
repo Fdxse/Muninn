@@ -19,6 +19,7 @@ use Muninn\Api\Workspaces\WorkspacePermission;
  *   POST /api/v1/notes/{id}/attachments        upload one image as the raw request body (Editor+)
  *   GET  /api/v1/notes/{id}/attachments        list a note's images (Reader+)
  *   GET  /api/v1/attachments/{id}/content      the image itself (Reader+)
+ *   DELETE /api/v1/attachments/{id}            remove one image for good (Editor+)
  *
  * Uploads are the raw file bytes, not multipart forms: the body's Content-Type must be an image
  * type or application/octet-stream (the actual type is detected from the bytes), and the
@@ -114,6 +115,39 @@ final class AttachmentController
         $download = $this->attachmentService->readContent($membership, $attachmentId);
 
         return self::withFileHeaders(Response::file($download['bytes'], (string) $attachment['media_type']), $attachment, $entityTag);
+    }
+
+    /**
+     * DELETE /api/v1/attachments/{id}
+     *
+     * Removes one image of an active note for good: the row and the file. The note's text is not
+     * changed here; the editor takes the image's Markdown out and the user saves as usual. Unknown
+     * attachments, attachments of trashed notes and other workspaces' attachments all give 404.
+     */
+    public function delete(Request $request, RequestContext $context): Response
+    {
+        $attachmentId = (string) $request->routeParameter('id');
+        $attachmentOwner = $this->attachmentService->findOwnerOfActiveAttachment($attachmentId);
+        if ($attachmentOwner === null) {
+            throw HttpException::notFound();
+        }
+        $membership = $this->workspaceAuthorizer->requireWorkspacePermission(
+            $context->requireSession()->user,
+            $attachmentOwner['workspace_id'],
+            WorkspacePermission::WriteNotes,
+        );
+
+        $deletedAttachment = $this->attachmentService->delete($membership, $attachmentId);
+        $this->auditLog->record(
+            AuditLog::ATTACHMENT_DELETED,
+            $membership->userId,
+            'attachment',
+            $attachmentId,
+            $context->clientIp,
+            ['workspace_id' => $membership->workspaceId, 'note_id' => $deletedAttachment['note_id'], 'byte_size' => $deletedAttachment['byte_size']],
+        );
+
+        return Response::noContent();
     }
 
     /**
