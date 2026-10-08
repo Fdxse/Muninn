@@ -322,7 +322,7 @@ every update must name the revision it was based on and a stale one is refused w
 
 ## D046 — Resetting test data from the command line
 
-**Status:** Proposed (2026-10-07)
+**Status:** Accepted (2026-10-07, confirmed by the project owner)
 
 `bin/reset-data.php` resets an installation to "system administrators only": it deletes every
 non-admin account with its sessions, plus all workspaces, memberships, notes (Trash included),
