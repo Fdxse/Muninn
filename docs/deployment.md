@@ -62,7 +62,9 @@ Summary:
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when
-sign-ins are blocked after repeated wrong passwords (D057). It uses the ntfy server on the NAS.
+sign-ins are blocked after repeated wrong passwords (D057), and when a user writes to you with
+"Contact admin" (D058). It uses the ntfy server on the NAS. Until ntfy is set up, the Contact
+admin dialog tells users that messages are not set up yet.
 
 1. Pick a topic name, e.g. `muninn-admin`, and subscribe to it in the ntfy app.
 2. If your ntfy requires sign-in to publish, create a token for Muninn on the NAS

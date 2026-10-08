@@ -147,6 +147,11 @@ invitation request / sign-in block ─ handler queues a message (AdminNotifier),
    → queued messages POSTed as JSON to the ntfy server (config ntfy.*), failures logged
 ```
 
+```
+"Contact admin" (D058) ─ AdminMessageController validates and checks the hourly limit
+   → AdminNotifier sends at once (the user hears whether it arrived), audit row without the text
+```
+
 `AdminNotifier` is the only code that talks to ntfy; the transport is an interface so tests
 record messages instead of sending them.
 

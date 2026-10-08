@@ -37,9 +37,11 @@ API tokens, export/backup, offline editing, real-time collaboration) are not bui
   have an active Owner.
 - **No self-service password reset.** Someone who forgot their password asks an administrator
   for a one-time reset link (D040).
-- **Notifications go to the administrator only** (D057): new invitation requests and blocked
-  sign-ins, through the NAS's ntfy, configured in `config.php`. Everyday users cannot choose
+- **Notifications go to the administrator only** (D057, D058): new invitation requests, blocked
+  sign-ins and "Contact admin" messages, through the NAS's ntfy, configured in `config.php`. Everyday users cannot choose
   notifications yet, and the settings cannot be edited on the admin pages.
+- **Contact admin is one-way** (D058): messages are not stored and there is no reply inside
+  Muninn. The administrator answers through the contact details the user added, if any.
 - **No email.** Administrators copy invitation and reset links and send them themselves; users
   whose invitation request was approved do the same with their link (D049).
 - **Approved invitation requests do not expire.** The user can create a link until an
