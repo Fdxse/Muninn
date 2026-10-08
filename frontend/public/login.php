@@ -42,7 +42,10 @@ renderPageStart('Sign in');
         </div>
     </div>
 
-    <p class="small mt-4 mb-0 text-center">Accounts are by invitation only.</p>
+    <p class="small mt-4 mb-0 text-center">
+        Accounts are by invitation only.<br>
+        Forgot your password? Ask your administrator for a reset link.
+    </p>
 </main>
 <?php
 renderPageEnd(['login.js']);

@@ -148,6 +148,69 @@ body {
     --bs-btn-disabled-border-color: var(--muninn-slate-600);
 }
 
+/*
+ * Outline buttons in brand colours. Bootstrap's defaults are its own blue, and its red and gray
+ * text are below 4.5:1 contrast on white and on the light page background (derived shades).
+ */
+.btn-outline-primary {
+    --bs-btn-color: var(--muninn-navy-900);
+    --bs-btn-border-color: var(--muninn-navy-900);
+    --bs-btn-hover-color: var(--muninn-white);
+    --bs-btn-hover-bg: var(--muninn-navy-900);
+    --bs-btn-hover-border-color: var(--muninn-navy-900);
+    --bs-btn-active-color: var(--muninn-white);
+    --bs-btn-active-bg: var(--muninn-navy-950);
+    --bs-btn-active-border-color: var(--muninn-navy-950);
+    --bs-btn-disabled-color: var(--muninn-slate-600);
+    --bs-btn-disabled-border-color: var(--muninn-slate-600);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--muninn-gray-600);
+    --bs-btn-border-color: var(--muninn-gray-600);
+    --bs-btn-hover-color: var(--muninn-white);
+    --bs-btn-hover-bg: var(--muninn-gray-600);
+    --bs-btn-hover-border-color: var(--muninn-gray-600);
+    --bs-btn-active-color: var(--muninn-white);
+    --bs-btn-active-bg: var(--muninn-ink-800);
+    --bs-btn-active-border-color: var(--muninn-ink-800);
+}
+
+.btn-outline-danger {
+    --bs-btn-color: #b91c1c;
+    --bs-btn-border-color: #b91c1c;
+    --bs-btn-hover-color: var(--muninn-white);
+    --bs-btn-hover-bg: #b91c1c;
+    --bs-btn-hover-border-color: #b91c1c;
+    --bs-btn-active-color: var(--muninn-white);
+    --bs-btn-active-bg: #991b1b;
+    --bs-btn-active-border-color: #991b1b;
+}
+
+/* Link-buttons centre their icon and text the same way as real buttons of the same height. */
+a.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+/* Checkboxes need a visible border on white and on the light background (WCAG 1.4.11, 3:1). */
+.form-check-input {
+    border-color: var(--muninn-gray-500);
+}
+
+/* Ticked checkboxes (e.g. checklists in notes) in brand navy instead of Bootstrap blue. */
+.form-check-input:checked {
+    background-color: var(--muninn-navy-900);
+    border-color: var(--muninn-navy-900);
+}
+
+.form-check-input:focus {
+    border-color: var(--muninn-gold-500);
+    box-shadow: var(--muninn-focus-ring);
+}
+
 .btn:focus-visible,
 .form-control:focus,
 .form-select:focus {
@@ -175,15 +238,37 @@ body {
     background: var(--muninn-navy-900);
 }
 
+/* Navigation icons on phones are touch targets of at least 44 by 44 pixels. */
+.muninn-navbar .nav-link {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
 .muninn-navbar .navbar-brand,
 .muninn-navbar .nav-link,
 .muninn-navbar .navbar-text {
     color: var(--muninn-text-on-dark);
 }
 
+/* The current page's link (aria-current="page", set by app-shell.js) and hovered links. */
 .muninn-navbar .nav-link:hover,
-.muninn-navbar .nav-link:focus-visible {
+.muninn-navbar .nav-link:focus-visible,
+.muninn-navbar .nav-link.active {
     color: var(--muninn-gold-500);
+}
+
+.muninn-navbar .nav-link.active {
+    text-decoration: underline;
+    text-underline-offset: 0.35em;
+}
+
+/* Single-column pages such as the account page: comfortable line length on desktop. */
+.muninn-narrow-page {
+    max-width: 48rem;
 }
 
 .muninn-wordmark {

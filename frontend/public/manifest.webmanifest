@@ -1,7 +1,10 @@
 {
+    "id": "./index.php",
     "name": "Muninn",
     "short_name": "Muninn",
     "description": "Your notes. Your knowledge.",
+    "lang": "en",
+    "dir": "ltr",
     "start_url": "./index.php",
     "scope": "./",
     "display": "standalone",

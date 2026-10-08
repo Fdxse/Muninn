@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Invitation administration for system administrators: create, list and revoke invitations.
+ * Invitation administration for system administrators: create, list and revoke invitations, and
+ * approve or decline users' invitation requests (D049).
  * The API is the real gatekeeper: non-admins get 404 from every admin endpoint, and this page
  * then shows "not available" instead of any data.
  */
@@ -61,6 +62,17 @@ renderAppNavbar('../');
             </div>
         </div>
 
+        <section class="mb-4" aria-labelledby="requests-heading">
+            <h2 id="requests-heading" class="h5 mb-1">Requests from users</h2>
+            <p class="small text-muted-brand mb-3">
+                After you approve a request, the user who asked creates the invitation link and sends it.
+                Declining an approved request stops any link they created.
+            </p>
+            <div id="requests-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+            <p id="requests-empty" class="text-muted-brand d-none">No requests yet.</p>
+            <ul id="requests-list" class="list-group mb-2"></ul>
+        </section>
+
         <h2 class="h5 mb-3">All invitations</h2>
         <div id="list-error" class="alert alert-danger d-none" role="alert"></div>
         <p id="invitations-empty" class="text-muted-brand d-none">No invitations yet.</p>
@@ -81,4 +93,4 @@ renderAppNavbar('../');
     </section>
 </main>
 <?php
-renderPageEnd(['app-shell.js', 'admin-invitations.js'], '../');
+renderPageEnd(['app-shell.js', 'admin-invitations.js', 'admin-invitation-requests.js'], '../');

@@ -58,7 +58,7 @@ renderAppNavbar();
                     <i class="bi bi-archive" aria-hidden="true"></i> Archive
                 </button>
             </div>
-            <a class="btn btn-outline-primary btn-sm" id="trash-link" href="trash.php">
+            <a class="btn btn-outline-secondary btn-sm" id="trash-link" href="trash.php">
                 <i class="bi bi-trash" aria-hidden="true"></i> Trash
             </a>
         </div>

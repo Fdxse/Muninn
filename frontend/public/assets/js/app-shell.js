@@ -10,6 +10,14 @@
     var loadingIndicator = document.getElementById('shell-loading');
     var pageContent = document.getElementById('shell-content');
 
+    // Mark the navigation link of the current page, for screen readers and as a visual cue.
+    document.querySelectorAll('.muninn-navbar .nav-link').forEach(function (navigationLink) {
+        if (navigationLink.pathname === window.location.pathname) {
+            navigationLink.setAttribute('aria-current', 'page');
+            navigationLink.classList.add('active');
+        }
+    });
+
     document.getElementById('nav-logout-button').addEventListener('click', function () {
         MuninnApi.signOut();
     });
@@ -25,6 +33,7 @@
             // Convenience only: the API itself refuses admin calls from non-admins.
             document.getElementById('nav-admin-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-users-item').classList.toggle('d-none', !currentUser.is_system_admin);
+            document.getElementById('nav-admin-workspaces-item').classList.toggle('d-none', !currentUser.is_system_admin);
             // Administrator accounts have no workspaces (D025), so they get no Workspaces or Search link.
             document.getElementById('nav-workspaces-item').classList.toggle('d-none', currentUser.is_system_admin);
             document.getElementById('nav-search-item').classList.toggle('d-none', currentUser.is_system_admin);

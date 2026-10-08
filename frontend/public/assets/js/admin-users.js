@@ -1,5 +1,6 @@
 /*
- * Account administration: list accounts, disable and re-enable them.
+ * Account administration: list accounts, disable and re-enable them, and create one-time
+ * password reset links (D040).
  */
 (function () {
     'use strict';
@@ -11,6 +12,9 @@
     var errorAlert = document.getElementById('users-error');
     var usersTableBody = document.getElementById('users-table-body');
     var currentUserId = null;
+    var resetResultPanel = document.getElementById('reset-link-result');
+    var resetLinkText = document.getElementById('reset-link');
+    var copyResetStatus = document.getElementById('copy-reset-link-status');
 
     /** Builds one table row for an account. */
     function buildUserRow(user) {
@@ -19,10 +23,12 @@
         var nameCell = MuninnApi.createElement('td');
         nameCell.appendChild(MuninnApi.createElement('div', 'fw-semibold text-break', user.display_name));
         nameCell.appendChild(MuninnApi.createElement('div', 'small text-muted-brand', user.username + (user.is_system_admin ? ' · administrator' : '')));
+        var isActive = user.status === 'active';
+        // On phones the Status column is hidden, so the status is shown under the name instead.
+        nameCell.appendChild(MuninnApi.createElement('div', 'small text-muted-brand d-sm-none', isActive ? 'Active' : 'Disabled'));
         tableRow.appendChild(nameCell);
 
-        var statusCell = MuninnApi.createElement('td');
-        var isActive = user.status === 'active';
+        var statusCell = MuninnApi.createElement('td', 'd-none d-sm-table-cell');
         statusCell.appendChild(MuninnApi.createElement('span', 'badge ' + (isActive ? 'text-bg-success' : 'text-bg-secondary'), isActive ? 'active' : 'disabled'));
         tableRow.appendChild(statusCell);
 
@@ -30,13 +36,24 @@
 
         var actionCell = MuninnApi.createElement('td', 'text-end');
         if (user.id !== currentUserId) {
+            var buttonGroup = MuninnApi.createElement('div', 'd-flex flex-wrap justify-content-end gap-2');
+            if (isActive) {
+                var resetButton = MuninnApi.createElement('button', 'btn btn-sm btn-outline-secondary', 'Reset password');
+                resetButton.type = 'button';
+                resetButton.setAttribute('aria-label', 'Create a password reset link for ' + user.username);
+                resetButton.addEventListener('click', function () {
+                    createResetLink(user, resetButton);
+                });
+                buttonGroup.appendChild(resetButton);
+            }
             var actionButton = MuninnApi.createElement('button', 'btn btn-sm ' + (isActive ? 'btn-outline-danger' : 'btn-outline-primary'), isActive ? 'Disable' : 'Enable');
             actionButton.type = 'button';
             actionButton.setAttribute('aria-label', (isActive ? 'Disable ' : 'Enable ') + user.username);
             actionButton.addEventListener('click', function () {
                 setUserEnabled(user, !isActive, actionButton);
             });
-            actionCell.appendChild(actionButton);
+            buttonGroup.appendChild(actionButton);
+            actionCell.appendChild(buttonGroup);
         }
         tableRow.appendChild(actionCell);
 
@@ -65,6 +82,31 @@
             actionButton.disabled = false;
         }
     }
+
+    async function createResetLink(user, resetButton) {
+        if (!window.confirm('Create a password reset link for ' + user.username + '?')) {
+            return;
+        }
+        resetButton.disabled = true;
+        MuninnApi.showAlert(errorAlert, '');
+        try {
+            var resetData = await MuninnApi.request('POST', '/api/v1/admin/users/' + encodeURIComponent(user.id) + '/password-reset', {});
+            document.getElementById('reset-link-username').textContent = resetData.username;
+            document.getElementById('reset-link-expiry').textContent = MuninnApi.formatDateTime(resetData.expires_at);
+            resetLinkText.textContent = resetData.reset_url;
+            copyResetStatus.textContent = '';
+            resetResultPanel.classList.remove('d-none');
+            resetResultPanel.focus();
+        } catch (resetError) {
+            MuninnApi.showAlert(errorAlert, resetError.message);
+        } finally {
+            resetButton.disabled = false;
+        }
+    }
+
+    document.getElementById('copy-reset-link').addEventListener('click', function () {
+        MuninnApi.copyLinkText(resetLinkText, copyResetStatus);
+    });
 
     document.addEventListener('muninn:user-ready', async function (readyEvent) {
         currentUserId = readyEvent.detail.id;
