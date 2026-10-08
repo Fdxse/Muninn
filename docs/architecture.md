@@ -1,4 +1,4 @@
-# Muninn architecture (Week 4)
+# Muninn architecture (Week 6, Course MVP)
 
 ## Overview
 
@@ -6,14 +6,14 @@
 Browser / installed PWA
    │  HTTPS, HTML + static assets
    ▼
-www.dx.se ─ frontend/public (PHP page shell, vanilla JS, Bootstrap 5.3)
+www.dx.se/muninn ─ frontend/public (PHP page shell, vanilla JS, Bootstrap 5.3)
    │
    │  Browser calls the API directly: HTTPS + JSON, credentials: "include"
    ▼
-api.dx.se ─ CNAME of fehre.synology.me (NAS, Web Station)
+api.dx.se ─ CNAME of fehre.synology.me (NAS, Web Station, document root /volume1/Muninn/public)
    │  api/public/index.php → Application pipeline
-   ├── MariaDB 10.x (users, sessions, invitations, auth_attempts, audit_log)
-   └── Filesystem outside the web root (logs, storage/attachments)
+   ├── MariaDB 10.x (accounts, workspaces, notes, history, attachments metadata, audit log)
+   └── /volume1/Muninn/storage, outside the web root (log file, storage/attachments)
 ```
 
 `www.dx.se` and `api.dx.se` are different *origins* but the same *site* (`dx.se`). That is why
@@ -26,13 +26,13 @@ the session cookie works in every browser, including Safari on iOS (decision D02
 | `api/public/` | API web root: `index.php` front controller and `.htaccess` only |
 | `api/src/` | Application code, namespace `Muninn\Api\`, grouped by feature |
 | `api/migrations/` | Numbered forward-only SQL migrations |
-| `api/bin/` | CLI tools: `migrate.php`, `create-admin.php`, `reset-data.php` |
+| `api/bin/` | CLI tools: `migrate.php`, `create-admin.php`, `check-setup.php`, `seed-demo.php`, `purge-trash.php`, `reset-data.php` |
 | `api/config/` | `config.example.php` (committed) and `config.php` (server only, git-ignored) |
 | `api/tests/` | PHPUnit unit and integration tests |
 | `frontend/public/` | Everything uploaded to www.dx.se |
 | `frontend/public/includes/` | PHP helpers and config, blocked from direct access |
 | `deploy/` | Release zip builder, `Deploy-Api.ps1`, `DEPLOY.md` |
-| `docs/` | Architecture, conventions, setup, security checklist, limitations |
+| `docs/` | Architecture, conventions, setup, demo path, MVP status, security checklist, limitations, screenshots |
 
 ## API request pipeline
 
@@ -51,7 +51,7 @@ security check:
 Each route declares its access level (`public`, `user`, `system_admin`) where it is registered
 in `Application::registerRoutes()`.
 
-## Data model (migrations 0001–0003)
+## Data model (migrations 0001–0005)
 
 - `users`: UUID id, lowercase unique username, display name, password hash
   (Argon2id or bcrypt), `is_system_admin`, `status` (active/disabled).
@@ -72,6 +72,10 @@ in `Application::registerRoutes()`.
   its notes' `folder_id` to NULL (`ON DELETE SET NULL`).
 - `tags` and `note_tags`: tags per workspace (D034), unique name per workspace, linked to notes.
   Unused tags are removed when a note's tags change.
+- `password_resets`: one-time reset links created by an administrator (D040), hash only.
+- `invitation_requests`: a user's request for someone to be invited, its decision and the
+  invitation link it led to (D049).
+- `maintenance_runs`: when the automatic Trash cleanup last ran (D039).
 - `attachments`: image metadata (display filename, detected media type, size, dimensions,
   SHA-256) for one note. The file lives at `storage/attachments/<2 chars>/<uuid>.bin`.
 
@@ -121,7 +125,18 @@ bin/purge-trash.php         → the same cleanup by hand (--dry-run only counts)
 the caller may read (the same rules as every other endpoint: memberships only, never for
 administrators or disabled users), and `SearchService` queries only those, with every word
 matched by `LIKE` in the title, content or tag names (D038). Snippets are cut in SQL around the
-first hit, so large notes are never loaded whole.
+first hit, so large notes are never loaded whole, and then turned into plain text (D051), like
+the previews in note lists.
+
+## Administration
+
+System administrators are separate accounts without workspaces or note access (D025, D044).
+Their `system_admin` routes manage invitations, invitation requests from users (D049), accounts
+(disable/enable, one-time password reset links, D040) and the members of shared workspaces that
+have no active Owner left (D050). Their pages list workspaces with Owners and member counts,
+never note titles or content. Command-line tools on the server cover the rest: schema
+migrations, the first administrator, the setup check, demo data, Trash purge and the test-data
+reset.
 
 ## Frontend
 

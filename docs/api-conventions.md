@@ -93,7 +93,7 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/workspaces/{id}/members` | Admin+ | `{username, role}` → 201 |
 | PATCH | `/api/v1/workspaces/{id}/members/{userId}` | Admin+ | `{role}` |
 | DELETE | `/api/v1/workspaces/{id}/members/{userId}` | Admin+ (or self) | remove, or leave (204) |
-| GET | `/api/v1/workspaces/{id}/notes` | Reader+ | notes without content, with a short `excerpt`, `folder_id` and `tags`; optional `?folder=<id>` or `?folder=none`, and `?tag=<name>`; `?archived=1` lists the Archive instead |
+| GET | `/api/v1/workspaces/{id}/notes` | Reader+ | notes without content, with a short plain-text `excerpt` (Markdown markers removed, D051), `folder_id` and `tags`; optional `?folder=<id>` or `?folder=none`, and `?tag=<name>`; `?archived=1` lists the Archive instead |
 | POST | `/api/v1/workspaces/{id}/notes` | Editor+ | `{title?, content?, folder_id?, tags?}` → 201 |
 | GET | `/api/v1/notes/{id}` | Reader+ | one note with `content`, `revision`, `folder_id`, `folder_name`, `tags`, `archived_at`, `history_count` and `history_limit` |
 | PATCH | `/api/v1/notes/{id}` | Editor+ | `{revision, title?, content?, folder_id?, tags?}`; stale revision → 409 `revision_conflict` |

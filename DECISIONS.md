@@ -475,3 +475,41 @@ administrators and its Owners take over. So an administrator who also has an eve
 cannot add that account to a workspace that has a working Owner. Administrators still cannot be
 members themselves (D044), the note, search and attachment endpoints still refuse them, and
 personal workspaces are never listed or manageable. Every change is audited with `by_system_admin`.
+
+## D051 — Note previews show plain text, not raw Markdown
+
+**Status:** Accepted (2026-10-08, asked for by the project owner)
+
+The one-line preview under each note in the note list and the Trash, and the search result
+snippet, are plain text made by the API (`Notes\MarkdownExcerpt`): heading, quote and list
+markers, emphasis, code fences, link addresses, images and HTML tags are removed, checklist boxes
+become ☐ and ☑, and a first line that repeats the note's title is left out. It is a small set of
+line-by-line rules, not a Markdown parser, and the frontend still shows the result with
+`textContent`. The API reads the first 600 characters for this and returns at most 160.
+Rendering formatted Markdown in the list was not chosen: it would load marked and DOMPurify on
+every list page for a single truncated line.
+
+## D052 — Demo data from the command line
+
+**Status:** Accepted (2026-10-08, minor implementation choice for the Week 6 demo)
+
+`bin/seed-demo.php` creates two everyday accounts (`demo.anna`, `demo.erik`) with random
+24-character passwords printed once, a shared workspace where Anna is Owner and Erik Editor, and
+sample notes through the same services the API uses. It refuses to run when either username
+exists, so it never changes existing data, and offers `--dry-run`. There is no web endpoint for
+it and no "remove demo" command: the demo accounts are disabled on the admin Users page like any
+other account, or a test server is cleared with `bin/reset-data.php` (D046).
+
+## D053 — The live NAS keeps the API in one folder with `public/` as document root
+
+**Status:** Accepted (2026-10-08, records the live setup from 2026-10-07)
+
+On the NAS the whole API lives in `/volume1/Muninn` and the Web Station web service's document
+root is `/volume1/Muninn/public`. Source, `vendor`, configuration and storage are therefore
+outside the document root, which is what D042 is for, without a second folder.
+`Deploy-Api.ps1` supports this by pointing `-PublicTarget` at the `public` subfolder and
+`-AppTarget` at the folder itself; the `app-location.php` it writes then simply names the parent
+folder, which `index.php` would use anyway. D042's split layout stays supported for hosts
+whose document root cannot be a subfolder. On the NAS, command-line scripts run as
+`sudo php84 bin/<script>.php` from `/volume1/Muninn`, and `bin/check-setup.php` reports anything
+that would break or weaken the installation (it changes nothing).

@@ -120,8 +120,8 @@ finally {
 }
 
 Write-Host ""
-Write-Host "Files copied. Now apply database migrations on the NAS over SSH:"
-Write-Host "    cd $ServerAppPath && php bin/migrate.php"
+Write-Host "Files copied. Now apply database migrations on the NAS over SSH, then run bin/check-setup.php the same way:"
+Write-Host "    cd $ServerAppPath && sudo php84 bin/migrate.php   (PHP 8.4 on Web Station; plain php elsewhere)"
 Write-Host "Then check https://api.dx.se/api/v1/health (or https://fehre.synology.me/muninn/api/v1/health while staging)"
 Write-Host "returns {""data"":{""status"":""ok""}}."
 

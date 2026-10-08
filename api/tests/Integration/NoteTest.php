@@ -35,7 +35,7 @@ final class NoteTest extends WorkspaceTestCase
 
         $listedNotes = $this->sendAs($this->alice, 'GET', '/api/v1/workspaces/' . $this->workspaceId . '/notes')->json()['data']['notes'];
         self::assertCount(1, $listedNotes);
-        self::assertSame('- [ ] milk - [ ] bread', $listedNotes[0]['excerpt']);
+        self::assertSame('☐ milk ☐ bread', $listedNotes[0]['excerpt']);
         self::assertArrayNotHasKey('content', $listedNotes[0], 'Listings carry a short excerpt, not the full content.');
 
         $updateResponse = $this->sendAs($this->alice, 'PATCH', '/api/v1/notes/' . $createdNote['id'], [

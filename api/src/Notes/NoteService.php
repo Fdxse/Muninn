@@ -26,6 +26,12 @@ final class NoteService
     /** Length of the plain-text preview in note lists. */
     private const EXCERPT_LENGTH = 160;
 
+    /**
+     * Characters of Markdown read for the preview. More than EXCERPT_LENGTH, because the
+     * Markdown markers (link addresses especially) disappear from the preview (D051).
+     */
+    private const EXCERPT_SOURCE_LENGTH = 600;
+
     /** Folder filter value meaning "notes that are in no folder". */
     public const FOLDER_FILTER_NONE = 'none';
 
@@ -105,7 +111,8 @@ final class NoteService
         }
 
         $selectStatement = $this->database->prepare(
-            'SELECT notes.id, notes.folder_id, notes.title, LEFT(notes.content, ' . self::EXCERPT_LENGTH . ') AS excerpt,
+            'SELECT notes.id, notes.folder_id, notes.title, LEFT(notes.content, ' . self::EXCERPT_SOURCE_LENGTH . ') AS excerpt,
+                    CHAR_LENGTH(notes.content) > ' . self::EXCERPT_SOURCE_LENGTH . ' AS excerpt_source_cut,
                     notes.revision, notes.created_at, notes.updated_at, notes.archived_at,
                     updater.display_name AS updated_by_name
              FROM notes
@@ -122,8 +129,8 @@ final class NoteService
             'id' => $noteRow['id'],
             'folder_id' => $noteRow['folder_id'],
             'title' => $noteRow['title'],
-            // Collapse whitespace so the preview is one readable line.
-            'excerpt' => trim((string) preg_replace('/\s+/u', ' ', (string) $noteRow['excerpt'])),
+            // Markdown markers removed, so the preview is one readable line (D051).
+            'excerpt' => self::excerpt($noteRow),
             'tags' => $tagNamesByNote[$noteRow['id']] ?? [],
             'revision' => (int) $noteRow['revision'],
             'created_at' => UtcTimestamp::toIso((string) $noteRow['created_at']),
@@ -353,7 +360,8 @@ final class NoteService
     public function listTrash(WorkspaceMembership $membership, int $retentionDays): array
     {
         $selectStatement = $this->database->prepare(
-            'SELECT notes.id, notes.title, LEFT(notes.content, ' . self::EXCERPT_LENGTH . ') AS excerpt, notes.trashed_at,
+            'SELECT notes.id, notes.title, LEFT(notes.content, ' . self::EXCERPT_SOURCE_LENGTH . ') AS excerpt,
+                    CHAR_LENGTH(notes.content) > ' . self::EXCERPT_SOURCE_LENGTH . ' AS excerpt_source_cut, notes.trashed_at,
                     notes.trashed_at + INTERVAL :retention_days DAY AS purge_after,
                     trasher.display_name AS trashed_by_name
              FROM notes
@@ -367,7 +375,7 @@ final class NoteService
         return array_map(static fn (array $noteRow): array => [
             'id' => $noteRow['id'],
             'title' => $noteRow['title'],
-            'excerpt' => trim((string) preg_replace('/\s+/u', ' ', (string) $noteRow['excerpt'])),
+            'excerpt' => self::excerpt($noteRow),
             'trashed_at' => UtcTimestamp::toIso((string) $noteRow['trashed_at']),
             'trashed_by' => $noteRow['trashed_by_name'],
             'purge_after' => UtcTimestamp::toIso((string) $noteRow['purge_after']),
@@ -446,5 +454,16 @@ final class NoteService
             $this->database->rollBack();
             throw $workFailure;
         }
+    }
+
+    /**
+     * The plain-text preview of a list row that selected `title`, `excerpt` (the start of the
+     * content) and `excerpt_source_cut` (whether the content goes on beyond it).
+     *
+     * @param array<string, mixed> $noteRow
+     */
+    private static function excerpt(array $noteRow): string
+    {
+        return MarkdownExcerpt::preview((string) $noteRow['excerpt'], self::EXCERPT_LENGTH, (bool) $noteRow['excerpt_source_cut'], (string) $noteRow['title']);
     }
 }

@@ -125,3 +125,14 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
   cannot give their own everyday account access to a workspace that has a working Owner.
 - Out of the application's reach (hosting): HTTPS redirect and HSTS for the frontend on one.com,
   and backups of the NAS database (see known limitations).
+
+## Week 6 — ship
+
+| Control | Verified by |
+|---|---|
+| Note previews and search snippets come from the same authorised queries as before; only their text is reshaped (D051) | `MarkdownExcerptTest`, `NoteTest`, `SearchTest` |
+| Previews stay plain text shown with `textContent`; nothing from a note is inserted as HTML | code review of `notes-home.js`, `trash.js`, `search.js` |
+| Demo data follows the normal isolation rules and never touches existing accounts (D052) | `DemoDataTest` |
+| Demo passwords are random (144 bits), printed once, stored only as password hashes | `bin/seed-demo.php`; `DemoDataTest` signs in with them |
+| Setup check only reads; flags non-production mode, insecure cookies, pending migrations, missing admin, storage inside the web root, world-readable `config.php` | `bin/check-setup.php` run locally |
+| Demo, setup and admin scripts refuse to run from a web request | `bin/cli-guard.php` |

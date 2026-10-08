@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Muninn\Api\Search;
 
 use Muninn\Api\Database\UtcTimestamp;
+use Muninn\Api\Notes\MarkdownExcerpt;
 use Muninn\Api\Tags\TagService;
 use PDO;
 
@@ -159,8 +160,8 @@ final class SearchService
             $snippetStatement->execute(['start_position' => $startPosition, 'id' => $resultRow['id']]);
             $snippetText = (string) $snippetStatement->fetchColumn();
 
-            // Collapse whitespace so the snippet is one readable line, and mark cut-off ends.
-            $snippetText = trim((string) preg_replace('/\s+/u', ' ', $snippetText));
+            // Remove Markdown markers so the snippet is one readable line (D051), and mark cut-off ends.
+            $snippetText = MarkdownExcerpt::plainText($snippetText);
             if ($startPosition > 1 && $snippetText !== '') {
                 $snippetText = '…' . $snippetText;
             }
