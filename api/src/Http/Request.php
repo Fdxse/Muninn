@@ -75,6 +75,9 @@ final class Request
         if (isset($_SERVER['CONTENT_TYPE'])) {
             $requestHeaders['Content-Type'] = (string) $_SERVER['CONTENT_TYPE'];
         }
+        if (isset($_SERVER['CONTENT_LENGTH'])) {
+            $requestHeaders['Content-Length'] = (string) $_SERVER['CONTENT_LENGTH'];
+        }
 
         $requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
         $routablePath = self::stripInstallFolder(

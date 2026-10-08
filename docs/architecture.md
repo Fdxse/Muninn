@@ -1,4 +1,4 @@
-# Muninn architecture (Week 2)
+# Muninn architecture (Week 3)
 
 ## Overview
 
@@ -13,7 +13,7 @@ www.dx.se ─ frontend/public (PHP page shell, vanilla JS, Bootstrap 5.3)
 api.dx.se ─ CNAME of fehre.synology.me (NAS, Web Station)
    │  api/public/index.php → Application pipeline
    ├── MariaDB 10.x (users, sessions, invitations, auth_attempts, audit_log)
-   └── Filesystem outside the web root (logs now; attachments from Week 3)
+   └── Filesystem outside the web root (logs, storage/attachments)
 ```
 
 `www.dx.se` and `api.dx.se` are different *origins* but the same *site* (`dx.se`). That is why
@@ -51,7 +51,7 @@ security check:
 Each route declares its access level (`public`, `user`, `system_admin`) where it is registered
 in `Application::registerRoutes()`.
 
-## Data model (migrations 0001 and 0002)
+## Data model (migrations 0001–0003)
 
 - `users`: UUID id, lowercase unique username, display name, password hash
   (Argon2id or bcrypt), `is_system_admin`, `status` (active/disabled).
@@ -64,7 +64,13 @@ in `Application::registerRoutes()`.
 - `workspace_members`: (workspace, user) → role `owner`/`admin`/`editor`/`reader`. The only
   source of access to a workspace and its notes.
 - `notes`: workspace (fixed, D032), title, Markdown `content`, `revision` for optimistic
-  concurrency, creator/updater, and `trashed_at` for Trash (D045).
+  concurrency, creator/updater, `trashed_at` for Trash (D045), and an optional `folder_id`.
+- `folders`: flat, one level, per workspace (D033); unique name per workspace. Deleting one sets
+  its notes' `folder_id` to NULL (`ON DELETE SET NULL`).
+- `tags` and `note_tags`: tags per workspace (D034), unique name per workspace, linked to notes.
+  Unused tags are removed when a note's tags change.
+- `attachments`: image metadata (display filename, detected media type, size, dimensions,
+  SHA-256) for one note. The file lives at `storage/attachments/<2 chars>/<uuid>.bin`.
 
 ## Authorization (Week 2)
 
@@ -79,12 +85,44 @@ access (D025, D044). The role matrix (D029) is defined once in `WorkspaceRole` a
 
 All timestamps are UTC `DATETIME`; the PDO connection pins `time_zone = '+00:00'`.
 
+Folders, tags and attachments follow the same pattern: the folder's, note's or attachment's
+workspace is looked up first, `WorkspaceAuthorizer` checks the caller's membership of that
+workspace, and the service scopes every query to it. An attachment is reachable only while its
+note is active.
+
+## Attachments
+
+```text
+editor (button, paste, drop) ─ POST /notes/{id}/attachments (raw bytes, CSRF header)
+   → ImageInspector: magic bytes + getimagesizefromstring → PNG/JPEG/GIF/WebP only
+   → row in attachments + file written atomically to storage/attachments (one transaction)
+   → returns ![name](attachment:<id>) for the note
+read view ─ <img src="https://api.dx.se/api/v1/attachments/<id>/content">
+   → session cookie (same site, D022) → WorkspaceAuthorizer → file streamed with safe headers
+```
+
 ## Frontend
 
 PHP renders page shells and security headers only; it holds no session or credentials. Each
 page loads `api-client.js` (fetch wrapper with CSRF handling) and its own script. Data is
 inserted into the DOM with `textContent`, never `innerHTML`. A strict CSP allows scripts and
-styles from the site itself only, and network calls to the site and the API.
+styles from the site itself only, images from the site and the API, and network calls to the
+site and the API.
+
+Note Markdown is rendered in the browser (D035) by `markdown-renderer.js` with two vendored
+libraries, `assets/vendor/marked-18.0.14` (MIT) and `assets/vendor/dompurify-3.4.16`
+(Apache-2.0 / MPL-2.0), loaded only on the note page:
+
+1. marked parses GitHub-flavoured Markdown with raw HTML turned off (typed HTML shows as text).
+2. Images render only for `attachment:<id>` references; other image URLs become plain links (D036).
+3. DOMPurify sanitises the HTML; a hook adds `rel="noopener noreferrer nofollow"` to links and
+   drops any image whose source is not the API's attachment URL. The result is inserted as a
+   DOM fragment.
+
+Checklist boxes in the read view are clickable for Editors: a tick rewrites that one `[ ]` in
+the source (fenced code blocks are skipped) and saves with the note's revision. The editor
+(`note-editor.js`) is a textarea with a formatting toolbar, Write/Preview switch, and image
+upload by button, clipboard paste or drag and drop, all through the same upload endpoint.
 
 The PWA is a manifest, the raven app icons and a service worker that caches nothing
 (installability only, per CLAUDE.md).

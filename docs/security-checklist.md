@@ -54,8 +54,27 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Note content shown with `textContent` only (no HTML interpretation) | e2e check: `<b>` shown as text |
 | Membership and note-trash events audited | `WorkspaceRolesTest::testMembershipChangesAreAudited`, `NoteTest` |
 
+## Week 3 — Markdown, folders, tags and attachments
+
+| Control | Verified by |
+|---|---|
+| Raw HTML in Markdown shown as text; output sanitised by DOMPurify; no `javascript:` links; links get `rel="noopener noreferrer nofollow"` | e2e check (script, `onerror` and `javascript:` payloads did not run; `markdown-renderer.js`) |
+| Only `attachment:` images render; outside image URLs become plain links (D036) | e2e check; `markdown-renderer.js` sanitiser hook |
+| Rendered Markdown inserted as a DOM fragment, never via `innerHTML` | code review |
+| Folders and tags scoped to one workspace; outsiders get 404; Readers cannot change folders | `FolderAndTagTest::testOutsidersCannotSeeOrChangeFoldersAndTags`, `testReadersSeeFoldersButCannotChangeThem` |
+| A note cannot be filed into another workspace's folder (same answer as an unknown folder) | `FolderAndTagTest::testNoteCannotBeFiledIntoAnotherWorkspacesFolder` |
+| Deleting a folder never deletes notes | `FolderAndTagTest::testFolderLifecycleAndDeletingMovesNotesToNoFolder` |
+| Refused (stale) saves change neither folder nor tags | `FolderAndTagTest::testRefusedSaveChangesNeitherFolderNorTags` |
+| User A cannot fetch, list or upload to user B's attachments; identical 404 to an unknown ID | `AttachmentTest::testOtherUsersCannotFetchListOrUploadAttachments` |
+| Attachments of trashed notes and of workspaces a member left are unavailable | `AttachmentTest::testAttachmentsOfTrashedNotesAreUnavailable`, `testReadersCanViewButNotUpload` |
+| Upload type detected from bytes (magic bytes + `getimagesizefromstring`); SVG, disguised and broken files refused; browser type and extension ignored | `AttachmentTest::testNonImagesAndDisguisedFilesAreRefused`, `testBrowserTypeIsIgnoredInFavourOfTheRealType` |
+| Upload size limit; CSRF token required; form content types refused | `AttachmentTest::testUploadSizeLimitAndCsrfAreEnforced` |
+| Files stored outside the web root under random UUID names; filenames are display text only and sanitised | `AttachmentStorage`, `AttachmentTest::testFilenamesAreSanitised` |
+| Downloads: detected type, `nosniff`, CSP `default-src 'none'`, `private` caching, CORP `same-site` | `AttachmentTest::testUploadListAndDownload` |
+| Clipboard paste uses the same upload endpoint | `note-editor.js`; e2e check |
+| Data reset deletes folders, tags, attachments and their files | `DataResetTest` |
+
 ## Open items for later weeks
 
-- Markdown sanitisation, upload validation and attachment authorization (Week 3).
 - Search and history authorization tests (Week 4).
 - Full security review against this list (Week 5).

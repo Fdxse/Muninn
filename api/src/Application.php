@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace Muninn\Api;
 
 use Muninn\Api\Admin\UserAdminController;
+use Muninn\Api\Attachments\AttachmentController;
+use Muninn\Api\Attachments\AttachmentService;
+use Muninn\Api\Attachments\AttachmentStorage;
 use Muninn\Api\Auth\AuthController;
 use Muninn\Api\Auth\PasswordService;
 use Muninn\Api\Auth\RateLimiter;
 use Muninn\Api\Auth\SessionCookie;
 use Muninn\Api\Auth\SessionService;
 use Muninn\Api\Config\Config;
+use Muninn\Api\Folders\FolderController;
+use Muninn\Api\Folders\FolderService;
 use Muninn\Api\Http\ClientIpResolver;
 use Muninn\Api\Http\Cors;
 use Muninn\Api\Http\ErrorHandler;
@@ -26,6 +31,8 @@ use Muninn\Api\Logging\AppLogger;
 use Muninn\Api\Logging\AuditLog;
 use Muninn\Api\Notes\NoteController;
 use Muninn\Api\Notes\NoteService;
+use Muninn\Api\Tags\TagController;
+use Muninn\Api\Tags\TagService;
 use Muninn\Api\Users\UserRepository;
 use Muninn\Api\Workspaces\WorkspaceAuthorizer;
 use Muninn\Api\Workspaces\WorkspaceController;
@@ -71,6 +78,18 @@ final class Application
         );
         $this->router = new Router();
         $this->registerRoutes();
+    }
+
+    /**
+     * The attachment storage folder: attachments.storage_path, or storage/attachments inside
+     * the application folder (outside the web root on the NAS) when that is left empty.
+     * Shared with bin/reset-data.php so both always use the same folder.
+     */
+    public static function attachmentStorageFolder(Config $config): string
+    {
+        $configuredPath = $config->getString('attachments.storage_path');
+
+        return $configuredPath !== '' ? rtrim($configuredPath, '/') : dirname(__DIR__) . '/storage/attachments';
     }
 
     /** Exposed so tests can register extra routes (e.g. one that throws). */
@@ -183,7 +202,18 @@ final class Application
         );
         $userAdminController = new UserAdminController($userRepository, $this->sessionService, $auditLog);
         $workspaceController = new WorkspaceController($workspaceService, $workspaceAuthorizer, $auditLog);
-        $noteController = new NoteController(new NoteService($this->database), $workspaceAuthorizer, $auditLog);
+        $tagService = new TagService($this->database);
+        $noteService = new NoteService($this->database, $tagService);
+        $noteController = new NoteController($noteService, $workspaceAuthorizer, $auditLog);
+        $folderController = new FolderController(new FolderService($this->database), $workspaceAuthorizer, $auditLog);
+        $tagController = new TagController($tagService, $workspaceAuthorizer);
+        $attachmentController = new AttachmentController(
+            new AttachmentService($this->database, new AttachmentStorage(self::attachmentStorageFolder($this->config))),
+            $noteService,
+            $workspaceAuthorizer,
+            $auditLog,
+            $this->config->getInt('attachments.max_upload_bytes'),
+        );
 
         // Health check: reveals nothing about versions or the database.
         $this->router->add('GET', '/api/v1/health', fn (): Response => Response::data(['status' => 'ok']), Router::ACCESS_PUBLIC);
@@ -224,5 +254,17 @@ final class Application
         $this->router->add('GET', '/api/v1/notes/{id}', $noteController->show(...), Router::ACCESS_USER);
         $this->router->add('PATCH', '/api/v1/notes/{id}', $noteController->update(...), Router::ACCESS_USER);
         $this->router->add('DELETE', '/api/v1/notes/{id}', $noteController->trash(...), Router::ACCESS_USER);
+
+        // Folders and tags belong to one workspace each (D033, D034).
+        $this->router->add('GET', '/api/v1/workspaces/{id}/folders', $folderController->list(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/workspaces/{id}/folders', $folderController->create(...), Router::ACCESS_USER);
+        $this->router->add('PATCH', '/api/v1/folders/{id}', $folderController->rename(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/folders/{id}', $folderController->delete(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/workspaces/{id}/tags', $tagController->list(...), Router::ACCESS_USER);
+
+        // Image attachments. Access always comes from access to the attachment's active note.
+        $this->router->add('GET', '/api/v1/notes/{id}/attachments', $attachmentController->list(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/notes/{id}/attachments', $attachmentController->upload(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/attachments/{id}/content', $attachmentController->content(...), Router::ACCESS_USER);
     }
 }

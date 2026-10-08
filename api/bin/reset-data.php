@@ -19,6 +19,8 @@ declare(strict_types=1);
 require __DIR__ . '/cli-guard.php';
 
 use Muninn\Api\Admin\DataResetService;
+use Muninn\Api\Application;
+use Muninn\Api\Attachments\AttachmentStorage;
 use Muninn\Api\Bootstrap;
 use Muninn\Api\Config\Config;
 use Muninn\Api\Logging\AuditLog;
@@ -43,7 +45,7 @@ try {
     exit(1);
 }
 
-$resetService = new DataResetService($database);
+$resetService = new DataResetService($database, new AttachmentStorage(Application::attachmentStorageFolder($config)));
 
 // Without an admin nobody could sign in afterwards, so refuse before showing anything else.
 $administratorCount = $resetService->countAdministrators();

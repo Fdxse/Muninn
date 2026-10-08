@@ -225,10 +225,123 @@ body {
     color: var(--muninn-text-muted);
 }
 
-/* Notes: the Markdown source is shown as-is until rendering arrives in Week 3. */
-.muninn-note-source {
-    white-space: pre-wrap;
+/* Rendered note Markdown (read view and editor preview). */
+.muninn-note-content {
     overflow-wrap: anywhere;
+}
+
+.muninn-note-content > :last-child {
+    margin-bottom: 0;
+}
+
+.muninn-note-content h1,
+.muninn-note-content h2,
+.muninn-note-content h3 {
+    margin-top: 1.25rem;
+}
+
+.muninn-note-content h1 { font-size: 1.6rem; }
+.muninn-note-content h2 { font-size: 1.35rem; }
+.muninn-note-content h3 { font-size: 1.15rem; }
+
+/* Only attachment images are ever rendered (D036); keep them inside the note on phones. */
+.muninn-note-content .muninn-note-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0.5rem 0;
+    border-radius: 0.375rem;
+}
+
+.muninn-note-content pre {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    background-color: var(--muninn-white);
+    overflow-x: auto;
+}
+
+.muninn-note-content code {
+    color: var(--muninn-ink-800);
+    overflow-wrap: anywhere;
+}
+
+.muninn-note-content pre code {
+    overflow-wrap: normal;
+}
+
+.muninn-note-content blockquote {
+    padding-left: 1rem;
+    border-left: 0.25rem solid var(--muninn-gold-500);
+    color: var(--muninn-text-muted);
+}
+
+.muninn-note-content table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.muninn-note-content th,
+.muninn-note-content td {
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--bs-border-color);
+}
+
+/* Checklists: no bullets, and a box large enough to tap on a phone. */
+.muninn-note-content .muninn-task-list {
+    padding-left: 0.25rem;
+    list-style: none;
+}
+
+.muninn-note-content .muninn-task-item {
+    margin-bottom: 0.25rem;
+}
+
+.muninn-note-content .muninn-task-item > .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0 0.5rem 0 0;
+    vertical-align: -0.2rem;
+}
+
+.muninn-note-content .muninn-external-image::before {
+    content: "\1F5BC\FE0F ";
+}
+
+.muninn-editor-preview {
+    min-height: 50vh;
+    height: auto;
+}
+
+/* Write / Preview switch: navy outline, the current view filled. */
+.muninn-editor-tabs .btn {
+    --bs-btn-color: var(--muninn-navy-900);
+    --bs-btn-border-color: var(--muninn-navy-900);
+    --bs-btn-hover-color: var(--muninn-white);
+    --bs-btn-hover-bg: var(--muninn-navy-800);
+    --bs-btn-hover-border-color: var(--muninn-navy-800);
+    --bs-btn-active-color: var(--muninn-white);
+    --bs-btn-active-bg: var(--muninn-navy-900);
+    --bs-btn-active-border-color: var(--muninn-navy-900);
+    min-width: 4.5rem;
+    min-height: 2.25rem;
+}
+
+/* Toolbar buttons big enough for fingers. */
+.muninn-editor-toolbar .btn {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+}
+
+.muninn-tag-badge {
+    background-color: var(--muninn-slate-600);
+    color: var(--muninn-white);
+}
+
+.muninn-folder-filter {
+    flex: 1 1 12rem;
+    max-width: 20rem;
 }
 
 /* A comfortable editor on phones; grows with the screen on larger devices. */

@@ -10,6 +10,7 @@ use Muninn\Api\Http\Request;
 use Muninn\Api\Http\RequestContext;
 use Muninn\Api\Http\Response;
 use Muninn\Api\Logging\AuditLog;
+use Muninn\Api\Tags\TagService;
 use Muninn\Api\Validation\TextRules;
 use Muninn\Api\Workspaces\WorkspaceAuthorizer;
 use Muninn\Api\Workspaces\WorkspaceMembership;
@@ -17,7 +18,7 @@ use Muninn\Api\Workspaces\WorkspacePermission;
 
 /**
  * Note endpoints (all require a signed-in user):
- *   GET    /api/v1/workspaces/{id}/notes   list (Reader+)
+ *   GET    /api/v1/workspaces/{id}/notes   list, optionally ?folder=<id|none>&tag=<name> (Reader+)
  *   POST   /api/v1/workspaces/{id}/notes   create (Editor+)
  *   GET    /api/v1/notes/{id}              read (Reader+)
  *   PATCH  /api/v1/notes/{id}              update with revision check (Editor+)
@@ -48,10 +49,20 @@ final class NoteController
             WorkspacePermission::ReadNotes,
         );
 
-        return Response::data(['notes' => $this->noteService->listInWorkspace($membership)]);
+        $folderFilter = $request->queryParameter('folder');
+        if ($folderFilter === '') {
+            $folderFilter = null;
+        }
+        $tagFilter = trim((string) $request->queryParameter('tag'));
+
+        return Response::data(['notes' => $this->noteService->listInWorkspace(
+            $membership,
+            $folderFilter,
+            $tagFilter === '' ? null : $tagFilter,
+        )]);
     }
 
-    /** POST /api/v1/workspaces/{id}/notes  {"title": "...", "content": "..."} */
+    /** POST /api/v1/workspaces/{id}/notes  {"title": "...", "content": "...", "folder_id": "...", "tags": ["..."]} */
     public function create(Request $request, RequestContext $context): Response
     {
         $membership = $this->workspaceAuthorizer->requireWorkspacePermission(
@@ -59,11 +70,7 @@ final class NoteController
             (string) $request->routeParameter('id'),
             WorkspacePermission::WriteNotes,
         );
-        $requestBody = $request->jsonBody();
-        $title = $this->readTitle($requestBody) ?? '';
-        $content = $this->readContent($requestBody) ?? '';
-
-        $newNoteId = $this->noteService->create($membership, $title, $content);
+        $newNoteId = $this->noteService->create($membership, $this->readNoteInput($request->jsonBody()));
 
         return Response::data(['note' => $this->noteService->find($membership, $newNoteId)], 201);
     }
@@ -77,10 +84,10 @@ final class NoteController
     }
 
     /**
-     * PATCH /api/v1/notes/{id}  {"revision": 3, "title": "...", "content": "..."}
+     * PATCH /api/v1/notes/{id}  {"revision": 3, "title": "...", "content": "...", "folder_id": "...", "tags": ["..."]}
      *
-     * "revision" is the revision the edit was based on and is required; title and content are
-     * each optional. A stale revision is refused with 409 so no save silently overwrites another.
+     * "revision" is the revision the edit was based on and is required; every other field is
+     * optional and left unchanged when absent ("folder_id": null moves the note to No folder). A stale revision is refused with 409 so no save silently overwrites another.
      */
     public function update(Request $request, RequestContext $context): Response
     {
@@ -91,10 +98,8 @@ final class NoteController
         if ($expectedRevision === null || $expectedRevision < 1) {
             throw HttpException::validation(['revision' => 'Send the revision of the note you edited.']);
         }
-        $newTitle = $this->readTitle($requestBody);
-        $newContent = $this->readContent($requestBody);
 
-        $this->noteService->update($membership, $noteId, $expectedRevision, $newTitle, $newContent);
+        $this->noteService->update($membership, $noteId, $expectedRevision, $this->readNoteInput($requestBody));
 
         return Response::data(['note' => $this->noteService->find($membership, $noteId)]);
     }
@@ -134,6 +139,27 @@ final class NoteController
         $membership = $this->workspaceAuthorizer->requireWorkspacePermission($context->requireSession()->user, $workspaceId, $permission);
 
         return [$membership, $noteId];
+    }
+
+    /**
+     * Validates the note fields shared by create and update.
+     *
+     * @param array<string, mixed> $requestBody
+     */
+    private function readNoteInput(array $requestBody): NoteInput
+    {
+        $folderIsSet = array_key_exists('folder_id', $requestBody);
+        $folderId = $folderIsSet ? InputReader::optionalString($requestBody, 'folder_id') : null;
+
+        return new NoteInput(
+            title: $this->readTitle($requestBody),
+            content: $this->readContent($requestBody),
+            folderIsSet: $folderIsSet,
+            // An empty string is treated like null: "No folder". Whether the folder belongs to
+            // the note's workspace is checked by NoteService inside the save's transaction.
+            folderId: $folderId === '' ? null : $folderId,
+            tagNames: array_key_exists('tags', $requestBody) ? TagService::normaliseTagNames($requestBody['tags']) : null,
+        );
     }
 
     /**

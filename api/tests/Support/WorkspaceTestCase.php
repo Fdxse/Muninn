@@ -66,4 +66,49 @@ abstract class WorkspaceTestCase extends IntegrationTestCase
 
         return $createResponse->json()['data']['note'];
     }
+
+    /** A valid 1x1 pixel PNG image. */
+    protected const TINY_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+
+    protected static function tinyPng(): string
+    {
+        return (string) base64_decode(self::TINY_PNG_BASE64, true);
+    }
+
+    /**
+     * Uploads raw bytes as an attachment of a note, exactly as the browser does: the bytes are
+     * the body, the filename travels percent-encoded in X-Filename.
+     *
+     * @param array{session_token: string, csrf_token: string} $credentials
+     */
+    protected function uploadAttachment(
+        array $credentials,
+        string $noteId,
+        string $fileBytes,
+        string $contentType = 'image/png',
+        ?string $filename = 'photo.png',
+    ): Response {
+        $uploadHeaders = ['X-CSRF-Token' => $credentials['csrf_token'], 'Content-Type' => $contentType];
+        if ($filename !== null) {
+            $uploadHeaders['X-Filename'] = rawurlencode($filename);
+        }
+
+        return $this->application->handle(new \Muninn\Api\Http\Request(
+            'POST',
+            '/api/v1/notes/' . $noteId . '/attachments',
+            $uploadHeaders,
+            [self::COOKIE_NAME => $credentials['session_token']],
+            $fileBytes,
+            '203.0.113.10',
+        ));
+    }
+
+    /** Creates a folder through the API and returns it. */
+    protected function createFolder(array $credentials, string $workspaceId, string $folderName = 'Projects'): array
+    {
+        $createResponse = $this->sendAs($credentials, 'POST', '/api/v1/workspaces/' . $workspaceId . '/folders', ['name' => $folderName]);
+        self::assertSame(201, $createResponse->statusCode(), $createResponse->body());
+
+        return $createResponse->json()['data']['folder'];
+    }
 }

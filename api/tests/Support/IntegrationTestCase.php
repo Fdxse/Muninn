@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Muninn\Api\Tests\Support;
 
 use Muninn\Api\Application;
+use Muninn\Api\Attachments\AttachmentStorage;
 use Muninn\Api\Auth\PasswordService;
 use Muninn\Api\Config\Config;
 use Muninn\Api\Http\Request;
@@ -27,6 +28,8 @@ abstract class IntegrationTestCase extends TestCase
     protected PDO $database;
     protected Application $application;
     protected string $logFilePath;
+    /** A throwaway attachment folder per test, removed again in tearDown(). */
+    protected string $attachmentFolder;
 
     protected function setUp(): void
     {
@@ -34,6 +37,7 @@ abstract class IntegrationTestCase extends TestCase
         TestDatabase::truncateDataTables();
         $this->database = TestDatabase::connection();
         $this->logFilePath = sys_get_temp_dir() . '/muninn-test-' . bin2hex(random_bytes(6)) . '.log';
+        $this->attachmentFolder = sys_get_temp_dir() . '/muninn-test-attachments-' . bin2hex(random_bytes(6));
         $this->application = $this->buildApplication();
     }
 
@@ -41,6 +45,10 @@ abstract class IntegrationTestCase extends TestCase
     {
         if (is_file($this->logFilePath)) {
             unlink($this->logFilePath);
+        }
+        $this->attachmentStorage()->deleteAllFiles();
+        if (is_dir($this->attachmentFolder)) {
+            rmdir($this->attachmentFolder);
         }
         parent::tearDown();
     }
@@ -67,7 +75,14 @@ abstract class IntegrationTestCase extends TestCase
             'cors' => ['allowed_origins' => [self::ALLOWED_ORIGIN]],
             'frontend' => ['base_url' => 'https://www.dx.se'],
             'logging' => ['file_path' => $this->logFilePath],
+            'attachments' => ['storage_path' => $this->attachmentFolder],
         ], $overrides);
+    }
+
+    /** The storage the application under test writes attachment files to. */
+    protected function attachmentStorage(): AttachmentStorage
+    {
+        return new AttachmentStorage($this->attachmentFolder);
     }
 
     /** @param array<string, mixed> $configOverrides */

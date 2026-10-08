@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Muninn\Api\Admin;
 
+use Muninn\Api\Attachments\AttachmentStorage;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -12,8 +13,9 @@ use Throwable;
  * Resets an installation to "system administrators only" (decision D046).
  *
  * Used by bin/reset-data.php to clear out test accounts and test content. It deletes every
- * non-admin account together with everything that belongs to users: notes, workspaces,
- * workspace memberships, sessions and all invitations. It keeps:
+ * non-admin account together with everything that belongs to users: notes, folders, tags,
+ * attachments (rows and image files), workspaces, workspace memberships, sessions and all
+ * invitations. It keeps:
  *   - system administrator accounts and their sessions (so the admin stays signed in),
  *   - the audit log (audit history must survive changes to the rows it describes),
  *   - the schema and the migration history.
@@ -22,8 +24,13 @@ use Throwable;
  */
 final class DataResetService
 {
-    public function __construct(private readonly PDO $database)
-    {
+    /** Label used for the attachment files in the counts. */
+    public const ATTACHMENT_FILES_LABEL = 'attachment image files';
+
+    public function __construct(
+        private readonly PDO $database,
+        private readonly AttachmentStorage $attachmentStorage,
+    ) {
     }
 
     /** Number of system administrator accounts that will be kept. */
@@ -47,6 +54,9 @@ final class DataResetService
             'workspaces' => 'SELECT COUNT(*) FROM workspaces',
             'workspace memberships' => 'SELECT COUNT(*) FROM workspace_members',
             'notes (including Trash)' => 'SELECT COUNT(*) FROM notes',
+            'folders' => 'SELECT COUNT(*) FROM folders',
+            'tags' => 'SELECT COUNT(*) FROM tags',
+            'attachments' => 'SELECT COUNT(*) FROM attachments',
             'invitations (all states)' => 'SELECT COUNT(*) FROM invitations',
             'sign-in attempt records' => 'SELECT COUNT(*) FROM auth_attempts',
         ];
@@ -55,6 +65,7 @@ final class DataResetService
         foreach ($rowCountQueries as $countLabel => $countQuery) {
             $rowCounts[$countLabel] = (int) $this->database->query($countQuery)->fetchColumn();
         }
+        $rowCounts[self::ATTACHMENT_FILES_LABEL] = $this->attachmentStorage->countFiles();
 
         return $rowCounts;
     }
@@ -75,7 +86,11 @@ final class DataResetService
         // Delete children before parents so every foreign key stays satisfied without disabling
         // FOREIGN_KEY_CHECKS. Administrators own no workspaces or notes (D044), so all content goes.
         $deleteStatements = [
+            'attachments' => 'DELETE FROM attachments',
+            // note_tags rows go with their notes and tags (ON DELETE CASCADE).
+            'tags' => 'DELETE FROM tags',
             'notes (including Trash)' => 'DELETE FROM notes',
+            'folders' => 'DELETE FROM folders',
             'workspace memberships' => 'DELETE FROM workspace_members',
             'workspaces' => 'DELETE FROM workspaces',
             // Accepted invitations point at the accounts being deleted; pending ones are test links.
@@ -99,6 +114,10 @@ final class DataResetService
             $this->database->rollBack();
             throw $resetFailure;
         }
+
+        // Files go only after the rows are gone for good. A file that cannot be deleted is merely
+        // an orphan nobody can reach, since no attachment row points at it any more.
+        $deletedRowCounts[self::ATTACHMENT_FILES_LABEL] = $this->attachmentStorage->deleteAllFiles();
 
         return $deletedRowCounts;
     }

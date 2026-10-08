@@ -5,7 +5,8 @@
  *   note.php?id=<note id>              open an existing note
  *   note.php?workspace=<workspace id>  write a new note in that workspace
  *
- * Week 2 shows the Markdown source as plain text; rendered Markdown arrives in Week 3.
+ * The note is shown as sanitised, rendered Markdown (assets/js/markdown-renderer.js). The editor
+ * is a textarea with a Markdown toolbar, preview and image upload/paste (assets/js/note-editor.js).
  */
 
 declare(strict_types=1);
@@ -44,10 +45,11 @@ renderAppNavbar();
                     </button>
                 </div>
             </div>
-            <p class="small text-muted-brand mb-3" id="note-meta"></p>
+            <p class="small text-muted-brand mb-2" id="note-meta"></p>
+            <div class="d-flex flex-wrap gap-1 mb-3" id="note-organisation"></div>
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <div id="note-content" class="muninn-note-source"></div>
+                    <div id="note-content" class="muninn-note-content"></div>
                 </div>
             </div>
         </article>
@@ -60,10 +62,45 @@ renderAppNavbar();
                 <input type="text" class="form-control" id="note-title" maxlength="200" aria-describedby="note-title-feedback">
                 <div id="note-title-feedback" class="invalid-feedback"></div>
             </div>
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-sm-5">
+                    <label for="note-folder" class="form-label">Folder</label>
+                    <select class="form-select" id="note-folder" aria-describedby="note-folder-feedback">
+                        <option value="">No folder</option>
+                    </select>
+                    <div id="note-folder-feedback" class="invalid-feedback"></div>
+                </div>
+                <div class="col-12 col-sm-7">
+                    <label for="note-tags" class="form-label">Tags <span class="text-muted-brand small">(separate with commas)</span></label>
+                    <input type="text" class="form-control" id="note-tags" list="note-tag-suggestions" autocomplete="off"
+                           autocapitalize="none" aria-describedby="note-tags-feedback">
+                    <datalist id="note-tag-suggestions"></datalist>
+                    <div id="note-tags-feedback" class="invalid-feedback"></div>
+                </div>
+            </div>
             <div class="mb-3">
-                <label for="note-body" class="form-label">Note <span class="text-muted-brand small">(Markdown)</span></label>
-                <textarea class="form-control muninn-note-editor" id="note-body" rows="14" aria-describedby="note-body-feedback"></textarea>
+                <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2">
+                    <label for="note-body" class="form-label mb-0">Note <span class="text-muted-brand small">(Markdown)</span></label>
+                    <div class="btn-group btn-group-sm muninn-editor-tabs" role="tablist" aria-label="Editor view">
+                        <button type="button" class="btn active" id="editor-write-tab" role="tab" aria-selected="true" aria-controls="note-body">Write</button>
+                        <button type="button" class="btn" id="editor-preview-tab" role="tab" aria-selected="false" aria-controls="editor-preview">Preview</button>
+                    </div>
+                </div>
+                <div class="muninn-editor-toolbar btn-toolbar gap-1 mb-2" id="editor-toolbar" role="toolbar" aria-label="Formatting">
+                    <button type="button" class="btn btn-light btn-sm" data-editor-action="bold" title="Bold"><i class="bi bi-type-bold" aria-hidden="true"></i><span class="visually-hidden">Bold</span></button>
+                    <button type="button" class="btn btn-light btn-sm" data-editor-action="italic" title="Italic"><i class="bi bi-type-italic" aria-hidden="true"></i><span class="visually-hidden">Italic</span></button>
+                    <button type="button" class="btn btn-light btn-sm" data-editor-action="heading" title="Heading"><i class="bi bi-type-h2" aria-hidden="true"></i><span class="visually-hidden">Heading</span></button>
+                    <button type="button" class="btn btn-light btn-sm" data-editor-action="bullets" title="Bulleted list"><i class="bi bi-list-ul" aria-hidden="true"></i><span class="visually-hidden">Bulleted list</span></button>
+                    <button type="button" class="btn btn-light btn-sm" data-editor-action="checklist" title="Checklist"><i class="bi bi-check2-square" aria-hidden="true"></i><span class="visually-hidden">Checklist</span></button>
+                    <button type="button" class="btn btn-light btn-sm" data-editor-action="code" title="Code"><i class="bi bi-code-slash" aria-hidden="true"></i><span class="visually-hidden">Code</span></button>
+                    <button type="button" class="btn btn-light btn-sm" data-editor-action="link" title="Link"><i class="bi bi-link-45deg" aria-hidden="true"></i><span class="visually-hidden">Link</span></button>
+                    <button type="button" class="btn btn-light btn-sm" data-editor-action="image" title="Add image"><i class="bi bi-image" aria-hidden="true"></i><span class="visually-hidden">Add image</span></button>
+                    <input type="file" id="editor-image-input" class="d-none" multiple tabindex="-1" aria-hidden="true">
+                </div>
+                <textarea class="form-control muninn-note-editor" id="note-body" rows="14" aria-describedby="note-body-feedback editor-status"></textarea>
+                <div id="editor-preview" class="muninn-note-content muninn-editor-preview form-control d-none" role="tabpanel" aria-label="Preview"></div>
                 <div id="note-body-feedback" class="invalid-feedback"></div>
+                <p id="editor-status" class="small text-muted-brand mt-1 mb-0" aria-live="polite"></p>
             </div>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary" id="save-note-button">Save</button>
@@ -73,4 +110,7 @@ renderAppNavbar();
     </section>
 </main>
 <?php
-renderPageEnd(['app-shell.js', 'note-page.js']);
+renderPageEnd(['app-shell.js', 'markdown-renderer.js', 'note-editor.js', 'note-page.js'], '', [
+    'marked-18.0.14/marked.umd.js',
+    'dompurify-3.4.16/purify.min.js',
+]);

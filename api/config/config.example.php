@@ -84,6 +84,14 @@ return [
         'max_expiry_hours' => 720,
     ],
 
+    'attachments' => [
+        // OPTIONAL. Folder for note images. Must be OUTSIDE the web root and writable by the
+        // web server user. Empty (the default) means storage/attachments in the application folder.
+        'storage_path' => '',
+        // OPTIONAL. Largest image upload in bytes. PHP's post_max_size must be a bit larger.
+        'max_upload_bytes' => 10000000,
+    ],
+
     'logging' => [
         // REQUIRED. Absolute path of the application log file. Must be OUTSIDE the web root.
         'file_path' => '/volume1/secrets/muninn/storage/api.log',

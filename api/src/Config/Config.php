@@ -45,6 +45,11 @@ final class Config
             'default_expiry_hours' => 72,
             'max_expiry_hours' => 720,
         ],
+        'attachments' => [
+            // Empty means "<application folder>/storage/attachments" (see Application).
+            'storage_path' => '',
+            'max_upload_bytes' => 10_000_000,
+        ],
     ];
 
     /** @var array<string, mixed> */

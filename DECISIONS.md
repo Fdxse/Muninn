@@ -239,11 +239,47 @@ cannot disable their own account. Hard delete is deferred together with export.
 A note's workspace is fixed at creation in the MVP. This keeps attachments and version history
 authorized by a single, unchanging workspace.
 
+## D033 — Folders are flat
+
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
+
+Folders are one level deep and belong to one workspace. A note is in at most one folder or in
+"No folder". Deleting a folder never deletes notes: they move to "No folder"
+(`ON DELETE SET NULL`). Folder names are unique per workspace, ignoring case. Folders are managed
+by whoever may edit notes (Editor and up), since they only organise notes.
+
+## D034 — Tags belong to a workspace
+
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
+
+Tags are never global: each tag belongs to one workspace, so a tag name typed in one workspace
+can never be seen from another. Tags are set through the note (a list of names), created on
+first use and removed when no note, Trash included, uses them. Names are unique per workspace
+ignoring case; the first spelling is kept.
+
+## D035 — Markdown rendered in the browser
+
+**Status:** Accepted (2026-10-08, approved by the project owner)
+
+Notes are edited in a plain textarea with a small formatting toolbar and a Write/Preview switch
+(mobile-friendly, no rich-text editor). Markdown is rendered in the browser with **marked** (MIT)
+and sanitised with **DOMPurify** (Apache-2.0/MPL-2.0), both vendored under
+`frontend/public/assets/vendor/` (no CDN), with raw HTML in Markdown disabled and the existing
+strict CSP. There is no server-side Markdown library.
+
+## D036 — Only Muninn attachments render as images
+
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
+
+Rendered notes show images only when they reference a Muninn attachment
+(`![alt](attachment:<id>)`). Any other image URL is shown as a link instead, so opening a note
+never contacts another server (no tracking pixels, no mixed content).
+
 ## D041 — Manual, zip-based deployment
 
 **Status:** Accepted (2026-10-01)
 
-(D033–D040 are reserved for the decisions proposed for Weeks 3–5 in the Week 1 plan.)
+(D037–D040 are reserved for the decisions proposed for Weeks 4–5 in the Week 1 plan.)
 
 Nothing deploys automatically. A GitHub Actions workflow builds `muninn-<version>.zip` (API with
 production autoloader, frontend, `DEPLOY.md`, `Deploy-Api.ps1`). The frontend is uploaded by
@@ -297,8 +333,8 @@ first, offers `--dry-run`, and deletes only after the exact phrase `DELETE ALL U
 
 This is a server-operator tool for clearing out test data, not account deletion: D031 still
 holds for the web interface (accounts are disabled, never deleted), and there is deliberately no
-API endpoint, so a stolen admin session can never wipe the system. Attachment files will need to
-be included once attachments exist (Week 3).
+API endpoint, so a stolen admin session can never wipe the system. Since Week 3 it also deletes
+folders, tags, attachments and the attachment files.
 
 ## D043 — Brand colour palette
 
@@ -322,3 +358,17 @@ The production image set (logos, app icons, favicons, splash, hero and UI icons)
 the project owner on 2026-10-07 and is kept unchanged in `assets/branding/production/`. The
 frontend uses copies of the app icons and favicons, a 64px navigation-bar symbol and an 800px
 WebP of the dark horizontal logo; the full-size originals are not deployed.
+
+## D047 — Image attachments
+
+**Status:** Proposed (2026-10-08)
+
+Attachments are images (PNG, JPEG, GIF, WebP; never SVG) of at most 10 MB (configurable),
+belonging to one note. The type is detected from the file's bytes and checked with
+`getimagesizefromstring()`, so no PHP image extension is needed. Uploads are the raw file as the
+request body (with the CSRF header), which lets clipboard paste and the file picker share one
+endpoint. Files are stored outside the web root as `storage/attachments/<2>/<uuid>.bin` and
+served only through `GET /api/v1/attachments/{id}/content` after the note's workspace membership
+is checked; attachments of trashed notes are unavailable. A new note is saved automatically when
+its first image is added, so the image has a note to belong to. Removing single attachments is
+left out of the MVP; files go with their note when Trash purge arrives (D039).
