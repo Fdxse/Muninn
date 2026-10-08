@@ -589,7 +589,7 @@ everyday users, and editing ntfy settings in the admin pages.
 
 ## D058 — "Contact admin": users message the administrator through ntfy
 
-**Status:** Proposed (2026-10-08, asked for by the project owner; awaiting review in the PR)
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Every everyday user has a "Contact admin" button in the top bar. It opens a dialog with a
 message (up to 1000 characters, line breaks kept) and an optional "How can the admin reach
@@ -615,8 +615,8 @@ user sees on their next visit). That would need a table and pages of its own.
 
 ## D059 — Magic Links: first version
 
-**Status:** Proposed (2026-10-08). The project owner chose to build it with whole-workspace links
-and the defaults below; awaiting review in the PR.
+**Status:** Accepted (2026-10-08, confirmed by the project owner, who chose whole-workspace
+links and the defaults below)
 
 Builds on D019 (Accepted) and adds a third target: a whole workspace.
 
