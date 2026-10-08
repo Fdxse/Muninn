@@ -59,6 +59,23 @@ Summary:
    `note.php`, `history.php`, `index.php`, `assets/css/muninn.css` and several scripts in
    `assets/js/`.
 
+## Administrator notifications (ntfy)
+
+Muninn can push a notification to your phone when someone asks for an invitation and when
+sign-ins are blocked after repeated wrong passwords (D057). It uses the ntfy server on the NAS.
+
+1. Pick a topic name, e.g. `muninn-admin`, and subscribe to it in the ntfy app.
+2. If your ntfy requires sign-in to publish, create a token for Muninn on the NAS
+   (`ntfy token add <user>`) and give that user write access to the topic. Keep the token
+   secret: it goes only into `config.php`, never in chat, email or the repository.
+3. In `/volume1/Muninn/config/config.php`, add or fill in the `ntfy` section (see
+   `config/config.example.php`): `'enabled' => true`, `server_url` (the local address such as
+   `http://127.0.0.1:<port>`, so nothing leaves the NAS), `topic`, and `access_token` or `''`.
+4. Run `sudo php84 bin/send-test-notification.php` from `/volume1/Muninn`. It says whether ntfy
+   accepted the message, and the test should appear on your phone.
+
+If ntfy is down, Muninn keeps working; the failure is written to `storage/api.log`.
+
 ## Resetting test data
 
 To clear out test accounts and invitations and keep only the administrator account(s), run on

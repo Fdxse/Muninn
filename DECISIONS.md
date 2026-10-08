@@ -559,3 +559,30 @@ the editor's "Images on this note" list removes the image's Markdown from the te
 and the user saves as usual, so the note's revision and history work exactly as for any edit.
 An image that no longer exists (a removed image in an unsaved note, or in an old version) is
 shown as its name followed by "(image removed)" instead of a broken image.
+
+## D057 — Administrator push notifications through the NAS's own ntfy
+
+**Status:** Accepted (2026-10-08, confirmed by the project owner, who runs ntfy on the NAS)
+
+The API sends push notifications to the administrator through the ntfy server on the NAS. The
+first version sends two kinds of message and nothing else:
+
+- **New invitation request** (D049): who asked, with a link to Admin > Invitations. The
+  request's note (who should be invited and why) stays in Muninn.
+- **Sign-ins blocked** by the rate limiter: the username and address that reached the limit, or
+  the address alone when it is blocked for every username. Sent once, by the failure that
+  causes the block, and at most 10 times an hour across all addresses, so password guessing
+  from many addresses cannot flood the phone. Passwords never appear.
+
+Settings (`ntfy` in `config.php`: enabled, server address, topic, optional access token,
+timeout) are server-side only and never reach the frontend; they are validated at startup.
+The recommended address is the local one (`http://127.0.0.1:<port>`), so messages and the token
+never leave the NAS. Messages are queued while a request is answered and sent after the
+response (like the Trash cleanup, D039), so a slow or stopped ntfy never delays or breaks a
+request; failed sends are logged with the HTTP status but never the token. Each queued message
+is recorded in the audit log (`notification.admin_queued`), which also counts the hourly cap.
+It is sent as ntfy JSON with PHP's curl extension, or PHP's HTTP stream when curl is missing,
+so no library is added. `bin/send-test-notification.php` checks the settings on the server.
+
+Not in this version: per-user notification preferences (PROJECT.md), notifications to
+everyday users, and editing ntfy settings in the admin pages.

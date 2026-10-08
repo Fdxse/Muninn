@@ -139,6 +139,17 @@ never note titles or content. Command-line tools on the server cover the rest: s
 migrations, the first administrator, the setup check, demo data, Trash purge and the test-data
 reset.
 
+## Administrator notifications (D057)
+
+```
+invitation request / sign-in block ─ handler queues a message (AdminNotifier), audit row
+   → response sent to the browser (fastcgi_finish_request)
+   → queued messages POSTed as JSON to the ntfy server (config ntfy.*), failures logged
+```
+
+`AdminNotifier` is the only code that talks to ntfy; the transport is an interface so tests
+record messages instead of sending them.
+
 ## Frontend
 
 PHP renders page shells and security headers only; it holds no session or credentials. Each
