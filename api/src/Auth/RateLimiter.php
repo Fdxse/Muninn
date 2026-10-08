@@ -89,6 +89,42 @@ final class RateLimiter
         }
     }
 
+    /**
+     * Called right after a failed login was recorded: says which limit that failure has just
+     * reached, so the administrator is told once per block rather than on every refused try.
+     *
+     * @return array{username: string|null, failure_count: int}|null The blocked username (null
+     *         when the whole address is blocked) and the failure count, or null when no limit
+     *         was reached by this failure.
+     */
+    public function loginLimitJustReached(string $normalisedUsername, string $ipAddress): ?array
+    {
+        $failuresForUsername = $this->countFailures(
+            'attempt_type = :attempt_type AND subject = :subject AND ip_address = :ip_address',
+            ['attempt_type' => self::TYPE_LOGIN, 'subject' => $normalisedUsername, 'ip_address' => $ipAddress],
+        );
+        $failuresForIp = $this->countFailures(
+            'attempt_type = :attempt_type AND ip_address = :ip_address',
+            ['attempt_type' => self::TYPE_LOGIN, 'ip_address' => $ipAddress],
+        );
+
+        // The whole address being blocked is the bigger news, so it wins when both happen at once.
+        if ($failuresForIp === $this->maxLoginFailuresPerIp) {
+            return ['username' => null, 'failure_count' => $failuresForIp];
+        }
+        if ($failuresForUsername === $this->maxLoginFailuresPerUsername) {
+            return ['username' => $normalisedUsername, 'failure_count' => $failuresForUsername];
+        }
+
+        return null;
+    }
+
+    /** The rate-limit window in minutes (shown in notifications). */
+    public function windowMinutes(): int
+    {
+        return $this->windowMinutes;
+    }
+
     public function recordAttempt(string $attemptType, ?string $subject, string $ipAddress, bool $succeeded): void
     {
         $insertStatement = $this->database->prepare(

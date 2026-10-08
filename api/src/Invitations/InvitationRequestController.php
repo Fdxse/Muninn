@@ -10,6 +10,7 @@ use Muninn\Api\Http\Request;
 use Muninn\Api\Http\RequestContext;
 use Muninn\Api\Http\Response;
 use Muninn\Api\Logging\AuditLog;
+use Muninn\Api\Notifications\AdminNotifier;
 use Muninn\Api\Security\UuidGenerator;
 use Muninn\Api\Users\User;
 use Muninn\Api\Validation\TextRules;
@@ -37,6 +38,7 @@ final class InvitationRequestController
         private readonly AuditLog $auditLog,
         private readonly string $frontendBaseUrl,
         private readonly int $linkExpiryHours,
+        private readonly AdminNotifier $adminNotifier,
     ) {
     }
 
@@ -63,6 +65,8 @@ final class InvitationRequestController
 
         $newRequestId = $this->invitationRequestService->create($currentUser->id, $note);
         $this->auditLog->record(AuditLog::INVITATION_REQUEST_CREATED, $currentUser->id, 'invitation_request', $newRequestId, $context->clientIp);
+        // The administrator gets a push notification after this response is sent (D057).
+        $this->adminNotifier->invitationRequested($currentUser->displayName, $newRequestId);
 
         return Response::data(['invitation_request' => $this->invitationRequestService->find($newRequestId, $currentUser->id)], 201);
     }

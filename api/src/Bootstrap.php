@@ -39,12 +39,13 @@ final class Bootstrap
 
         $applicationOrResponse->handle(Request::fromGlobals())->send();
 
-        // Hand the response to the browser before housekeeping, so nobody waits for it. Under
+        // Hand the response to the browser before notifications and housekeeping, so nobody waits for them. Under
         // PHP-FPM this closes the connection; elsewhere housekeeping simply runs a little longer
         // inside the request (one bounded run per hour at most).
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         }
+        $applicationOrResponse->sendQueuedNotifications();
         $applicationOrResponse->runHousekeeping();
     }
 

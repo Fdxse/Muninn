@@ -11,6 +11,7 @@ use Muninn\Api\Config\Config;
 use Muninn\Api\Http\Request;
 use Muninn\Api\Http\Response;
 use Muninn\Api\Logging\AppLogger;
+use Muninn\Api\Notifications\NtfyTransport;
 use Muninn\Api\Users\UserRepository;
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -30,6 +31,8 @@ abstract class IntegrationTestCase extends TestCase
     protected string $logFilePath;
     /** A throwaway attachment folder per test, removed again in tearDown(). */
     protected string $attachmentFolder;
+    /** Records ntfy messages instead of sending them; no test ever reaches a real server. */
+    protected RecordingNtfyTransport $ntfyTransport;
 
     protected function setUp(): void
     {
@@ -38,6 +41,7 @@ abstract class IntegrationTestCase extends TestCase
         $this->database = TestDatabase::connection();
         $this->logFilePath = sys_get_temp_dir() . '/muninn-test-' . bin2hex(random_bytes(6)) . '.log';
         $this->attachmentFolder = sys_get_temp_dir() . '/muninn-test-attachments-' . bin2hex(random_bytes(6));
+        $this->ntfyTransport = new RecordingNtfyTransport();
         $this->application = $this->buildApplication();
     }
 
@@ -92,6 +96,7 @@ abstract class IntegrationTestCase extends TestCase
             new Config($this->configValues($configOverrides)),
             $this->database,
             new AppLogger($this->logFilePath),
+            $this->ntfyTransport,
         );
     }
 
