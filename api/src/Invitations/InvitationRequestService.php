@@ -113,6 +113,17 @@ final class InvitationRequestService
     }
 
     /**
+     * How many requests wait for an administrator's decision. Feeds the badge on the admin
+     * "Invitations" navigation link; approved requests wait on the asking user, not the admin.
+     */
+    public function countPending(): int
+    {
+        return (int) $this->database->query(
+            'SELECT COUNT(*) FROM invitation_requests WHERE status = \'pending\''
+        )->fetchColumn();
+    }
+
+    /**
      * Loads one request, optionally only when it belongs to the given requester.
      *
      * @return array<string, mixed>

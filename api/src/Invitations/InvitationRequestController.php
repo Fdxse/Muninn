@@ -24,6 +24,7 @@ use Muninn\Api\Validation\TextRules;
  *   POST   /api/v1/invitation-requests/{id}/link  create (or replace) the invitation link
  * System administrators:
  *   GET    /api/v1/admin/invitation-requests
+ *   GET    /api/v1/admin/invitation-requests/pending-count
  *   POST   /api/v1/admin/invitation-requests/{id}/approve
  *   POST   /api/v1/admin/invitation-requests/{id}/decline
  */
@@ -116,6 +117,12 @@ final class InvitationRequestController
     public function listAll(Request $request, RequestContext $context): Response
     {
         return Response::data(['invitation_requests' => $this->invitationRequestService->listAll()]);
+    }
+
+    /** GET /api/v1/admin/invitation-requests/pending-count — for the navigation badge. */
+    public function pendingCount(Request $request, RequestContext $context): Response
+    {
+        return Response::data(['pending_count' => $this->invitationRequestService->countPending()]);
     }
 
     /** POST /api/v1/admin/invitation-requests/{id}/approve */

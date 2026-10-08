@@ -168,6 +168,25 @@ final class InvitationRequestTest extends WorkspaceTestCase
         $this->assertError($this->sendAs($this->bob, 'POST', '/api/v1/admin/invitation-requests/' . $requestId . '/decline'), 404, 'not_found');
     }
 
+    public function testPendingCountCoversOnlyRequestsAwaitingTheAdmin(): void
+    {
+        $pendingCountPath = '/api/v1/admin/invitation-requests/pending-count';
+        self::assertSame(0, $this->sendAs($this->admin, 'GET', $pendingCountPath)->json()['data']['pending_count']);
+
+        $firstRequestId = $this->createRequest($this->alice, 'First person');
+        $this->createRequest($this->bob, 'Second person');
+        $cancelledRequestId = $this->createRequest($this->bob, 'Third person');
+        self::assertSame(3, $this->sendAs($this->admin, 'GET', $pendingCountPath)->json()['data']['pending_count']);
+
+        // Approved and cancelled requests no longer need the administrator.
+        self::assertSame(200, $this->approve($firstRequestId)->statusCode());
+        self::assertSame(204, $this->sendAs($this->bob, 'DELETE', '/api/v1/invitation-requests/' . $cancelledRequestId)->statusCode());
+        self::assertSame(1, $this->sendAs($this->admin, 'GET', $pendingCountPath)->json()['data']['pending_count']);
+
+        // Everyday users cannot read the count: the admin route looks like it does not exist.
+        $this->assertError($this->sendAs($this->alice, 'GET', $pendingCountPath), 404, 'not_found');
+    }
+
     public function testOpenRequestsAreLimitedAndNoteIsRequired(): void
     {
         for ($requestNumber = 1; $requestNumber <= 5; $requestNumber++) {

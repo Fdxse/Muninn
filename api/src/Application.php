@@ -314,6 +314,7 @@ final class Application
         $this->router->add('DELETE', '/api/v1/invitation-requests/{id}', $invitationRequestController->cancel(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/invitation-requests/{id}/link', $invitationRequestController->createLink(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/admin/invitation-requests', $invitationRequestController->listAll(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/admin/invitation-requests/pending-count', $invitationRequestController->pendingCount(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/invitation-requests/{id}/approve', $invitationRequestController->approve(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/invitation-requests/{id}/decline', $invitationRequestController->decline(...), Router::ACCESS_SYSTEM_ADMIN);
 

@@ -22,6 +22,30 @@
         MuninnApi.signOut();
     });
 
+    /**
+     * Shows how many invitation requests wait for the administrator's decision on the
+     * "Invitations" link, or hides the badge when there are none. A failure only hides the
+     * badge: it is a hint, and the Invitations page itself always lists every request.
+     */
+    async function refreshInvitationRequestsBadge() {
+        var invitationsBadge = document.getElementById('nav-admin-invitations-badge');
+        try {
+            var countData = await MuninnApi.request('GET', '/api/v1/admin/invitation-requests/pending-count');
+            var pendingCount = countData.pending_count;
+            // Screen readers hear "Invitations 2 waiting for a decision" instead of a bare number.
+            invitationsBadge.replaceChildren(
+                document.createTextNode(String(pendingCount)),
+                MuninnApi.createElement('span', 'visually-hidden', ' waiting for a decision')
+            );
+            invitationsBadge.classList.toggle('d-none', pendingCount === 0);
+        } catch (countError) {
+            invitationsBadge.classList.add('d-none');
+        }
+    }
+
+    // The Invitations page announces approvals and declines, so the badge follows along.
+    document.addEventListener('muninn:invitation-requests-changed', refreshInvitationRequestsBadge);
+
     MuninnApi.loadCurrentUser()
         .then(function (currentUserData) {
             var currentUser = currentUserData.user;
@@ -34,6 +58,9 @@
             document.getElementById('nav-admin-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-users-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-workspaces-item').classList.toggle('d-none', !currentUser.is_system_admin);
+            if (currentUser.is_system_admin) {
+                refreshInvitationRequestsBadge();
+            }
             // Administrator accounts have no workspaces (D025), so they get no Workspaces or Search link.
             document.getElementById('nav-workspaces-item').classList.toggle('d-none', currentUser.is_system_admin);
             document.getElementById('nav-search-item').classList.toggle('d-none', currentUser.is_system_admin);

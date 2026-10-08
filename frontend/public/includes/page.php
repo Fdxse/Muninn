@@ -178,6 +178,8 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <i class="bi bi-person-plus" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Invitations</span>
                     <span class="visually-hidden d-sm-none">Invitations</span>
+                    <!-- Count of invitation requests waiting for a decision; filled in by app-shell.js. -->
+                    <span class="badge rounded-pill muninn-nav-badge d-none" id="nav-admin-invitations-badge"></span>
                 </a>
             </li>
             <li class="nav-item d-none" id="nav-admin-workspaces-item">

@@ -96,6 +96,8 @@
             MuninnApi.showAlert(errorAlert, decisionError.message);
         }
         await loadRequests();
+        // Lets the navigation badge (app-shell.js) update its count of pending requests.
+        document.dispatchEvent(new CustomEvent('muninn:invitation-requests-changed'));
     }
 
     document.addEventListener('muninn:user-ready', function (readyEvent) {
