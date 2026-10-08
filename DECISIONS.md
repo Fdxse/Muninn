@@ -277,7 +277,7 @@ never contacts another server (no tracking pixels, no mixed content).
 
 ## D037 — When a history version is kept
 
-**Status:** Proposed (2026-10-08), built on this default while the project owner decides
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Every save keeps the note state it replaces (title, content, folder and tag names) in
 `note_versions`, unless the save changes nothing. Saves by the same person within 10 minutes of
