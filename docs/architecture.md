@@ -110,7 +110,9 @@ read view ─ <img src="https://api.dx.se/api/v1/attachments/<id>/content">
 DELETE /notes/{id}          → trashed_at set; note, history and images kept (restorable)
 POST /trash/{id}/restore    → trashed_at cleared (Editor+)
 DELETE /trash/{id}          → NotePurger (Admin+): rows deleted in one transaction, then files
-bin/purge-trash.php (daily) → NotePurger for notes trashed > trash.retention_days days ago
+signed-in request, after   → ExpiredTrashCleanup (at most hourly, claimed in maintenance_runs):
+  the response is sent        NotePurger for notes trashed > trash.retention_days days ago
+bin/purge-trash.php         → the same cleanup by hand (--dry-run only counts)
 ```
 
 ## Search

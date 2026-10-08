@@ -93,8 +93,9 @@ return [
     ],
 
     'trash' => [
-        // OPTIONAL. Days a deleted note stays in Trash before bin/purge-trash.php (run daily by
-        // the NAS Task Scheduler) deletes it for good, with its history and images. 1 to 3650.
+        // OPTIONAL. Days a deleted note stays in Trash before the API deletes it for good, with
+        // its history and images (checked at most once an hour, after a signed-in request).
+        // 1 to 3650.
         'retention_days' => 30,
     ],
 

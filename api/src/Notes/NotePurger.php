@@ -17,7 +17,8 @@ use Throwable;
  *
  * Only notes that are already in Trash can ever be purged; every query below requires
  * trashed_at IS NOT NULL. Used by the Trash endpoints (one note, or a workspace's whole Trash,
- * for members allowed to purge) and by bin/purge-trash.php (notes past the retention period).
+ * for members allowed to purge) and by ExpiredTrashCleanup and bin/purge-trash.php (notes past
+ * the retention period).
  */
 final class NotePurger
 {
@@ -59,15 +60,18 @@ final class NotePurger
 
     /**
      * Deletes, in every workspace, the notes that have been in Trash for more than $retentionDays
-     * days (run daily by bin/purge-trash.php).
+     * days (run by the API itself through ExpiredTrashCleanup, or by bin/purge-trash.php).
      *
+     * @param int|null $maximumNoteCount Stop after about this many notes (rounded up to whole
+     *                                   batches); null deletes every expired note.
      * @return int Number of notes deleted.
      */
-    public function purgeExpired(int $retentionDays): int
+    public function purgeExpired(int $retentionDays, ?int $maximumNoteCount = null): int
     {
         return $this->purgeMatching(
             'trashed_at < UTC_TIMESTAMP() - INTERVAL :retention_days DAY',
             ['retention_days' => max(0, $retentionDays)],
+            $maximumNoteCount,
         );
     }
 
@@ -89,15 +93,17 @@ final class NotePurger
      *
      * @param string $extraCondition SQL condition on `notes` written in this class (never input).
      * @param array<string, mixed> $conditionParameters Values for its placeholders.
+     * @param int|null $maximumNoteCount Stop starting new batches once this many are deleted.
      * @return int Number of notes deleted.
      */
-    private function purgeMatching(string $extraCondition, array $conditionParameters): int
+    private function purgeMatching(string $extraCondition, array $conditionParameters, ?int $maximumNoteCount = null): int
     {
         $totalPurgedNoteCount = 0;
         do {
             $purgedInBatch = $this->purgeOneBatch($extraCondition, $conditionParameters);
             $totalPurgedNoteCount += $purgedInBatch;
-        } while ($purgedInBatch === self::BATCH_SIZE);
+            $limitReached = $maximumNoteCount !== null && $totalPurgedNoteCount >= $maximumNoteCount;
+        } while ($purgedInBatch === self::BATCH_SIZE && !$limitReached);
 
         return $totalPurgedNoteCount;
     }

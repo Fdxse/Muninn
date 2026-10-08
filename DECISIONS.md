@@ -290,7 +290,7 @@ version. Readers may see history; Editors and up may restore.
 
 ## D038 — Search matches parts of words
 
-**Status:** Proposed (2026-10-08), built on this default while the project owner decides
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Search uses `LIKE` on the note title, content and tag names, not MariaDB `FULLTEXT`: every word
 typed must occur somewhere, also inside a longer word, so Swedish compound words are found
@@ -302,7 +302,7 @@ request. At most 50 results; title matches first.
 
 ## D039 — Trash purge
 
-**Status:** Proposed (2026-10-08), built on this default while the project owner decides
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Deleting a note for good removes the note row, its version history, its tag links, its attachment
 rows and the attachment files, and tags no note uses any more. Files are deleted after the database
@@ -311,8 +311,13 @@ transaction commits. Two ways lead there, both only for notes already in Trash:
 - Admins and Owners may delete one trashed note, or empty the whole Trash, right away
   (`WorkspacePermission::PurgeNotes`). Editors can trash and restore but never destroy data. In a
   personal workspace the user is the Owner, so they can always empty their own Trash.
-- `bin/purge-trash.php`, run daily by the Synology Task Scheduler, deletes notes trashed more than
-  `trash.retention_days` (default 30, D012) days ago. Without the task, notes simply stay in Trash.
+- The API itself deletes notes trashed more than `trash.retention_days` (default 30, D012) days
+  ago, so nothing has to be scheduled on the NAS. After answering a signed-in request it runs the
+  cleanup at most once an hour (claimed atomically in `maintenance_runs`, so simultaneous requests
+  never both run it), at most 500 notes per run, after the response has been sent where PHP-FPM
+  allows it. Anonymous requests never trigger it. A failure is logged and never affects the
+  user's request. On days nobody signs in, nothing is deleted until the next visit.
+  `bin/purge-trash.php` runs the same cleanup by hand.
 
 ## D041 — Manual, zip-based deployment
 

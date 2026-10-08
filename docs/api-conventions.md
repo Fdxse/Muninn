@@ -123,8 +123,9 @@ Trash (D012, D039, D045): `DELETE /api/v1/notes/{id}` moves a note to Trash. `/a
 only ever addresses trashed notes and `/api/v1/notes/{id}` only active ones, so an active note
 can never be purged by mistake (404). A restored note returns to its folder, or to the Archive
 if it was archived. Deleting for good removes the note, its history, tag links, attachment rows
-and image files, and tags no note uses any more. `bin/purge-trash.php` does the same daily for
-notes trashed more than `trash.retention_days` (default 30) days ago.
+and image files, and tags no note uses any more. The API does the same by itself, at most once
+an hour after a signed-in request, for notes trashed more than `trash.retention_days` (default
+30) days ago; `bin/purge-trash.php` runs that cleanup by hand.
 
 History (D009, D037): every save keeps the state it replaces, unless nothing changed. Saves by
 the same person within 10 minutes of the last kept version count as one; a save by someone else

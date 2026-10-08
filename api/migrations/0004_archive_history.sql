@@ -39,3 +39,11 @@ CREATE TABLE note_versions (
     CONSTRAINT note_versions_edited_by_fk FOREIGN KEY (edited_by_user_id) REFERENCES users (id),
     CONSTRAINT note_versions_replaced_by_fk FOREIGN KEY (replaced_by_user_id) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- When the API last started each housekeeping task (D039). The API cleans up expired Trash by
+-- itself, at most once per hour, after answering a signed-in request; claiming the row with one
+-- atomic statement makes sure two simultaneous requests never both run the cleanup.
+CREATE TABLE maintenance_runs (
+    task_name VARCHAR(64) CHARACTER SET ascii NOT NULL PRIMARY KEY,
+    last_started_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

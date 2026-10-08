@@ -51,7 +51,7 @@ final class Config
             'max_upload_bytes' => 10_000_000,
         ],
         'trash' => [
-            // Days a note stays in Trash before bin/purge-trash.php deletes it for good (D012).
+            // Days a note stays in Trash before the API deletes it for good (D012, D039).
             'retention_days' => 30,
         ],
     ];

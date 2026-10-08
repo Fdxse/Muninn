@@ -105,18 +105,12 @@ admin account; invite yourself a separate everyday account from the admin page (
    staging sub-folder, set it to `https://fehre.synology.me/muninn` (desktop browsers only).
 3. Make sure the host runs PHP 8 and serves HTTPS.
 
-### 6. Daily Trash cleanup (NAS Task Scheduler)
+### 6. Trash cleanup (nothing to set up)
 
-Notes stay in Trash for 30 days (`trash.retention_days`), then this task deletes them for good
-with their history and images. In DSM: **Control Panel → Task Scheduler → Create → Scheduled
-Task → User-defined script**, user `root`, daily (e.g. 03:30), with the script (use your
-application folder):
-
-```sh
-cd /volume1/secrets/muninn && php84 bin/purge-trash.php
-```
-
-Check it once over SSH with `--dry-run`, which only counts what would be deleted.
+Notes stay in Trash for 30 days (`trash.retention_days`), then the API deletes them for good with
+their history and images by itself, at most once an hour, after answering a signed-in request.
+No scheduled task is needed. To check or clean up by hand over SSH, from the application folder:
+`sudo php84 bin/purge-trash.php --dry-run` (only counts) or without `--dry-run` (deletes).
 
 ---
 

@@ -29,6 +29,7 @@ use Muninn\Api\Invitations\InvitationController;
 use Muninn\Api\Invitations\InvitationService;
 use Muninn\Api\Logging\AppLogger;
 use Muninn\Api\Logging\AuditLog;
+use Muninn\Api\Notes\ExpiredTrashCleanup;
 use Muninn\Api\Notes\NoteController;
 use Muninn\Api\Notes\NoteHistory;
 use Muninn\Api\Notes\NotePurger;
@@ -62,6 +63,10 @@ final class Application
     private ClientIpResolver $clientIpResolver;
     private SessionService $sessionService;
     private SessionCookie $sessionCookie;
+    private ExpiredTrashCleanup $expiredTrashCleanup;
+
+    /** Set once the current request is signed in; housekeeping only follows such requests. */
+    private bool $housekeepingDue = false;
 
     public function __construct(
         private readonly Config $config,
@@ -107,6 +112,7 @@ final class Application
     public function handle(Request $request): Response
     {
         $requestId = bin2hex(random_bytes(8));
+        $this->housekeepingDue = false;
 
         try {
             $response = $this->dispatch($request, $requestId);
@@ -117,6 +123,24 @@ final class Application
         $response = $this->cors->withCorsHeaders($request, $response);
 
         return SecurityHeaders::apply($response)->withHeader('X-Request-Id', $requestId);
+    }
+
+    /**
+     * Housekeeping that runs after the response to a signed-in request has been sent: deletes
+     * notes whose time in Trash has run out (D039), at most once per hour. Anonymous requests
+     * never trigger it, so nobody can make the server do this work without an account.
+     * Never throws.
+     *
+     * @return int|null Notes deleted, or null when nothing ran.
+     */
+    public function runHousekeeping(): ?int
+    {
+        if (!$this->housekeepingDue) {
+            return null;
+        }
+        $this->housekeepingDue = false;
+
+        return $this->expiredTrashCleanup->runIfDue();
     }
 
     /** @throws Throwable */
@@ -143,6 +167,7 @@ final class Application
             if ($currentSession === null) {
                 throw HttpException::unauthenticated();
             }
+            $this->housekeepingDue = true;
 
             // Admin routes are hidden from everyone else: 404 rather than 403.
             if ($matchedRoute['access'] === Router::ACCESS_SYSTEM_ADMIN && !$currentSession->user->isSystemAdmin) {
@@ -212,9 +237,17 @@ final class Application
         $noteService = new NoteService($this->database, $tagService, $noteHistory);
         $noteController = new NoteController($noteService, $noteHistory, $workspaceAuthorizer, $auditLog);
         $attachmentStorage = new AttachmentStorage(self::attachmentStorageFolder($this->config));
+        $notePurger = new NotePurger($this->database, $tagService, $attachmentStorage);
+        $this->expiredTrashCleanup = new ExpiredTrashCleanup(
+            $this->database,
+            $notePurger,
+            $auditLog,
+            $this->logger,
+            $this->config->getInt('trash.retention_days'),
+        );
         $trashController = new TrashController(
             $noteService,
-            new NotePurger($this->database, $tagService, $attachmentStorage),
+            $notePurger,
             $workspaceAuthorizer,
             $auditLog,
             $this->config->getInt('trash.retention_days'),

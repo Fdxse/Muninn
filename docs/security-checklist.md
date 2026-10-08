@@ -90,7 +90,7 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Readers cannot restore; Editors cannot delete for good; active notes can never be purged | `TrashAndArchiveTest::testTrashListRestoreAndRoles`, `testOnlyAdminsAndOwnersDeleteForGood` |
 | Purge removes history, tag links, unused tags, attachment rows and only that note's files | `TrashAndArchiveTest::testPurgingRemovesHistoryTagsAttachmentsAndFiles` |
 | Retention cleanup never deletes active or archived content, only Trash older than the limit | `TrashAndArchiveTest::testRetentionCleanupDeletesOnlyExpiredTrash` |
-| Restore, purge, empty Trash, scheduled cleanup and version restores are audited | `TrashAndArchiveTest`, `NoteHistoryTest`, `bin/purge-trash.php` |
+| Restore, purge, empty Trash, automatic cleanup and version restores are audited | `TrashAndArchiveTest`, `NoteHistoryTest`, `ExpiredTrashCleanup` |
 | Search highlighting built from text nodes and `<mark>` elements, never `innerHTML` | `search.js` code review |
 
 ## Open items for later weeks

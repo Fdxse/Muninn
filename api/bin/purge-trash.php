@@ -5,7 +5,8 @@
  * together with their version history, tag links, attachment rows and image files (D039).
  * Notes that are not in Trash are never touched.
  *
- * Meant to run once a day from the NAS Task Scheduler (see docs/deployment.md):
+ * The API already does this by itself, at most once an hour (ExpiredTrashCleanup, D039). This
+ * script is for checking or cleaning up by hand on the NAS:
  *   sudo php84 bin/purge-trash.php [--dry-run] [path/to/config.php]
  *
  *   --dry-run   Only report how many notes would be deleted; change nothing.
@@ -63,7 +64,7 @@ try {
     exit(1);
 }
 
-// Record the run in the audit log; the actor is the scheduled task, not an API user.
+// Record the run in the audit log; the actor is whoever ran this script, not an API user.
 if ($purgedNoteCount > 0) {
     (new AuditLog($database))->record(AuditLog::TRASH_EXPIRED_PURGED, null, null, null, null, [
         'deleted_notes' => $purgedNoteCount,

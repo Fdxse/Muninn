@@ -161,6 +161,42 @@ final class TrashAndArchiveTest extends WorkspaceTestCase
         self::assertSame(0, $notePurger->purgeExpired(30), 'Running again deletes nothing more.');
     }
 
+    public function testTheApiCleansUpExpiredTrashAtMostOncePerHour(): void
+    {
+        $firstExpiredNote = $this->createNote($this->editor, $this->workspaceId, 'Trashed long ago');
+        $secondExpiredNote = $this->createNote($this->editor, $this->workspaceId, 'Also trashed long ago');
+        $activeNote = $this->createNote($this->editor, $this->workspaceId, 'Still in use');
+        foreach ([$firstExpiredNote, $secondExpiredNote] as $expiredNote) {
+            self::assertSame(204, $this->sendAs($this->editor, 'DELETE', '/api/v1/notes/' . $expiredNote['id'])->statusCode());
+        }
+        $this->database->prepare('UPDATE notes SET trashed_at = UTC_TIMESTAMP() - INTERVAL 31 DAY WHERE id = :id')->execute(['id' => $firstExpiredNote['id']]);
+
+        // An anonymous request never triggers housekeeping.
+        $this->send('GET', '/api/v1/health');
+        self::assertNull($this->application->runHousekeeping());
+        self::assertSame(3, (int) $this->scalar('SELECT COUNT(*) FROM notes'));
+
+        // The first signed-in request deletes the expired note and records it in the audit log.
+        $this->getAs($this->reader, '/api/v1/workspaces/' . $this->workspaceId . '/notes');
+        self::assertSame(1, $this->application->runHousekeeping());
+        self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM notes WHERE id = :id', ['id' => $firstExpiredNote['id']]));
+        self::assertSame(1, (int) $this->scalar("SELECT COUNT(*) FROM audit_log WHERE event_type = 'trash.expired_purged'"));
+        self::assertNull($this->application->runHousekeeping(), 'Housekeeping runs once per request at most.');
+
+        // Within the hour, later requests leave newly expired notes for the next run.
+        $this->database->prepare('UPDATE notes SET trashed_at = UTC_TIMESTAMP() - INTERVAL 31 DAY WHERE id = :id')->execute(['id' => $secondExpiredNote['id']]);
+        $this->getAs($this->reader, '/api/v1/workspaces/' . $this->workspaceId . '/notes');
+        self::assertNull($this->application->runHousekeeping());
+        self::assertSame(1, (int) $this->scalar('SELECT COUNT(*) FROM notes WHERE id = :id', ['id' => $secondExpiredNote['id']]));
+
+        // Once the hour has passed, the next signed-in request runs it again.
+        $this->database->exec('UPDATE maintenance_runs SET last_started_at = UTC_TIMESTAMP() - INTERVAL 61 MINUTE');
+        $this->getAs($this->reader, '/api/v1/workspaces/' . $this->workspaceId . '/notes');
+        self::assertSame(1, $this->application->runHousekeeping());
+        $remainingNoteIds = array_map('strval', $this->database->query('SELECT id FROM notes')->fetchAll(\PDO::FETCH_COLUMN));
+        self::assertSame([$activeNote['id']], $remainingNoteIds);
+    }
+
     public function testOutsidersCannotSeeOrTouchTheTrash(): void
     {
         $mallory = $this->signedInUser('mallory');
