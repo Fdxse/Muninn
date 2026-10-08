@@ -167,3 +167,24 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Contact admin: at most 5 messages per user per hour, separate per user | `AdminMessageTest::testEachUserHasAnHourlyLimit` |
 | Contact admin: the text and contact details are never stored or logged; failures are logged without the token | `AdminMessageTest::testMessageIsSentToTheAdministratorStraightAway`, `testUndeliveredMessageIsReportedAndLoggedWithoutTheToken` |
 | Contact admin: input validated (length, single-line contact) and control characters removed | `AdminMessageTest::testInvalidInputIsRefused`, `testControlCharactersAreRemovedButLineBreaksKept` |
+
+## After the MVP — Magic Links (D059)
+
+| Control | Verified by |
+|---|---|
+| Link token 256-bit, shown once, stored only as SHA-256; never in lists, responses after creation or the audit log | `MagicLinkTest::testOwnerCreatesAReadLinkWhoseTokenIsShownOnceAndStoredOnlyAsAHash` |
+| Only Admins and Owners of the workspace create, list and revoke links; Editors 403, others and system administrators 404 | `MagicLinkTest::testOnlyAdminsAndOwnersOfTheWorkspaceManageLinks` |
+| Every link expires (at most 365 days); targets must be in the same workspace; timestamps need an explicit offset | `MagicLinkTest::testInvalidLinkRequestsAreRefused` |
+| Read is the default; read links cannot save, create or upload | `MagicLinkTest::testWorkspaceReadLinkShowsTheWorkspaceButCannotWrite` |
+| Visit cookie and sign-in cookie never stand in for each other (no history, Trash, search or members through a link) | `MagicLinkTest::testVisitCookieAndSignInCookieNeverStandInForEachOther` |
+| Folder links reach their folder and sub-folders only; note links one note; everything else 404 | `MagicLinkTest::testFolderLinkReachesTheFolderAndItsSubFoldersOnly`, `testNoteLinkReachesOnlyItsNote` |
+| Write links keep optimistic concurrency and history; never delete or reach outside the link | `MagicLinkTest::testWriteLinkSavesWithRevisionCheckAndCreatesInsideItsFolder` |
+| Images: same upload checks; only images of reachable notes are served | `MagicLinkTest::testWriteLinkUploadsImagesAndServesOnlyReachableOnes` |
+| CSRF token required for visitor state changes | `MagicLinkTest::testStateChangesNeedTheVisitCsrfToken` |
+| Revoked, expired and not-yet-valid links fail, also for browsers that already opened them | `MagicLinkTest::testRevokingStopsTheLinkAndOpenVisitsAtOnce`, `testExpiredAndNotYetValidLinksFail` |
+| Daily hours enforced in the configured time zone (not the server's), on opening and on every request | `MagicLinkTest::testDailyWindowIsEnforcedOnOpeningAndOnEveryRequest`, `MagicLinkScheduleTest` |
+| Links stop when the creator is demoted below Admin or disabled, or the note/folder is gone | `MagicLinkTest::testLinkStopsWhenItsCreatorIsDemotedOrDisabled`, `testLinkStopsWhenItsNoteIsTrashedOrFolderDeleted` |
+| Token guesses rate limited per IP; unknown, revoked and expired links give the same 404 | `MagicLinkTest::testGuessingTokensIsRateLimited` |
+| System administrator overview shows no labels, folder names or note titles | `MagicLinkTest::testAdministratorSeesAndRevokesLinksWithoutNoteData` |
+| Token travels in the URL fragment (never sent to the web server); visitor images load only through `/api/v1/link/attachments/` | `link-page.js`, `markdown-renderer.js`; browser check |
+| Unknown route access levels fail at startup instead of skipping checks | `Router::add()` |

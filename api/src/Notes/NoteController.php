@@ -101,7 +101,7 @@ final class NoteController
     {
         [$membership, $noteId] = $this->authorizeNote($request, $context, WorkspacePermission::WriteNotes);
         $requestBody = $request->jsonBody();
-        $expectedRevision = $this->readExpectedRevision($requestBody);
+        $expectedRevision = self::readExpectedRevision($requestBody);
 
         $this->noteService->update($membership, $noteId, $expectedRevision, $this->readNoteInput($requestBody));
 
@@ -179,7 +179,7 @@ final class NoteController
     public function restoreVersion(Request $request, RequestContext $context): Response
     {
         [$membership, $noteId] = $this->authorizeNote($request, $context, WorkspacePermission::WriteNotes);
-        $expectedRevision = $this->readExpectedRevision($request->jsonBody());
+        $expectedRevision = self::readExpectedRevision($request->jsonBody());
         $version = $this->noteHistory->findVersion($membership, $noteId, (string) $request->routeParameter('versionId'));
 
         $this->noteService->update($membership, $noteId, $expectedRevision, new NoteInput(
@@ -204,11 +204,12 @@ final class NoteController
 
     /**
      * Reads the required "revision" field: the revision of the note the user edited.
+     * Public so Magic Link saves use the same optimistic concurrency check (D010).
      *
      * @param array<string, mixed> $requestBody
      * @throws HttpException 422 when it is missing or not a positive integer.
      */
-    private function readExpectedRevision(array $requestBody): int
+    public static function readExpectedRevision(array $requestBody): int
     {
         $expectedRevision = InputReader::optionalInt($requestBody, 'revision');
         if ($expectedRevision === null || $expectedRevision < 1) {
@@ -248,8 +249,8 @@ final class NoteController
         $folderId = $folderIsSet ? InputReader::optionalString($requestBody, 'folder_id') : null;
 
         return new NoteInput(
-            title: $this->readTitle($requestBody),
-            content: $this->readContent($requestBody),
+            title: self::readTitle($requestBody),
+            content: self::readContent($requestBody),
             folderIsSet: $folderIsSet,
             // An empty string is treated like null: "No folder". Whether the folder belongs to
             // the note's workspace is checked by NoteService inside the save's transaction.
@@ -259,11 +260,12 @@ final class NoteController
     }
 
     /**
-     * Returns the trimmed title, or null when the field is absent.
+     * Returns the trimmed title, or null when the field is absent. Public so the Magic Link
+     * visitor endpoints validate titles exactly like these endpoints do.
      *
      * @param array<string, mixed> $requestBody
      */
-    private function readTitle(array $requestBody): ?string
+    public static function readTitle(array $requestBody): ?string
     {
         $rawTitle = InputReader::optionalString($requestBody, 'title');
         if ($rawTitle === null) {
@@ -280,10 +282,11 @@ final class NoteController
 
     /**
      * Returns the content exactly as sent (Markdown whitespace matters), or null when absent.
+     * Public for the same reason as readTitle().
      *
      * @param array<string, mixed> $requestBody
      */
-    private function readContent(array $requestBody): ?string
+    public static function readContent(array $requestBody): ?string
     {
         $content = InputReader::optionalString($requestBody, 'content');
         if ($content === null) {

@@ -51,6 +51,12 @@ final class AuditLog
     public const ADMIN_NOTIFICATION_QUEUED = 'notification.admin_queued';
     public const ADMIN_MESSAGE_SENT = 'admin_message.sent';
     public const SYSTEM_DATA_RESET = 'system.data_reset';
+    public const MAGIC_LINK_CREATED = 'magic_link.created';
+    public const MAGIC_LINK_REVOKED = 'magic_link.revoked';
+    public const MAGIC_LINK_OPENED = 'magic_link.opened';
+    public const MAGIC_LINK_NOTE_CREATED = 'magic_link.note_created';
+    public const MAGIC_LINK_NOTE_UPDATED = 'magic_link.note_updated';
+    public const MAGIC_LINK_ATTACHMENT_UPLOADED = 'magic_link.attachment_uploaded';
 
     public function __construct(private readonly PDO $database)
     {

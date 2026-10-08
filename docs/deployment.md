@@ -59,6 +59,20 @@ Summary:
    `note.php`, `history.php`, `index.php`, `assets/css/muninn.css` and several scripts in
    `assets/js/`.
 
+## Upgrading to Magic Links (D059)
+
+1. Deploy as usual, then on the NAS from `/volume1/Muninn`: `sudo php84 bin/migrate.php` (adds
+   migration `0007_magic_links`; no existing data changes).
+2. FTP the frontend with overwrite on: it adds `link.php`, `magic-links.php`,
+   `admin/magic-links.php` and their scripts, and changes `workspace.php`, `admin/workspaces.php`,
+   `includes/page.php`, `assets/js/api-client.js`, `assets/js/markdown-renderer.js` and
+   `assets/js/workspace-settings.js`.
+3. Optional: the `magic_links` section in `config/config.php` (see `config/config.example.php`).
+   The defaults are Europe/Stockholm for daily hours, 30 days by default and 365 at most.
+4. Try it: as a workspace Owner open the workspace's settings, then "Manage Magic Links", create
+   a read-only link and open it in a private browser window. Revoke it and reload the window: it
+   should say the link does not work.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when
@@ -89,8 +103,8 @@ sudo php84 bin/reset-data.php             # asks you to type DELETE ALL USER DAT
 ```
 
 It deletes every non-admin account with its sessions, workspaces and notes (Trash and history
-included), folders, tags, note images (database rows and the files in `storage/attachments/`), all
-invitations and the sign-in attempt records. Admin accounts, the audit log and the schema stay.
+included), folders, tags, note images (database rows and the files in `storage/attachments/`),
+Magic Links, all invitations and the sign-in attempt records. Admin accounts, the audit log and the schema stay.
 There is no undo, so back up the database first if anything might be worth keeping (D046).
 
 ## Environment record

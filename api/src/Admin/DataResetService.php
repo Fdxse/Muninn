@@ -14,7 +14,7 @@ use Throwable;
  *
  * Used by bin/reset-data.php to clear out test accounts and test content. It deletes every
  * non-admin account together with everything that belongs to users: notes, note history, folders, tags,
- * attachments (rows and image files), workspaces, workspace memberships, sessions and all
+ * attachments (rows and image files), Magic Links, workspaces, workspace memberships, sessions and all
  * invitations. It keeps:
  *   - system administrator accounts and their sessions (so the admin stays signed in),
  *   - the audit log (audit history must survive changes to the rows it describes),
@@ -52,6 +52,8 @@ final class DataResetService
                                              JOIN users ON users.id = sessions.user_id
                                              WHERE users.is_system_admin = 0',
             'workspaces' => 'SELECT COUNT(*) FROM workspaces',
+            'magic links (D059)' => 'SELECT COUNT(*) FROM magic_links',
+            'magic link visits' => 'SELECT COUNT(*) FROM magic_link_sessions',
             'workspace memberships' => 'SELECT COUNT(*) FROM workspace_members',
             'notes (including Trash)' => 'SELECT COUNT(*) FROM notes',
             'note history versions' => 'SELECT COUNT(*) FROM note_versions',
@@ -89,6 +91,9 @@ final class DataResetService
         // Delete children before parents so every foreign key stays satisfied without disabling
         // FOREIGN_KEY_CHECKS. Administrators own no workspaces or notes (D044), so all content goes.
         $deleteStatements = [
+            // Magic Links point at workspaces and at the accounts that created them (D059).
+            'magic link visits' => 'DELETE FROM magic_link_sessions',
+            'magic links (D059)' => 'DELETE FROM magic_links',
             'attachments' => 'DELETE FROM attachments',
             // note_tags rows go with their notes and tags (ON DELETE CASCADE).
             'tags' => 'DELETE FROM tags',

@@ -43,26 +43,7 @@ final class AttachmentController
     {
         [$membership, $noteId] = $this->authorizeNote($request, $context, WorkspacePermission::WriteNotes);
 
-        $declaredContentType = strtolower(trim(explode(';', (string) $request->header('Content-Type'))[0]));
-        if (!str_starts_with($declaredContentType, 'image/') && $declaredContentType !== 'application/octet-stream') {
-            throw new HttpException(415, 'unsupported_media_type', 'Upload an image file as the request body.');
-        }
-
-        $fileBytes = $request->rawBody();
-        // PHP silently drops a body larger than post_max_size, so an empty body that announced
-        // a length means "too large for this server", not "empty".
-        if ($fileBytes === '' && (int) $request->header('Content-Length') > 0) {
-            throw new HttpException(413, 'file_too_large', 'This image is too large for the server to accept.');
-        }
-        if ($fileBytes === '') {
-            throw HttpException::validation(['file' => 'The upload is empty.']);
-        }
-        if (strlen($fileBytes) > $this->maximumUploadBytes) {
-            throw new HttpException(413, 'file_too_large', 'Images can be at most ' . self::megabytes($this->maximumUploadBytes) . ' MB.');
-        }
-
-        $encodedFilename = $request->header('X-Filename');
-        $requestedFilename = $encodedFilename === null ? null : rawurldecode($encodedFilename);
+        [$fileBytes, $requestedFilename] = self::readUploadedImage($request, $this->maximumUploadBytes);
 
         $attachment = $this->attachmentService->create($membership, $noteId, $requestedFilename, $fileBytes);
         $this->auditLog->record(
@@ -151,12 +132,46 @@ final class AttachmentController
     }
 
     /**
+     * Reads an image upload: the raw body with an image (or octet-stream) Content-Type, at most
+     * $maximumUploadBytes, and the optional percent-encoded X-Filename header. The real type is
+     * checked later from the bytes. Public so Magic Link uploads pass exactly the same checks.
+     *
+     * @return array{0: string, 1: string|null} The file bytes and the display filename (or null).
+     * @throws HttpException 413, 415 or 422.
+     */
+    public static function readUploadedImage(Request $request, int $maximumUploadBytes): array
+    {
+        $declaredContentType = strtolower(trim(explode(';', (string) $request->header('Content-Type'))[0]));
+        if (!str_starts_with($declaredContentType, 'image/') && $declaredContentType !== 'application/octet-stream') {
+            throw new HttpException(415, 'unsupported_media_type', 'Upload an image file as the request body.');
+        }
+
+        $fileBytes = $request->rawBody();
+        // PHP silently drops a body larger than post_max_size, so an empty body that announced
+        // a length means "too large for this server", not "empty".
+        if ($fileBytes === '' && (int) $request->header('Content-Length') > 0) {
+            throw new HttpException(413, 'file_too_large', 'This image is too large for the server to accept.');
+        }
+        if ($fileBytes === '') {
+            throw HttpException::validation(['file' => 'The upload is empty.']);
+        }
+        if (strlen($fileBytes) > $maximumUploadBytes) {
+            throw new HttpException(413, 'file_too_large', 'Images can be at most ' . self::megabytes($maximumUploadBytes) . ' MB.');
+        }
+
+        $encodedFilename = $request->header('X-Filename');
+        $requestedFilename = $encodedFilename === null ? null : rawurldecode($encodedFilename);
+
+        return [$fileBytes, $requestedFilename];
+    }
+
+    /**
      * Headers for serving a private image: shown inline under its display name, cached only by
      * the user's own browser and only briefly, and never usable as a document or by other sites.
      *
      * @param array<string, mixed> $attachment
      */
-    private static function withFileHeaders(Response $response, array $attachment, string $entityTag): Response
+    public static function withFileHeaders(Response $response, array $attachment, string $entityTag): Response
     {
         $filename = (string) $attachment['filename'];
         // ASCII fallback plus the exact UTF-8 name (RFC 6266).

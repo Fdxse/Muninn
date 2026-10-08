@@ -28,6 +28,10 @@ renderAppNavbar('../');
             no active Owner, for example because its only Owner was disabled: give it a new Owner, who then
             takes over. You cannot see the notes. Personal workspaces are not listed.
         </p>
+        <p class="small mb-3">
+            <a href="magic-links.php"><i class="bi bi-link-45deg" aria-hidden="true"></i> Magic Links overview</a>
+            <span class="text-muted-brand">: every link that opens a workspace without signing in, with a Revoke button.</span>
+        </p>
         <div id="workspaces-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
         <p id="workspaces-empty" class="text-muted-brand d-none">No shared workspaces yet.</p>
         <ul id="workspaces-list" class="list-group mb-4"></ul>

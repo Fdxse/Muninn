@@ -25,8 +25,16 @@
     var apiBaseUrl = (document.querySelector('meta[name="muninn-api-base"]') || { getAttribute: function () { return ''; } })
         .getAttribute('content').replace(/\/+$/, '');
 
-    /** Every rendered image must start with this URL; anything else is removed by the sanitiser. */
-    var attachmentUrlPrefix = apiBaseUrl + '/api/v1/attachments/';
+    /**
+     * Every rendered image must start with this URL; anything else is removed by the sanitiser.
+     * The Magic Link page (D059) loads images through the visitor endpoint instead, which it
+     * names in a <meta name="muninn-attachment-path"> tag; only these two paths are possible.
+     */
+    var attachmentPathMeta = document.querySelector('meta[name="muninn-attachment-path"]');
+    var attachmentPath = attachmentPathMeta && attachmentPathMeta.getAttribute('content') === '/api/v1/link/attachments/'
+        ? '/api/v1/link/attachments/'
+        : '/api/v1/attachments/';
+    var attachmentUrlPrefix = apiBaseUrl + attachmentPath;
 
     /** "attachment:<uuid>" — the only image source notes may use. */
     var attachmentReferencePattern = /^attachment:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
