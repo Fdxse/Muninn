@@ -266,6 +266,29 @@ a.btn {
     text-underline-offset: 0.35em;
 }
 
+/* Count badge on a navigation link (pending invitation requests): gold on navy, like the brand accent. */
+.muninn-navbar .muninn-nav-badge {
+    background: var(--muninn-gold-500);
+    color: var(--muninn-navy-900);
+    font-size: 0.7rem;
+}
+
+/* On phones the links are icons only and the bar is full, so the badge sits on the icon's corner
+   instead of taking extra width. */
+@media (max-width: 575.98px) {
+    .muninn-navbar .nav-link:has(.muninn-nav-badge) {
+        position: relative;
+    }
+
+    .muninn-navbar .muninn-nav-badge {
+        position: absolute;
+        top: 0.3rem;
+        right: 0;
+        padding: 0.2em 0.45em;
+        font-size: 0.6rem;
+    }
+}
+
 /* Single-column pages such as the account page: comfortable line length on desktop. */
 .muninn-narrow-page {
     max-width: 48rem;

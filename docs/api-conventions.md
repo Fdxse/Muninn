@@ -78,6 +78,7 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | DELETE | `/api/v1/invitation-requests/{id}` | user (own) | cancel; revokes its link (204) |
 | POST | `/api/v1/invitation-requests/{id}/link` | user (own, approved) | → 201 with one-time `invitation_url`; replaces an earlier link |
 | GET | `/api/v1/admin/invitation-requests` | system admin | every request, pending first |
+| GET | `/api/v1/admin/invitation-requests/pending-count` | system admin | `{pending_count}`: requests awaiting a decision (nav badge) |
 | POST | `/api/v1/admin/invitation-requests/{id}/approve` | system admin | pending → approved |
 | POST | `/api/v1/admin/invitation-requests/{id}/decline` | system admin | pending or unused approval → declined; revokes its link |
 | GET | `/api/v1/admin/workspaces` | system admin | shared workspaces with `owners`, `member_count`, `active_owner_count`; no note data (D050) |
