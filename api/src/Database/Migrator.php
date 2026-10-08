@@ -54,6 +54,20 @@ final class Migrator
         return $appliedThisRun;
     }
 
+    /**
+     * Lists the migrations that have not been applied yet, without changing anything. Used by
+     * bin/check-setup.php.
+     *
+     * @return list<string>
+     */
+    public function pendingVersions(): array
+    {
+        $tableExists = $this->database->query("SHOW TABLES LIKE 'schema_migrations'")->fetchColumn() !== false;
+        $alreadyAppliedVersions = $tableExists ? $this->appliedVersions() : [];
+
+        return array_values(array_diff(array_keys($this->migrationFiles()), $alreadyAppliedVersions));
+    }
+
     private function ensureMigrationsTable(): void
     {
         $this->database->exec(

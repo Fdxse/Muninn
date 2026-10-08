@@ -276,6 +276,12 @@ a.btn {
 /* On phones the links are icons only and the bar is full, so the badge sits on the icon's corner
    instead of taking extra width. */
 @media (max-width: 575.98px) {
+    /* The links are already 44px touch targets, so no extra gap between them is needed; without
+       it the five admin icons and Sign out fit on a 375px screen without clipping. */
+    .muninn-navbar .navbar-nav {
+        gap: 0 !important;
+    }
+
     .muninn-navbar .nav-link:has(.muninn-nav-badge) {
         position: relative;
     }

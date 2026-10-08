@@ -1,6 +1,8 @@
 # Known limitations
 
-Current state after Week 5. Updated as the MVP grows.
+State at the end of the Course MVP (Week 6). The stretch goals in `COURSE-MVP.md` (Magic Links,
+geotagging, ntfy, API tokens, export/backup, offline editing, real-time collaboration) are not
+built.
 
 - **Only images can be attached** (PNG, JPEG, GIF, WebP up to 10 MB). Other file types, and
   images from other websites, are not shown in notes (D036: an outside image appears as a link).
@@ -43,6 +45,13 @@ Current state after Week 5. Updated as the MVP grows.
   (`assets/branding/ASSET-MANIFEST.md`).
 - **iPhone sign-in needs `api.dx.se`.** Calling the API as `fehre.synology.me` from www.dx.se
   works on desktop Chrome but not on iOS, because the cookie would be third-party.
+- **Note previews are plain text.** Lists and search results show the start of a note without
+  its Markdown formatting (D051); tables, quotes and code read as ordinary words there.
+- **Demo data is removed by hand.** `bin/seed-demo.php` has no undo; disable the demo accounts
+  on the admin Users page afterwards (D052).
+- **The setup check cannot see the web server's PHP settings.** `bin/check-setup.php` runs with
+  the command-line PHP, so `post_max_size` and `open_basedir` of the Web Station profile are
+  checked by hand.
 - **Manual deployment.** By design; see `deploy/DEPLOY.md`.
 - **No automated backups.** Use Synology Hyper Backup or a scheduled `mysqldump` for the
   `muninn` database until export/backup tooling exists.

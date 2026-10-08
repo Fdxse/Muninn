@@ -9,9 +9,10 @@ Summary:
 - A release zip is built automatically after every merge to main, once CI has passed on that
   commit: Actions → Release → the newest run → Artifacts, named `muninn-main-<date>-<commit>`.
   A version tag (`v*`) or Actions → Release → Run workflow still builds one on demand.
-- **API** → NAS via `Deploy-Api.ps1`, then `php bin/migrate.php` over SSH. Web root is the
-  API folder's `public/` subfolder, served as `https://api.dx.se` (CNAME of `fehre.synology.me`).
-- **Frontend** → FTP the contents of `frontend/` to the `www.dx.se` web root.
+- **API** → NAS folder `/volume1/Muninn` via `Deploy-Api.ps1`, then `sudo php84 bin/migrate.php`
+  and `sudo php84 bin/check-setup.php` over SSH from that folder. Web Station serves its
+  `public/` subfolder as `https://api.dx.se` (CNAME of `fehre.synology.me`), D053.
+- **Frontend** → FTP the contents of `frontend/` to `https://www.dx.se/muninn/`.
 - Server configuration (`api/config/config.php`, frontend `includes/config.php`) is created once
   on each server and never shipped in a zip.
 
@@ -40,6 +41,16 @@ Summary:
    that deletes something is recorded in the audit log. To look or clean up by hand, run
    `sudo php84 bin/purge-trash.php --dry-run` (only counts) or without `--dry-run`.
 
+## Upgrading to Week 5 and 6 (account page, reset links, invitation requests, ship)
+
+1. Deploy as usual, then on the NAS from `/volume1/Muninn`: `sudo php84 bin/migrate.php` (adds
+   migration `0005_password_resets_invitation_requests`; Week 6 adds no migration).
+2. FTP the frontend with overwrite on (adds `account.php`, `reset-password.php`,
+   `admin/workspaces.php` and their scripts; Week 6 changes `assets/css/muninn.css`).
+3. New in Week 6: `sudo php84 bin/check-setup.php` checks the installation, and
+   `sudo php84 bin/seed-demo.php` creates demo data (see `docs/demo.md`).
+4. Then work through the "Going live checklist" in `deploy/DEPLOY.md`.
+
 ## Resetting test data
 
 To clear out test accounts and invitations and keep only the administrator account(s), run on
@@ -62,10 +73,14 @@ Fill this in at the first real deployment so a fresh deployment can be reproduce
 | Item | Value |
 |---|---|
 | NAS DSM version | _to record_ |
-| Web Station PHP version and extensions | _to record_ |
-| Web Station back-end (Apache/nginx) | _to record_ |
-| MariaDB version | _to record_ |
-| API folder on NAS | _to record_ |
-| Log folder on NAS | _to record_ |
+| Web Station PHP version and extensions | PHP 8.4 profile; pdo_mysql, mbstring, openssl, sodium; `open_basedir` includes `/volume1/Muninn` |
+| Web Station back-end | Apache 2.4, web service "muninn", document root `Muninn/public` |
+| Web portal | Name-based, `api.dx.se`, HTTPS 443 |
+| MariaDB version | _to record_ (MariaDB 10 package) |
+| API folder on NAS | `/volume1/Muninn` (D053) |
+| Log file on NAS | `/volume1/Muninn/storage/api.log` (check `logging.file_path`) |
+| Images on NAS | `/volume1/Muninn/storage/attachments/` |
+| Frontend | `https://www.dx.se/muninn/`, uploaded by FTP |
 | www.dx.se PHP version | _to record_ |
-| api.dx.se certificate | _to record (issuer, renewal)_ |
+| api.dx.se certificate | Let's Encrypt on the NAS (renewed by DSM) |
+| DNS | one.com: `api` CNAME `fehre.synology.me` |
