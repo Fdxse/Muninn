@@ -8,7 +8,9 @@ namespace Muninn\Api\Workspaces;
  * One user's membership of one workspace, as established by WorkspaceAuthorizer.
  *
  * Holding an instance means "this user is an active member of this workspace with this role";
- * nothing else in the code creates one from client input.
+ * nothing else in the code creates one from client input. The one exception is
+ * WorkspaceAuthorizer::requireAdministratorMemberManagement(), which gives a system administrator
+ * Owner rights over the members of a shared workspace without an active Owner (never its notes).
  */
 final class WorkspaceMembership
 {

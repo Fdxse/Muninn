@@ -25,6 +25,14 @@ final class AuditLog
     public const USER_CREATED_BY_CLI = 'user.created_by_cli';
     public const USER_DISABLED = 'user.disabled';
     public const USER_ENABLED = 'user.enabled';
+    public const PASSWORD_CHANGED = 'user.password_changed';
+    public const PASSWORD_RESET_CREATED = 'password_reset.created';
+    public const PASSWORD_RESET_COMPLETED = 'password_reset.completed';
+    public const INVITATION_REQUEST_CREATED = 'invitation_request.created';
+    public const INVITATION_REQUEST_APPROVED = 'invitation_request.approved';
+    public const INVITATION_REQUEST_DECLINED = 'invitation_request.declined';
+    public const INVITATION_REQUEST_CANCELLED = 'invitation_request.cancelled';
+    public const INVITATION_REQUEST_LINK_CREATED = 'invitation_request.link_created';
     public const WORKSPACE_CREATED = 'workspace.created';
     public const WORKSPACE_RENAMED = 'workspace.renamed';
     public const WORKSPACE_DELETED = 'workspace.deleted';

@@ -136,7 +136,9 @@
 
     /** Endpoints that work without a session, so no CSRF token is needed first. */
     function isPublicPath(path) {
-        return path === '/api/v1/auth/login' || path.indexOf('/api/v1/invitations/') === 0;
+        return path === '/api/v1/auth/login'
+            || path.indexOf('/api/v1/invitations/') === 0
+            || path.indexOf('/api/v1/password-resets/') === 0;
     }
 
     /** Returns {user, csrf_token} for the signed-in user; rejects with status 401 otherwise. */
@@ -209,6 +211,24 @@
         return newElement;
     }
 
+    /**
+     * Copies the text of a one-time link element to the clipboard and reports the result in
+     * statusElement. When clipboard access is blocked, the text is selected for manual copying.
+     */
+    async function copyLinkText(linkElement, statusElement) {
+        try {
+            await navigator.clipboard.writeText(linkElement.textContent);
+            statusElement.textContent = 'Copied.';
+        } catch (clipboardError) {
+            var textSelection = window.getSelection();
+            var selectionRange = document.createRange();
+            selectionRange.selectNodeContents(linkElement);
+            textSelection.removeAllRanges();
+            textSelection.addRange(selectionRange);
+            statusElement.textContent = 'Press Ctrl+C (or long-press) to copy.';
+        }
+    }
+
     /** Reads a value from the page's query string, or null. */
     function queryParameter(parameterName) {
         return new URLSearchParams(window.location.search).get(parameterName);
@@ -256,6 +276,7 @@
         formatDateTime: formatDateTime,
         createElement: createElement,
         queryParameter: queryParameter,
+        copyLinkText: copyLinkText,
         rememberWorkspace: rememberWorkspace,
         rememberedWorkspace: rememberedWorkspace,
         roleLabel: roleLabel,

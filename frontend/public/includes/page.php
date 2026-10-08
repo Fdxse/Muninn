@@ -94,6 +94,11 @@ function renderPageStart(string $pageTitle, string $assetPrefix = ''): void
     <title><?= escapeHtml($pageTitle) ?> · Muninn</title>
     <meta name="description" content="Muninn — Your notes. Your knowledge.">
     <meta name="theme-color" content="#0b1a2b">
+    <!-- Home-screen app on iOS: name under the icon, full-screen launch, dark status bar. -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Muninn">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <!-- The API address is passed to JavaScript through a meta tag, so no inline script is needed. -->
     <meta name="muninn-api-base" content="<?= escapeHtml($apiBaseUrl) ?>">
     <meta name="muninn-site-root" content="<?= escapeHtml($assetPrefix === '' ? './' : $assetPrefix) ?>">
@@ -175,13 +180,27 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <span class="visually-hidden d-sm-none">Invitations</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <span class="navbar-text small px-2 d-none d-sm-inline" id="nav-user-name"></span>
+            <li class="nav-item d-none" id="nav-admin-workspaces-item">
+                <a class="nav-link" href="<?= $assetPrefix ?>admin/workspaces.php">
+                    <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Workspaces</span>
+                    <span class="visually-hidden d-sm-none">Workspaces</span>
+                </a>
             </li>
             <li class="nav-item">
+                <!-- The account page: change password, and ask for someone to be invited (D040, D049). -->
+                <a class="nav-link" href="<?= $assetPrefix ?>account.php">
+                    <i class="bi bi-person-circle" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline" id="nav-user-name">Account</span>
+                    <span class="visually-hidden d-sm-none">Your account</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <!-- Icon only on phones, so the bar fits on one line even with the admin links. -->
                 <button type="button" class="btn btn-outline-light btn-sm" id="nav-logout-button">
                     <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-                    <span>Sign out</span>
+                    <span class="d-none d-sm-inline">Sign out</span>
+                    <span class="visually-hidden d-sm-none">Sign out</span>
                 </button>
             </li>
         </ul>

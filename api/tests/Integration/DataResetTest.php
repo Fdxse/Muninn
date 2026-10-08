@@ -54,7 +54,7 @@ final class DataResetTest extends WorkspaceTestCase
 
         // Only the admin remains, and nothing else is left over.
         self::assertSame(['sysadmin'], array_column(TestDatabase::connection()->query('SELECT username FROM users')->fetchAll(), 'username'));
-        foreach (['notes', 'folders', 'tags', 'note_tags', 'attachments', 'workspace_members', 'workspaces', 'invitations', 'auth_attempts'] as $emptiedTable) {
+        foreach (['notes', 'folders', 'tags', 'note_tags', 'attachments', 'workspace_members', 'workspaces', 'invitations', 'invitation_requests', 'password_resets', 'auth_attempts'] as $emptiedTable) {
             self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM ' . $emptiedTable), $emptiedTable . ' should be empty');
         }
 

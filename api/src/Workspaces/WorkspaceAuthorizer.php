@@ -107,6 +107,49 @@ final class WorkspaceAuthorizer
         return $membership;
     }
 
+    /**
+     * Lets a system administrator manage the MEMBERS of an orphaned shared workspace, one with no
+     * active Owner left (D050), e.g. after its only Owner was disabled. Workspaces that still have
+     * an active Owner are managed by their Owners only, so an administrator cannot add an
+     * account of their own to them. It returns a membership-shaped value with Owner rights over members, for use with the
+     * WorkspaceService member methods only. It grants no note access: note, search and
+     * attachment endpoints go through findMembership(), which never returns anything for an
+     * administrator (decision D025). Personal workspaces are never manageable this way.
+     *
+     * @throws HttpException 404 when the caller is not an active administrator, or the
+     *                       workspace does not exist, is personal, or has an active Owner.
+     */
+    public function requireAdministratorMemberManagement(User $administrator, string $workspaceId): WorkspaceMembership
+    {
+        if (!$administrator->isSystemAdmin || !$administrator->isActive() || !UuidGenerator::isValid($workspaceId)) {
+            throw HttpException::notFound();
+        }
+
+        $selectStatement = $this->database->prepare(
+            'SELECT workspaces.id, workspaces.name, workspaces.kind FROM workspaces
+             WHERE workspaces.id = :id AND workspaces.kind = :kind
+               AND NOT EXISTS (
+                   SELECT 1 FROM workspace_members
+                   JOIN users ON users.id = workspace_members.user_id
+                   WHERE workspace_members.workspace_id = workspaces.id
+                     AND workspace_members.role = \'owner\' AND users.status = \'active\'
+               )'
+        );
+        $selectStatement->execute(['id' => $workspaceId, 'kind' => WorkspaceMembership::KIND_SHARED]);
+        $workspaceRow = $selectStatement->fetch();
+        if ($workspaceRow === false) {
+            throw HttpException::notFound();
+        }
+
+        return new WorkspaceMembership(
+            workspaceId: (string) $workspaceRow['id'],
+            workspaceName: (string) $workspaceRow['name'],
+            workspaceKind: (string) $workspaceRow['kind'],
+            userId: $administrator->id,
+            role: WorkspaceRole::Owner,
+        );
+    }
+
     /** The 403 used whenever a member's role is too weak for an action. */
     public static function insufficientRole(): HttpException
     {

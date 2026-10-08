@@ -61,6 +61,9 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/auth/login` | public | `{username, password}` → user + `csrf_token` |
 | POST | `/api/v1/auth/logout` | user | revoke the session (204) |
 | GET | `/api/v1/auth/me` | user | user + `csrf_token` |
+| POST | `/api/v1/auth/password` | user | `{current_password, new_password}` → 204; other sessions signed out (D040) |
+| POST | `/api/v1/password-resets/inspect` | public | `{token}` → `{valid, username, expires_at}` or 404 `password_reset_invalid` |
+| POST | `/api/v1/password-resets/complete` | public | `{token, password}` → 204; signed out everywhere (D040) |
 | POST | `/api/v1/invitations/inspect` | public | `{token}` → `{valid, expires_at}` or 404 |
 | POST | `/api/v1/invitations/accept` | public | `{token, username, display_name, password}` → 201, signed in |
 | GET | `/api/v1/admin/invitations` | system admin | list (never tokens) |
@@ -69,6 +72,17 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | GET | `/api/v1/admin/users` | system admin | list accounts (never password hashes) |
 | POST | `/api/v1/admin/users/{id}/disable` | system admin | disable and sign out everywhere (204) |
 | POST | `/api/v1/admin/users/{id}/enable` | system admin | re-enable (204) |
+| POST | `/api/v1/admin/users/{id}/password-reset` | system admin | `{expires_in_hours?}` (1-72, default 24) → 201 with one-time `reset_url` (D040) |
+| GET | `/api/v1/invitation-requests` | user | the caller's own requests, with `status` and `link` state (D049) |
+| POST | `/api/v1/invitation-requests` | user | `{note}` → 201; at most 5 open → 409 `too_many_open_requests` |
+| DELETE | `/api/v1/invitation-requests/{id}` | user (own) | cancel; revokes its link (204) |
+| POST | `/api/v1/invitation-requests/{id}/link` | user (own, approved) | → 201 with one-time `invitation_url`; replaces an earlier link |
+| GET | `/api/v1/admin/invitation-requests` | system admin | every request, pending first |
+| POST | `/api/v1/admin/invitation-requests/{id}/approve` | system admin | pending → approved |
+| POST | `/api/v1/admin/invitation-requests/{id}/decline` | system admin | pending or unused approval → declined; revokes its link |
+| GET | `/api/v1/admin/workspaces` | system admin | shared workspaces with `owners`, `member_count`, `active_owner_count`; no note data (D050) |
+| GET/POST | `/api/v1/admin/workspaces/{id}/members` | system admin | only workspaces with no active Owner (else 404): list, or `{username, role}` add, with Owner rules |
+| PATCH/DELETE | `/api/v1/admin/workspaces/{id}/members/{userId}` | system admin | same restriction; `{role}` change, or remove; last Owner → 409 |
 | GET | `/api/v1/workspaces` | user | the caller's workspaces with `your_role` and `permissions` |
 | POST | `/api/v1/workspaces` | user | `{name}` → 201, new shared workspace, caller is Owner |
 | GET | `/api/v1/workspaces/{id}` | Reader+ | one workspace |

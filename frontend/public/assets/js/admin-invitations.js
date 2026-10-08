@@ -133,19 +133,8 @@
         }
     });
 
-    copyButton.addEventListener('click', async function () {
-        try {
-            await navigator.clipboard.writeText(resultLink.textContent);
-            copyStatus.textContent = 'Copied.';
-        } catch (clipboardError) {
-            // Clipboard access can be blocked; selecting the text lets the user copy manually.
-            var textSelection = window.getSelection();
-            var selectionRange = document.createRange();
-            selectionRange.selectNodeContents(resultLink);
-            textSelection.removeAllRanges();
-            textSelection.addRange(selectionRange);
-            copyStatus.textContent = 'Press Ctrl+C (or long-press) to copy.';
-        }
+    copyButton.addEventListener('click', function () {
+        MuninnApi.copyLinkText(resultLink, copyStatus);
     });
 
     document.addEventListener('muninn:user-ready', async function (readyEvent) {

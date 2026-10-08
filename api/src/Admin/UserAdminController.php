@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Muninn\Api\Admin;
 
+use Muninn\Api\Auth\PasswordResetService;
 use Muninn\Api\Auth\SessionService;
 use Muninn\Api\Database\UtcTimestamp;
 use Muninn\Api\Http\HttpException;
@@ -21,13 +22,15 @@ use Muninn\Api\Users\UserRepository;
  *   POST /api/v1/admin/users/{id}/enable
  *
  * Accounts are disabled, never deleted, in the MVP. A disabled user's sessions are revoked
- * at once and they cannot sign in; their workspaces and notes stay untouched.
+ * at once, their password reset links stop working, and they cannot sign in; their workspaces
+ * and notes stay untouched.
  */
 final class UserAdminController
 {
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly SessionService $sessionService,
+        private readonly PasswordResetService $passwordResetService,
         private readonly AuditLog $auditLog,
     ) {
     }
@@ -59,6 +62,8 @@ final class UserAdminController
 
         $this->userRepository->setStatus($targetUserId, 'disabled');
         $this->sessionService->revokeAllForUser($targetUserId);
+        // An open password reset link must not survive the account being disabled (D040).
+        $this->passwordResetService->revokeUnusedForUser($targetUserId);
         $this->auditLog->record(AuditLog::USER_DISABLED, $adminUser->id, 'user', $targetUserId, $context->clientIp);
 
         return Response::noContent();

@@ -12,12 +12,14 @@ use PDO;
  *
  * Two independent limits apply to logins: per username + IP (stops guessing one account)
  * and per IP across all usernames (slows password spraying). Invitation token guesses are
- * limited per IP. Successful attempts are recorded too, for auditing, but are not counted.
+ * limited per IP, and so are password reset token guesses (with the same limit, counted separately).
+ * Successful attempts are recorded too, for auditing, but are not counted.
  */
 final class RateLimiter
 {
     public const TYPE_LOGIN = 'login';
     public const TYPE_INVITATION = 'invitation';
+    public const TYPE_PASSWORD_RESET = 'password_reset';
 
     /** Rows older than this are deleted opportunistically. */
     private const RETENTION_HOURS = 24;
@@ -62,6 +64,24 @@ final class RateLimiter
         $failuresForIp = $this->countFailures(
             'attempt_type = :attempt_type AND ip_address = :ip_address',
             ['attempt_type' => self::TYPE_INVITATION, 'ip_address' => $ipAddress],
+        );
+
+        if ($failuresForIp >= $this->maxInvitationFailuresPerIp) {
+            throw HttpException::tooManyRequests($this->windowMinutes * 60);
+        }
+    }
+
+    /**
+     * Throws 429 when this IP has guessed too many invalid password reset tokens (D040).
+     * Uses the same per-IP limit as invitation tokens: both are 256-bit link tokens.
+     *
+     * @throws HttpException
+     */
+    public function assertPasswordResetAllowed(string $ipAddress): void
+    {
+        $failuresForIp = $this->countFailures(
+            'attempt_type = :attempt_type AND ip_address = :ip_address',
+            ['attempt_type' => self::TYPE_PASSWORD_RESET, 'ip_address' => $ipAddress],
         );
 
         if ($failuresForIp >= $this->maxInvitationFailuresPerIp) {

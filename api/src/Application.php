@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Muninn\Api;
 
 use Muninn\Api\Admin\UserAdminController;
+use Muninn\Api\Admin\WorkspaceAdminController;
 use Muninn\Api\Attachments\AttachmentController;
 use Muninn\Api\Attachments\AttachmentService;
 use Muninn\Api\Attachments\AttachmentStorage;
 use Muninn\Api\Auth\AuthController;
+use Muninn\Api\Auth\PasswordResetController;
+use Muninn\Api\Auth\PasswordResetService;
 use Muninn\Api\Auth\PasswordService;
 use Muninn\Api\Auth\RateLimiter;
 use Muninn\Api\Auth\SessionCookie;
@@ -26,6 +29,8 @@ use Muninn\Api\Http\Response;
 use Muninn\Api\Http\Router;
 use Muninn\Api\Http\SecurityHeaders;
 use Muninn\Api\Invitations\InvitationController;
+use Muninn\Api\Invitations\InvitationRequestController;
+use Muninn\Api\Invitations\InvitationRequestService;
 use Muninn\Api\Invitations\InvitationService;
 use Muninn\Api\Logging\AppLogger;
 use Muninn\Api\Logging\AuditLog;
@@ -217,8 +222,9 @@ final class Application
             $rateLimiter,
             $auditLog,
         );
+        $invitationService = new InvitationService($this->database, $userRepository);
         $invitationController = new InvitationController(
-            new InvitationService($this->database, $userRepository),
+            $invitationService,
             $passwordService,
             $this->sessionService,
             $this->sessionCookie,
@@ -230,8 +236,25 @@ final class Application
             $workspaceService,
             $userRepository,
         );
-        $userAdminController = new UserAdminController($userRepository, $this->sessionService, $auditLog);
+        $invitationRequestController = new InvitationRequestController(
+            new InvitationRequestService($this->database, $invitationService),
+            $auditLog,
+            $this->config->getString('frontend.base_url'),
+            $this->config->getInt('invitations.default_expiry_hours'),
+        );
+        $passwordResetService = new PasswordResetService($this->database);
+        $passwordResetController = new PasswordResetController(
+            $passwordResetService,
+            $passwordService,
+            $this->sessionService,
+            $userRepository,
+            $rateLimiter,
+            $auditLog,
+            $this->config->getString('frontend.base_url'),
+        );
+        $userAdminController = new UserAdminController($userRepository, $this->sessionService, $passwordResetService, $auditLog);
         $workspaceController = new WorkspaceController($workspaceService, $workspaceAuthorizer, $auditLog);
+        $workspaceAdminController = new WorkspaceAdminController($workspaceService, $workspaceAuthorizer, $auditLog);
         $tagService = new TagService($this->database);
         $noteHistory = new NoteHistory($this->database);
         $noteService = new NoteService($this->database, $tagService, $noteHistory);
@@ -270,6 +293,11 @@ final class Application
         $this->router->add('POST', '/api/v1/auth/login', $authController->login(...), Router::ACCESS_PUBLIC);
         $this->router->add('POST', '/api/v1/auth/logout', $authController->logout(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/auth/me', $authController->me(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/auth/password', $passwordResetController->changeOwn(...), Router::ACCESS_USER);
+
+        // Password reset links (D040): public, rate limited, token in the JSON body.
+        $this->router->add('POST', '/api/v1/password-resets/inspect', $passwordResetController->inspect(...), Router::ACCESS_PUBLIC);
+        $this->router->add('POST', '/api/v1/password-resets/complete', $passwordResetController->complete(...), Router::ACCESS_PUBLIC);
 
         // Invitation acceptance (public, rate limited, token in the JSON body — never in a URL).
         $this->router->add('POST', '/api/v1/invitations/inspect', $invitationController->inspect(...), Router::ACCESS_PUBLIC);
@@ -280,10 +308,27 @@ final class Application
         $this->router->add('POST', '/api/v1/admin/invitations', $invitationController->create(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('DELETE', '/api/v1/admin/invitations/{id}', $invitationController->revoke(...), Router::ACCESS_SYSTEM_ADMIN);
 
+        // Invitation requests (D049): everyday users ask, administrators decide, the user sends the link.
+        $this->router->add('GET', '/api/v1/invitation-requests', $invitationRequestController->listOwn(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/invitation-requests', $invitationRequestController->create(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/invitation-requests/{id}', $invitationRequestController->cancel(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/invitation-requests/{id}/link', $invitationRequestController->createLink(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/admin/invitation-requests', $invitationRequestController->listAll(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/invitation-requests/{id}/approve', $invitationRequestController->approve(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/invitation-requests/{id}/decline', $invitationRequestController->decline(...), Router::ACCESS_SYSTEM_ADMIN);
+
         // Account administration (system admins only; accounts are disabled, never deleted).
         $this->router->add('GET', '/api/v1/admin/users', $userAdminController->list(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/users/{id}/disable', $userAdminController->disable(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/users/{id}/enable', $userAdminController->enable(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/users/{id}/password-reset', $passwordResetController->create(...), Router::ACCESS_SYSTEM_ADMIN);
+
+        // Shared workspace membership administration (D050): members only, never notes.
+        $this->router->add('GET', '/api/v1/admin/workspaces', $workspaceAdminController->list(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/admin/workspaces/{id}/members', $workspaceAdminController->listMembers(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/workspaces/{id}/members', $workspaceAdminController->addMember(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('PATCH', '/api/v1/admin/workspaces/{id}/members/{userId}', $workspaceAdminController->changeMemberRole(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('DELETE', '/api/v1/admin/workspaces/{id}/members/{userId}', $workspaceAdminController->removeMember(...), Router::ACCESS_SYSTEM_ADMIN);
 
         // Workspaces and members. Signed-in users only; WorkspaceAuthorizer checks membership and role.
         $this->router->add('GET', '/api/v1/workspaces', $workspaceController->list(...), Router::ACCESS_USER);

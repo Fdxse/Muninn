@@ -319,11 +319,28 @@ transaction commits. Two ways lead there, both only for notes already in Trash:
   user's request. On days nobody signs in, nothing is deleted until the next visit.
   `bin/purge-trash.php` runs the same cleanup by hand.
 
+## D040 — Password reset links
+
+**Status:** Accepted (2026-10-08, approved by the project owner)
+
+There is no email and no self-service "forgot password". A system administrator creates a one-time
+reset link for a user on the Users page and sends it personally, like an invitation (D026). The
+token is 256-bit random, stored only as a SHA-256 hash in `password_resets`, travels in the URL
+fragment (`/reset-password.php#token=…`), is valid for 24 hours by default (at most 72) and works
+once. Creating a new link, disabling the account, or the user changing their own password revokes
+older unused links. Using a link sets the new password and signs the account out on every device;
+the user then signs in normally. The reset page shows the username so the person knows which
+account they are resetting. Used, expired, revoked and unknown links give the same answer, and
+wrong-token guesses are rate limited per IP like invitation tokens. An administrator cannot create
+a link for their own account and cannot reset a disabled account.
+
+Signed-in users change their own password with their current password
+(`POST /api/v1/auth/password`); a wrong current password counts as a failed sign-in for rate
+limiting, and every other session of the account is signed out.
+
 ## D041 — Manual, zip-based deployment
 
 **Status:** Accepted (2026-10-01)
-
-(D040 is reserved for password reset, proposed for Week 5 in the Week 1 plan.)
 
 Nothing deploys automatically. A GitHub Actions workflow builds `muninn-<version>.zip` (API with
 production autoloader, frontend, `DEPLOY.md`, `Deploy-Api.ps1`). The frontend is uploaded by
@@ -427,3 +444,34 @@ leave the workspace's normal note list and the folder and tag counts, and are sh
 workspace's Archive view instead. Archiving is done by Editors and up, is not an edit (no new
 revision or history version), and a trashed note that is restored returns to the Archive if it was
 archived.
+
+## D049 — Invitation requests
+
+**Status:** Accepted (2026-10-08, approved by the project owner)
+
+Any everyday user can ask for someone to be invited, with a short note on who and why (at most 5
+open requests per user). A system administrator approves or declines each request on the
+Invitations page. After approval, the user who asked creates the invitation link on their Account
+page and sends it themselves; the link is an ordinary invitation (D026: hashed, single use, the
+default invitation lifetime of 72 hours) whose creator is that user, so it also shows in the
+administrator's invitation list. Creating a new link revokes the previous one, so a lost link can be
+replaced. The administrator can still decline (withdraw) an approved request until its link has
+been used, and the user can cancel; both revoke the link. Once the link is used, the request is
+complete. An invitation stops working when the account that created it is disabled. Users only
+ever see their own requests; administrator accounts invite directly and cannot file requests.
+The invited person chooses their own username, as with every invitation.
+
+## D050 — System administrators rescue shared workspaces without an Owner
+
+**Status:** Accepted (2026-10-08, chosen by the project owner)
+
+D025 says administrators manage memberships without note access. The admin Workspaces page lists
+every shared workspace with its Owners, member count and whether it has an active Owner (never
+note titles, counts or content). An administrator can manage the members only of a workspace
+with no active Owner left, typically because its only Owner was disabled: add members, change
+roles and remove members with the same rules as an Owner, including "a workspace keeps at least
+one Owner". As soon as the workspace has an active Owner again, its member endpoints answer 404 to
+administrators and its Owners take over. So an administrator who also has an everyday account
+cannot add that account to a workspace that has a working Owner. Administrators still cannot be
+members themselves (D044), the note, search and attachment endpoints still refuse them, and
+personal workspaces are never listed or manageable. Every change is audited with `by_system_admin`.

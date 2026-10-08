@@ -129,4 +129,14 @@ final class SessionService
         );
         $revokeStatement->execute(['user_id' => $userId]);
     }
+
+    /** Revokes every open session of a user except one (used when they change their own password). */
+    public function revokeAllForUserExcept(string $userId, string $keptSessionId): void
+    {
+        $revokeStatement = $this->database->prepare(
+            'UPDATE sessions SET revoked_at = UTC_TIMESTAMP()
+             WHERE user_id = :user_id AND id <> :kept_session_id AND revoked_at IS NULL'
+        );
+        $revokeStatement->execute(['user_id' => $userId, 'kept_session_id' => $keptSessionId]);
+    }
 }

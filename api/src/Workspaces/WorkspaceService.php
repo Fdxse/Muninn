@@ -110,6 +110,41 @@ final class WorkspaceService
         return self::toPublicArray($workspaceRow);
     }
 
+    /**
+     * Every shared workspace for the system administrator (D050): names, member counts and Owners
+     * only. No note titles, note counts or other content metadata (D025). Only the ones without an
+     * active Owner can be managed (see WorkspaceAuthorizer::requireAdministratorMemberManagement).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function listSharedForAdministrator(): array
+    {
+        $workspaceRows = $this->database->query(
+            'SELECT workspaces.id, workspaces.name, workspaces.created_at,
+                    COUNT(workspace_members.user_id) AS member_count,
+                    SUM(workspace_members.role = \'owner\' AND users.status = \'active\') AS active_owner_count,
+                    GROUP_CONCAT(CASE WHEN workspace_members.role = \'owner\' THEN users.username END
+                                 ORDER BY users.username SEPARATOR \',\') AS owner_usernames
+             FROM workspaces
+             LEFT JOIN workspace_members ON workspace_members.workspace_id = workspaces.id
+             LEFT JOIN users ON users.id = workspace_members.user_id
+             WHERE workspaces.kind = \'shared\'
+             GROUP BY workspaces.id, workspaces.name, workspaces.created_at
+             ORDER BY workspaces.name, workspaces.id
+             LIMIT 500'
+        )->fetchAll();
+
+        return array_map(static fn (array $workspaceRow): array => [
+            'id' => $workspaceRow['id'],
+            'name' => $workspaceRow['name'],
+            'member_count' => (int) $workspaceRow['member_count'],
+            'owners' => $workspaceRow['owner_usernames'] === null ? [] : explode(',', (string) $workspaceRow['owner_usernames']),
+            // Zero means only an administrator can manage the members now.
+            'active_owner_count' => (int) $workspaceRow['active_owner_count'],
+            'created_at' => UtcTimestamp::toIso((string) $workspaceRow['created_at']),
+        ], $workspaceRows);
+    }
+
     /** Creates a shared workspace with the creator as its Owner (decision D030) and returns its ID. */
     public function createShared(User $creator, string $workspaceName): string
     {
