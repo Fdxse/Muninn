@@ -129,7 +129,7 @@ final class WorkspaceService
      * Deletes an empty shared workspace. The caller must hold WorkspacePermission::ManageWorkspace.
      *
      * A workspace that still holds notes (trashed ones included) is refused with 409, so deleting
-     * a workspace can never delete notes. Bulk note deletion waits for Trash purge in Week 4.
+     * a workspace can never delete notes: they must first be trashed and deleted from Trash for good.
      */
     public function deleteEmptyShared(WorkspaceMembership $ownerMembership): void
     {
@@ -143,7 +143,7 @@ final class WorkspaceService
             $noteCountStatement = $this->database->prepare('SELECT COUNT(*) FROM notes WHERE workspace_id = :workspace_id');
             $noteCountStatement->execute(['workspace_id' => $ownerMembership->workspaceId]);
             if ((int) $noteCountStatement->fetchColumn() > 0) {
-                throw HttpException::conflict('workspace_not_empty', 'Delete or move out every note (including Trash) before deleting the workspace.');
+                throw HttpException::conflict('workspace_not_empty', 'Delete every note and empty the Trash before deleting the workspace.');
             }
 
             // Memberships go with it (ON DELETE CASCADE).
@@ -403,6 +403,7 @@ final class WorkspaceService
             // Convenience flags for the UI. The API enforces the same rules on every request.
             'permissions' => [
                 'write_notes' => $callerRole->allows(WorkspacePermission::WriteNotes),
+                'purge_notes' => $callerRole->allows(WorkspacePermission::PurgeNotes),
                 'manage_members' => $callerRole->allows(WorkspacePermission::ManageMembers) && $workspaceRow['kind'] === WorkspaceMembership::KIND_SHARED,
                 'manage_workspace' => $callerRole->allows(WorkspacePermission::ManageWorkspace),
             ],

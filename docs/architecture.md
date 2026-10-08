@@ -1,4 +1,4 @@
-# Muninn architecture (Week 3)
+# Muninn architecture (Week 4)
 
 ## Overview
 
@@ -64,7 +64,10 @@ in `Application::registerRoutes()`.
 - `workspace_members`: (workspace, user) → role `owner`/`admin`/`editor`/`reader`. The only
   source of access to a workspace and its notes.
 - `notes`: workspace (fixed, D032), title, Markdown `content`, `revision` for optimistic
-  concurrency, creator/updater, `trashed_at` for Trash (D045), and an optional `folder_id`.
+  concurrency, creator/updater, `trashed_at` for Trash (D045), `archived_at` for the Archive
+  (D048), and an optional `folder_id`.
+- `note_versions`: earlier states of a note (title, content, folder, tag names, who saved it
+  and when), at most 100 per note (D009, D037). Removed with the note when it is purged.
 - `folders`: flat, one level, per workspace (D033); unique name per workspace. Deleting one sets
   its notes' `folder_id` to NULL (`ON DELETE SET NULL`).
 - `tags` and `note_tags`: tags per workspace (D034), unique name per workspace, linked to notes.
@@ -100,6 +103,25 @@ editor (button, paste, drop) ─ POST /notes/{id}/attachments (raw bytes, CSRF h
 read view ─ <img src="https://api.dx.se/api/v1/attachments/<id>/content">
    → session cookie (same site, D022) → WorkspaceAuthorizer → file streamed with safe headers
 ```
+
+## Trash lifecycle
+
+```text
+DELETE /notes/{id}          → trashed_at set; note, history and images kept (restorable)
+POST /trash/{id}/restore    → trashed_at cleared (Editor+)
+DELETE /trash/{id}          → NotePurger (Admin+): rows deleted in one transaction, then files
+signed-in request, after   → ExpiredTrashCleanup (at most hourly, claimed in maintenance_runs):
+  the response is sent        NotePurger for notes trashed > trash.retention_days days ago
+bin/purge-trash.php         → the same cleanup by hand (--dry-run only counts)
+```
+
+## Search
+
+`SearchController` asks `WorkspaceAuthorizer::workspaceIdsWithPermission()` for the workspaces
+the caller may read (the same rules as every other endpoint: memberships only, never for
+administrators or disabled users), and `SearchService` queries only those, with every word
+matched by `LIKE` in the title, content or tag names (D038). Snippets are cut in SQL around the
+first hit, so large notes are never loaded whole.
 
 ## Frontend
 

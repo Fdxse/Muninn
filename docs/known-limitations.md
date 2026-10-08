@@ -1,11 +1,11 @@
 # Known limitations
 
-Current state after Week 3. Updated as the MVP grows.
+Current state after Week 4. Updated as the MVP grows.
 
 - **Only images can be attached** (PNG, JPEG, GIF, WebP up to 10 MB). Other file types, and
   images from other websites, are not shown in notes (D036: an outside image appears as a link).
-- **Attachments cannot be removed one by one yet.** Deleting the image's Markdown hides it; the
-  file stays with the note and is removed when the note is purged from Trash (Week 4).
+- **Attachments cannot be removed one by one.** Deleting the image's Markdown hides it; the
+  file stays with the note and is removed when the note is deleted for good from Trash.
 - **The NAS must accept 10 MB request bodies.** If PHP's `post_max_size` is lower, larger images
   are refused with "too large for the server" (see `deploy/DEPLOY.md`).
 - **No syntax highlighting** in code blocks, and no tables toolbar button (tables written in
@@ -13,11 +13,17 @@ Current state after Week 3. Updated as the MVP grows.
 - **Ticking a checklist box saves the whole note** with its revision; if someone else saved the
   note in the meantime, the tick is refused and the page asks for a reload.
 - **Folders are one level deep** (D033); there are no sub-folders.
-- **Deleted notes cannot be restored yet.** Deleting moves a note to Trash (nothing is lost),
-  but the Trash view, restore and permanent deletion arrive in Week 4. Until then a shared
-  workspace that ever held a note cannot be deleted.
 - **Note lists show at most 500 notes per workspace,** most recently changed first. Folder and
-  tag filters narrow the list; search arrives in Week 4.
+  tag filters and search narrow the list. The Trash also shows at most 500 notes.
+- **Search shows at most 50 results** and matches words literally (no spelling tolerance or
+  word stemming). Matching ignores case and also accents, so "o" finds "ö" too.
+- **Trash cleanup runs only when someone uses Muninn.** The API deletes expired Trash after a
+  signed-in request, at most once an hour, so on days nobody signs in, notes past 30 days stay in
+  Trash (still restorable) until the next visit. One cleanup deletes at most 500 notes; the rest
+  follow an hour later.
+- **History keeps at most 100 earlier versions per note,** and quick successive saves by the same
+  person count as one version. Archiving, trashing and restoring from Trash are not versions.
+- **Images in old versions** show only while the image is still attached to the note.
 - **Members are added by exact username.** Workspace Owners and Admins can therefore confirm
   whether an active username exists; there is no user directory or autocomplete.
 - **A disabled user stays listed as a member** of their workspaces (marked "disabled account").

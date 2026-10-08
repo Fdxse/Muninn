@@ -1,7 +1,7 @@
 <?php
 
 /**
- * One note: read it, edit it, or move it to Trash.
+ * One note: read it, edit it, archive it, open its history, or move it to Trash.
  *   note.php?id=<note id>              open an existing note
  *   note.php?workspace=<workspace id>  write a new note in that workspace
  *
@@ -40,12 +40,21 @@ renderAppNavbar();
                     <button type="button" class="btn btn-primary btn-sm" id="edit-note-button">
                         <i class="bi bi-pencil" aria-hidden="true"></i> Edit
                     </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="archive-note-button">
+                        <i class="bi bi-archive" aria-hidden="true"></i> <span id="archive-note-label">Archive</span>
+                    </button>
                     <button type="button" class="btn btn-outline-danger btn-sm" id="trash-note-button">
                         <i class="bi bi-trash" aria-hidden="true"></i> Delete
                     </button>
                 </div>
             </div>
-            <p class="small text-muted-brand mb-2" id="note-meta"></p>
+            <div id="archived-notice" class="alert alert-secondary py-2 small d-none" role="status">
+                <i class="bi bi-archive" aria-hidden="true"></i> This note is archived. It is left out of the note list.
+            </div>
+            <p class="small text-muted-brand mb-2">
+                <span id="note-meta"></span>
+                · <a id="history-link" href="#"><i class="bi bi-clock-history" aria-hidden="true"></i> <span id="history-link-label">History</span></a>
+            </p>
             <div class="d-flex flex-wrap gap-1 mb-3" id="note-organisation"></div>
             <div class="card border-0 shadow-sm">
                 <div class="card-body">

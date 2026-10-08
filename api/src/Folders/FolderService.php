@@ -47,8 +47,8 @@ final class FolderService
     }
 
     /**
-     * Lists the workspace's folders alphabetically, each with the number of active (not trashed)
-     * notes in it. Trashed notes are not counted: they are invisible until Week 4's Trash view.
+     * Lists the workspace's folders alphabetically, each with the number of notes in it that the
+     * normal note list shows: archived and trashed notes are not counted.
      *
      * @return list<array<string, mixed>>
      */
@@ -58,7 +58,7 @@ final class FolderService
             'SELECT folders.id, folders.name, folders.created_at, folders.updated_at,
                     COUNT(notes.id) AS note_count
              FROM folders
-             LEFT JOIN notes ON notes.folder_id = folders.id AND notes.trashed_at IS NULL
+             LEFT JOIN notes ON notes.folder_id = folders.id AND notes.trashed_at IS NULL AND notes.archived_at IS NULL
              WHERE folders.workspace_id = :workspace_id
              GROUP BY folders.id, folders.name, folders.created_at, folders.updated_at
              ORDER BY folders.name, folders.id'

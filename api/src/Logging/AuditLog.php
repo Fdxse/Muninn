@@ -32,6 +32,11 @@ final class AuditLog
     public const WORKSPACE_MEMBER_ROLE_CHANGED = 'workspace.member_role_changed';
     public const WORKSPACE_MEMBER_REMOVED = 'workspace.member_removed';
     public const NOTE_TRASHED = 'note.trashed';
+    public const NOTE_RESTORED_FROM_TRASH = 'note.restored_from_trash';
+    public const NOTE_PURGED = 'note.purged';
+    public const TRASH_EMPTIED = 'trash.emptied';
+    public const TRASH_EXPIRED_PURGED = 'trash.expired_purged';
+    public const NOTE_VERSION_RESTORED = 'note.version_restored';
     public const FOLDER_DELETED = 'folder.deleted';
     public const ATTACHMENT_UPLOADED = 'attachment.uploaded';
     public const SYSTEM_DATA_RESET = 'system.data_reset';

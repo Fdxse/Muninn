@@ -105,6 +105,13 @@ admin account; invite yourself a separate everyday account from the admin page (
    staging sub-folder, set it to `https://fehre.synology.me/muninn` (desktop browsers only).
 3. Make sure the host runs PHP 8 and serves HTTPS.
 
+### 6. Trash cleanup (nothing to set up)
+
+Notes stay in Trash for 30 days (`trash.retention_days`), then the API deletes them for good with
+their history and images by itself, at most once an hour, after answering a signed-in request.
+No scheduled task is needed. To check or clean up by hand over SSH, from the application folder:
+`sudo php84 bin/purge-trash.php --dry-run` (only counts) or without `--dry-run` (deletes).
+
 ---
 
 ## Every release

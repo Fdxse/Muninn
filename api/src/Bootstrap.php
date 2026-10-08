@@ -30,11 +30,40 @@ final class Bootstrap
         ini_set('display_errors', '0');
         ini_set('log_errors', '1');
 
-        self::handle($configFilePath, Request::fromGlobals())->send();
+        $applicationOrResponse = self::buildApplication($configFilePath);
+        if ($applicationOrResponse instanceof Response) {
+            $applicationOrResponse->send();
+
+            return;
+        }
+
+        $applicationOrResponse->handle(Request::fromGlobals())->send();
+
+        // Hand the response to the browser before housekeeping, so nobody waits for it. Under
+        // PHP-FPM this closes the connection; elsewhere housekeeping simply runs a little longer
+        // inside the request (one bounded run per hour at most).
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+        $applicationOrResponse->runHousekeeping();
     }
 
     /** Builds the application and handles one request. Separate from run() so tests can call it. */
     public static function handle(string $configFilePath, Request $request): Response
+    {
+        $applicationOrResponse = self::buildApplication($configFilePath);
+        if ($applicationOrResponse instanceof Response) {
+            return $applicationOrResponse;
+        }
+
+        return $applicationOrResponse->handle($request);
+    }
+
+    /**
+     * Builds the application from the config file, or returns the error response to send when
+     * that is not possible.
+     */
+    private static function buildApplication(string $configFilePath): Application|Response
     {
         // No config file at all means the server has not been set up yet. That is an expected
         // state on a first deploy, not a crash, so say so instead of a bare 500.
@@ -56,7 +85,7 @@ final class Bootstrap
             return SecurityHeaders::apply($startupResponse);
         }
 
-        return (new Application($config, $database, $logger))->handle($request);
+        return new Application($config, $database, $logger);
     }
 
     /** Opens the runtime database connection using the 'database' config section. */

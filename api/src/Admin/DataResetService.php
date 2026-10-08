@@ -13,7 +13,7 @@ use Throwable;
  * Resets an installation to "system administrators only" (decision D046).
  *
  * Used by bin/reset-data.php to clear out test accounts and test content. It deletes every
- * non-admin account together with everything that belongs to users: notes, folders, tags,
+ * non-admin account together with everything that belongs to users: notes, note history, folders, tags,
  * attachments (rows and image files), workspaces, workspace memberships, sessions and all
  * invitations. It keeps:
  *   - system administrator accounts and their sessions (so the admin stays signed in),
@@ -54,6 +54,7 @@ final class DataResetService
             'workspaces' => 'SELECT COUNT(*) FROM workspaces',
             'workspace memberships' => 'SELECT COUNT(*) FROM workspace_members',
             'notes (including Trash)' => 'SELECT COUNT(*) FROM notes',
+            'note history versions' => 'SELECT COUNT(*) FROM note_versions',
             'folders' => 'SELECT COUNT(*) FROM folders',
             'tags' => 'SELECT COUNT(*) FROM tags',
             'attachments' => 'SELECT COUNT(*) FROM attachments',
@@ -89,6 +90,7 @@ final class DataResetService
             'attachments' => 'DELETE FROM attachments',
             // note_tags rows go with their notes and tags (ON DELETE CASCADE).
             'tags' => 'DELETE FROM tags',
+            'note history versions' => 'DELETE FROM note_versions',
             'notes (including Trash)' => 'DELETE FROM notes',
             'folders' => 'DELETE FROM folders',
             'workspace memberships' => 'DELETE FROM workspace_members',

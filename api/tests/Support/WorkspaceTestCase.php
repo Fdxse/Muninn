@@ -67,6 +67,47 @@ abstract class WorkspaceTestCase extends IntegrationTestCase
         return $createResponse->json()['data']['note'];
     }
 
+    /**
+     * Saves changes to a note through the API as $editorCredentials and returns the response.
+     *
+     * @param array<string, mixed> $changedFields
+     */
+    protected function updateNote(array $editorCredentials, string $noteId, int $basedOnRevision, array $changedFields): Response
+    {
+        return $this->sendAs($editorCredentials, 'PATCH', '/api/v1/notes/' . $noteId, ['revision' => $basedOnRevision] + $changedFields);
+    }
+
+    /**
+     * Sends an authenticated GET with query parameters (e.g. ?q= for search).
+     *
+     * @param array{session_token: string, csrf_token: string} $credentials
+     * @param array<string, string> $queryParameters
+     */
+    protected function getAs(array $credentials, string $path, array $queryParameters = []): Response
+    {
+        return $this->application->handle(new \Muninn\Api\Http\Request(
+            'GET',
+            $path,
+            [],
+            [self::COOKIE_NAME => $credentials['session_token']],
+            '',
+            '203.0.113.10',
+            $queryParameters,
+        ));
+    }
+
+    /**
+     * Asserts a 200 response and returns its "data" part.
+     *
+     * @return array<string, mixed>
+     */
+    protected function assertOkData(Response $response): array
+    {
+        self::assertSame(200, $response->statusCode(), $response->body());
+
+        return $response->json()['data'];
+    }
+
     /** A valid 1x1 pixel PNG image. */
     protected const TINY_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
 

@@ -1,6 +1,7 @@
 /*
  * Notes home: loads the user's workspaces into the picker and lists the notes of the chosen
- * one, optionally narrowed to a folder and/or a tag. Editors can add, rename and delete folders.
+ * one, optionally narrowed to a folder and/or a tag, or its Archive instead. Editors can add,
+ * rename and delete folders.
  * All text is inserted with textContent, never innerHTML.
  */
 (function () {
@@ -24,6 +25,11 @@
     var newFolderForm = document.getElementById('new-folder-form');
     var newFolderNameInput = document.getElementById('new-folder-name');
     var folderManagementList = document.getElementById('folder-management-list');
+    var showNotesButton = document.getElementById('show-notes-button');
+    var showArchiveButton = document.getElementById('show-archive-button');
+    var trashLink = document.getElementById('trash-link');
+    var folderFilterRow = document.getElementById('folder-filter-row');
+    var archiveHint = document.getElementById('archive-hint');
 
     /** Folder filter values besides folder IDs. */
     var ALL_FOLDERS = '';
@@ -35,6 +41,8 @@
     // The active filters: a folder ID, NO_FOLDER or ALL_FOLDERS; a tag name or null.
     var selectedFolder = ALL_FOLDERS;
     var selectedTag = null;
+    // True while the workspace's Archive is shown instead of its normal note list.
+    var isShowingArchive = false;
 
     function workspacePath() {
         return '/api/v1/workspaces/' + encodeURIComponent(currentWorkspaceId);
@@ -43,6 +51,9 @@
     /** Keeps the address bar in step with the filters, so a filtered list can be reloaded or bookmarked. */
     function updateAddress() {
         var queryParameters = new URLSearchParams({ workspace: currentWorkspaceId });
+        if (isShowingArchive) {
+            queryParameters.set('view', 'archive');
+        }
         if (selectedFolder !== ALL_FOLDERS) {
             queryParameters.set('folder', selectedFolder);
         }
@@ -160,23 +171,43 @@
         return icon;
     }
 
+    /**
+     * Shows which list is selected. The Archive is one flat list, so the folder and tag filters
+     * (which count only the normal list's notes) are hidden there.
+     */
+    function showViewChoice() {
+        showNotesButton.classList.toggle('active', !isShowingArchive);
+        showNotesButton.setAttribute('aria-pressed', isShowingArchive ? 'false' : 'true');
+        showArchiveButton.classList.toggle('active', isShowingArchive);
+        showArchiveButton.setAttribute('aria-pressed', isShowingArchive ? 'true' : 'false');
+        folderFilterRow.classList.toggle('d-none', isShowingArchive);
+        archiveHint.classList.toggle('d-none', !isShowingArchive);
+        var canWrite = workspacesById[currentWorkspaceId].permissions.write_notes;
+        newNoteLink.classList.toggle('d-none', !canWrite || isShowingArchive);
+    }
+
     /** Reloads folders, tags and notes for the current workspace and filters. */
     async function refreshList() {
         MuninnApi.showAlert(notesErrorAlert, '');
+        showViewChoice();
         try {
             var folderData = await MuninnApi.request('GET', workspacePath() + '/folders');
             var tagData = await MuninnApi.request('GET', workspacePath() + '/tags');
             currentFolders = folderData.folders;
             showFolderChoices();
-            showTagChoices(tagData.tags);
+            showTagChoices(isShowingArchive ? [] : tagData.tags);
             showFolderManagement();
 
             var listQuery = new URLSearchParams();
-            if (selectedFolder !== ALL_FOLDERS) {
-                listQuery.set('folder', selectedFolder);
-            }
-            if (selectedTag !== null) {
-                listQuery.set('tag', selectedTag);
+            if (isShowingArchive) {
+                listQuery.set('archived', '1');
+            } else {
+                if (selectedFolder !== ALL_FOLDERS) {
+                    listQuery.set('folder', selectedFolder);
+                }
+                if (selectedTag !== null) {
+                    listQuery.set('tag', selectedTag);
+                }
             }
             var queryString = listQuery.toString();
             var listData = await MuninnApi.request('GET', workspacePath() + '/notes' + (queryString ? '?' + queryString : ''));
@@ -185,7 +216,11 @@
                 notesList.appendChild(buildNoteEntry(note));
             });
             var isFiltered = selectedFolder !== ALL_FOLDERS || selectedTag !== null;
-            notesEmptyMessage.textContent = isFiltered ? 'No notes match this folder and tag.' : 'No notes here yet.';
+            if (isShowingArchive) {
+                notesEmptyMessage.textContent = 'The Archive is empty.';
+            } else {
+                notesEmptyMessage.textContent = isFiltered ? 'No notes match this folder and tag.' : 'No notes here yet.';
+            }
             notesEmptyMessage.classList.toggle('d-none', listData.notes.length > 0);
         } catch (listError) {
             notesList.replaceChildren();
@@ -198,6 +233,7 @@
             newNoteAddress += '&folder=' + encodeURIComponent(selectedFolder);
         }
         newNoteLink.href = newNoteAddress;
+        trashLink.href = 'trash.php?workspace=' + encodeURIComponent(currentWorkspaceId);
         updateAddress();
     }
 
@@ -208,7 +244,6 @@
         MuninnApi.rememberWorkspace(workspaceId);
 
         // Convenience only: the API refuses note and folder changes for Readers anyway.
-        newNoteLink.classList.toggle('d-none', !workspace.permissions.write_notes);
         manageFoldersButton.classList.toggle('d-none', !workspace.permissions.write_notes);
         roleHint.textContent = workspace.kind === 'personal'
             ? 'Your personal workspace. Only you can see it.'
@@ -268,6 +303,16 @@
         showWorkspace(workspacePicker.value);
     });
 
+    showNotesButton.addEventListener('click', function () {
+        isShowingArchive = false;
+        refreshList();
+    });
+
+    showArchiveButton.addEventListener('click', function () {
+        isShowingArchive = true;
+        refreshList();
+    });
+
     folderFilter.addEventListener('change', function () {
         selectedFolder = folderFilter.value;
         refreshList();
@@ -297,6 +342,7 @@
             if (initialWorkspaceId === MuninnApi.queryParameter('workspace')) {
                 selectedFolder = MuninnApi.queryParameter('folder') || ALL_FOLDERS;
                 selectedTag = MuninnApi.queryParameter('tag');
+                isShowingArchive = MuninnApi.queryParameter('view') === 'archive';
             }
             await showWorkspace(initialWorkspaceId);
         } catch (workspaceError) {

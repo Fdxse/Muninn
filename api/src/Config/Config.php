@@ -50,6 +50,10 @@ final class Config
             'storage_path' => '',
             'max_upload_bytes' => 10_000_000,
         ],
+        'trash' => [
+            // Days a note stays in Trash before the API deletes it for good (D012, D039).
+            'retention_days' => 30,
+        ],
     ];
 
     /** @var array<string, mixed> */
@@ -163,6 +167,12 @@ final class Config
             if ($allowedOrigin === '*' || !preg_match('#^https?://[^/\s]+$#', $allowedOrigin)) {
                 throw new ConfigException('cors.allowed_origins must contain exact origins like https://www.dx.se (no paths, no "*").');
             }
+        }
+
+        // A retention of 0 days would let the daily cleanup destroy notes the moment they are trashed.
+        $retentionDays = $this->get('trash.retention_days');
+        if (!is_int($retentionDays) || $retentionDays < 1 || $retentionDays > 3650) {
+            throw new ConfigException('trash.retention_days must be a whole number of days from 1 to 3650.');
         }
 
         if ($this->isProduction() && !$this->getBool('session.cookie_secure')) {

@@ -68,8 +68,9 @@ final class TagService
     }
 
     /**
-     * Lists the tags used by at least one active (not trashed) note of the workspace, with how
-     * many active notes use each. Tags used only by trashed notes stay hidden, like those notes.
+     * Lists the tags used by at least one note of the workspace's normal note list (not archived,
+     * not trashed), with how many such notes use each. Tags used only by archived or trashed notes
+     * stay hidden, like those notes.
      *
      * @return list<array{name: string, note_count: int}>
      */
@@ -79,7 +80,7 @@ final class TagService
             'SELECT tags.name, COUNT(notes.id) AS note_count
              FROM tags
              JOIN note_tags ON note_tags.tag_id = tags.id
-             JOIN notes ON notes.id = note_tags.note_id AND notes.trashed_at IS NULL
+             JOIN notes ON notes.id = note_tags.note_id AND notes.trashed_at IS NULL AND notes.archived_at IS NULL
              WHERE tags.workspace_id = :workspace_id
              GROUP BY tags.id, tags.name
              ORDER BY tags.name'
@@ -149,17 +150,20 @@ final class TagService
             $insertLinkStatement->execute(['note_id' => $noteId, 'tag_id' => $tagId]);
         }
 
-        $this->deleteUnusedTags($membership);
+        $this->deleteUnusedTags($membership->workspaceId);
     }
 
-    /** Removes the workspace's tags that no note (Trash included) uses any more. */
-    private function deleteUnusedTags(WorkspaceMembership $membership): void
+    /**
+     * Removes the workspace's tags that no note (Trash included) uses any more. Also called after
+     * notes are deleted for good from Trash, which may leave tags unused.
+     */
+    public function deleteUnusedTags(string $workspaceId): void
     {
         $deleteStatement = $this->database->prepare(
             'DELETE tags FROM tags
              LEFT JOIN note_tags ON note_tags.tag_id = tags.id
              WHERE tags.workspace_id = :workspace_id AND note_tags.tag_id IS NULL'
         );
-        $deleteStatement->execute(['workspace_id' => $membership->workspaceId]);
+        $deleteStatement->execute(['workspace_id' => $workspaceId]);
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Note page: shows one note as sanitised Markdown, edits it with optimistic concurrency (title,
- * content, folder and tags), adds images, ticks checklist boxes, creates new notes and moves
- * notes to Trash. Markdown rendering lives in markdown-renderer.js, the editor controls in
+ * content, folder and tags), adds images, ticks checklist boxes, creates new notes, archives
+ * them, links to their history and moves notes to Trash. Markdown rendering lives in markdown-renderer.js, the editor controls in
  * note-editor.js.
  */
 (function () {
@@ -24,6 +24,11 @@
     var viewActions = document.getElementById('note-view-actions');
     var editButton = document.getElementById('edit-note-button');
     var trashButton = document.getElementById('trash-note-button');
+    var archiveButton = document.getElementById('archive-note-button');
+    var archiveButtonLabel = document.getElementById('archive-note-label');
+    var archivedNotice = document.getElementById('archived-notice');
+    var historyLink = document.getElementById('history-link');
+    var historyLinkLabel = document.getElementById('history-link-label');
     var noteForm = document.getElementById('note-form');
     var formHeading = document.getElementById('note-form-heading');
     var titleInput = document.getElementById('note-title');
@@ -102,6 +107,14 @@
             noteContent.replaceChildren(MuninnApi.createElement('p', 'text-muted-brand mb-0', 'This note is empty.'));
         }
         showOrganisation();
+
+        var isArchived = Boolean(currentNote.archived_at);
+        archivedNotice.classList.toggle('d-none', !isArchived);
+        archiveButtonLabel.textContent = isArchived ? 'Unarchive' : 'Archive';
+        // History usage is always shown as "used / limit" (D009).
+        historyLink.href = 'history.php?id=' + encodeURIComponent(currentNote.id);
+        historyLinkLabel.textContent = 'History ' + currentNote.history_count + ' / ' + currentNote.history_limit;
+
         // Convenience only: the API refuses edits from Readers anyway.
         viewActions.classList.toggle('d-none', !canWrite);
 
@@ -277,8 +290,23 @@
         }
     });
 
+    archiveButton.addEventListener('click', async function () {
+        var archiveAction = currentNote.archived_at ? 'unarchive' : 'archive';
+        archiveButton.disabled = true;
+        MuninnApi.showAlert(errorAlert, '');
+        try {
+            var archiveData = await MuninnApi.request('POST', '/api/v1/notes/' + encodeURIComponent(currentNote.id) + '/' + archiveAction);
+            currentNote = archiveData.note;
+            showReadView();
+        } catch (archiveError) {
+            MuninnApi.showAlert(errorAlert, archiveError.message);
+        } finally {
+            archiveButton.disabled = false;
+        }
+    });
+
     trashButton.addEventListener('click', async function () {
-        if (!window.confirm('Delete this note? It moves to Trash.')) {
+        if (!window.confirm('Delete this note? It moves to Trash, where it can be restored for a while.')) {
             return;
         }
         trashButton.disabled = true;
