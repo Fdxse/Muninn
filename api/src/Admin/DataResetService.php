@@ -59,6 +59,8 @@ final class DataResetService
             'tags' => 'SELECT COUNT(*) FROM tags',
             'attachments' => 'SELECT COUNT(*) FROM attachments',
             'invitations (all states)' => 'SELECT COUNT(*) FROM invitations',
+            'invitation requests' => 'SELECT COUNT(*) FROM invitation_requests',
+            'password reset links' => 'SELECT COUNT(*) FROM password_resets',
             'sign-in attempt records' => 'SELECT COUNT(*) FROM auth_attempts',
         ];
 
@@ -95,8 +97,12 @@ final class DataResetService
             'folders' => 'DELETE FROM folders',
             'workspace memberships' => 'DELETE FROM workspace_members',
             'workspaces' => 'DELETE FROM workspaces',
+            // Requests point at invitations and at the accounts being deleted.
+            'invitation requests' => 'DELETE FROM invitation_requests',
             // Accepted invitations point at the accounts being deleted; pending ones are test links.
             'invitations (all states)' => 'DELETE FROM invitations',
+            // Unused links stop mattering once the accounts are gone; administrators' links go too.
+            'password reset links' => 'DELETE FROM password_resets',
             'sessions of those accounts' => 'DELETE sessions FROM sessions
                                              JOIN users ON users.id = sessions.user_id
                                              WHERE users.is_system_admin = 0',

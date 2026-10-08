@@ -107,6 +107,40 @@ final class WorkspaceAuthorizer
         return $membership;
     }
 
+    /**
+     * Lets a system administrator manage the MEMBERS of a shared workspace (Week 5 admin work):
+     * returns a membership-shaped value with Owner rights over members, for use with the
+     * WorkspaceService member methods only. It grants no note access: note, search and
+     * attachment endpoints go through findMembership(), which never returns anything for an
+     * administrator (decision D025). Personal workspaces are never manageable this way.
+     *
+     * @throws HttpException 404 when the caller is not an active administrator, or the
+     *                       workspace does not exist or is personal.
+     */
+    public function requireAdministratorMemberManagement(User $administrator, string $workspaceId): WorkspaceMembership
+    {
+        if (!$administrator->isSystemAdmin || !$administrator->isActive() || !UuidGenerator::isValid($workspaceId)) {
+            throw HttpException::notFound();
+        }
+
+        $selectStatement = $this->database->prepare(
+            'SELECT id, name, kind FROM workspaces WHERE id = :id AND kind = :kind'
+        );
+        $selectStatement->execute(['id' => $workspaceId, 'kind' => WorkspaceMembership::KIND_SHARED]);
+        $workspaceRow = $selectStatement->fetch();
+        if ($workspaceRow === false) {
+            throw HttpException::notFound();
+        }
+
+        return new WorkspaceMembership(
+            workspaceId: (string) $workspaceRow['id'],
+            workspaceName: (string) $workspaceRow['name'],
+            workspaceKind: (string) $workspaceRow['kind'],
+            userId: $administrator->id,
+            role: WorkspaceRole::Owner,
+        );
+    }
+
     /** The 403 used whenever a member's role is too weak for an action. */
     public static function insufficientRole(): HttpException
     {

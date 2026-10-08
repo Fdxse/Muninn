@@ -16,6 +16,8 @@ use Throwable;
  * Invitation lifecycle: create, list, revoke, inspect and accept.
  *
  * Tokens are 256-bit random, stored only as SHA-256 hashes, time limited and single use.
+ * An invitation stops working when the account that created it is disabled; that matters for
+ * links created by everyday users through invitation requests (D049).
  * Acceptance locks the invitation row (SELECT ... FOR UPDATE) inside the same transaction
  * that creates the user, so two simultaneous accepts can never create two accounts.
  */
@@ -134,8 +136,11 @@ final class InvitationService
     public function inspect(string $rawToken): array
     {
         $selectStatement = $this->database->prepare(
-            'SELECT expires_at FROM invitations
-             WHERE token_hash = :token_hash AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > UTC_TIMESTAMP()'
+            'SELECT invitations.expires_at FROM invitations
+             JOIN users AS creator ON creator.id = invitations.created_by_user_id
+             WHERE invitations.token_hash = :token_hash AND invitations.accepted_at IS NULL
+               AND invitations.revoked_at IS NULL AND invitations.expires_at > UTC_TIMESTAMP()
+               AND creator.status = \'active\''
         );
         $selectStatement->execute(['token_hash' => SecretToken::hash($rawToken)]);
         $expiresAt = $selectStatement->fetchColumn();
@@ -158,8 +163,11 @@ final class InvitationService
         try {
             // Lock the row: a concurrent accept of the same token waits here, then sees it used.
             $lockStatement = $this->database->prepare(
-                'SELECT id FROM invitations
-                 WHERE token_hash = :token_hash AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > UTC_TIMESTAMP()
+                'SELECT invitations.id FROM invitations
+                 JOIN users AS creator ON creator.id = invitations.created_by_user_id
+                 WHERE invitations.token_hash = :token_hash AND invitations.accepted_at IS NULL
+                   AND invitations.revoked_at IS NULL AND invitations.expires_at > UTC_TIMESTAMP()
+                   AND creator.status = \'active\'
                  FOR UPDATE'
             );
             $lockStatement->execute(['token_hash' => SecretToken::hash($rawToken)]);
