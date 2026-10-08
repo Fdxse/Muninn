@@ -189,6 +189,14 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <span class="visually-hidden d-sm-none">Workspaces</span>
                 </a>
             </li>
+            <li class="nav-item d-none" id="nav-contact-admin-item">
+                <!-- "Contact admin" (D058): everyday users write a short message to the administrator. -->
+                <button type="button" class="nav-link" data-bs-toggle="modal" data-bs-target="#contact-admin-modal">
+                    <i class="bi bi-chat-dots" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Contact admin</span>
+                    <span class="visually-hidden d-sm-none">Contact admin</span>
+                </button>
+            </li>
             <li class="nav-item">
                 <!-- The account page: change password, and ask for someone to be invited (D040, D049). -->
                 <a class="nav-link" href="<?= $assetPrefix ?>account.php">
@@ -208,5 +216,44 @@ function renderAppNavbar(string $assetPrefix = ''): void
         </ul>
     </div>
 </nav>
+<!-- "Contact admin" dialog (D058). Filled in and sent by assets/js/app-shell.js. -->
+<div class="modal fade" id="contact-admin-modal" tabindex="-1" aria-labelledby="contact-admin-heading" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <form id="contact-admin-form" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="contact-admin-heading">Contact admin</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted-brand">
+                        Your message goes straight to the administrator's phone. Muninn does not keep it,
+                        so add how the administrator can reach you if you want an answer.
+                    </p>
+                    <div id="contact-admin-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+                    <div id="contact-admin-success" class="alert alert-success d-none" role="status" tabindex="-1"></div>
+                    <div class="mb-3">
+                        <label for="contact-admin-message" class="form-label">Message</label>
+                        <textarea class="form-control" id="contact-admin-message" rows="5" maxlength="1000" required
+                                  aria-describedby="contact-admin-message-feedback"></textarea>
+                        <div id="contact-admin-message-feedback" class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-1">
+                        <label for="contact-admin-contact" class="form-label">How can the admin reach you? <span class="text-muted-brand small">(optional)</span></label>
+                        <input type="text" class="form-control" id="contact-admin-contact" maxlength="200" autocomplete="email"
+                               placeholder="E-mail or phone number" aria-describedby="contact-admin-contact-feedback">
+                        <div id="contact-admin-contact-feedback" class="invalid-feedback"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" id="contact-admin-send-button">
+                        <i class="bi bi-send" aria-hidden="true"></i> Send
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
     <?php
 }

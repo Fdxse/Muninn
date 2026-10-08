@@ -40,6 +40,7 @@ use Muninn\Api\Notes\NoteHistory;
 use Muninn\Api\Notes\NotePurger;
 use Muninn\Api\Notes\NoteService;
 use Muninn\Api\Notes\TrashController;
+use Muninn\Api\Notifications\AdminMessageController;
 use Muninn\Api\Notifications\AdminNotifier;
 use Muninn\Api\Notifications\HttpNtfyTransport;
 use Muninn\Api\Notifications\NtfyTransport;
@@ -276,6 +277,7 @@ final class Application
             $this->config->getInt('invitations.default_expiry_hours'),
             $this->adminNotifier,
         );
+        $adminMessageController = new AdminMessageController($this->database, $auditLog, $this->adminNotifier);
         $passwordResetService = new PasswordResetService($this->database);
         $passwordResetController = new PasswordResetController(
             $passwordResetService,
@@ -351,6 +353,10 @@ final class Application
         $this->router->add('GET', '/api/v1/admin/invitation-requests/pending-count', $invitationRequestController->pendingCount(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/invitation-requests/{id}/approve', $invitationRequestController->approve(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/invitation-requests/{id}/decline', $invitationRequestController->decline(...), Router::ACCESS_SYSTEM_ADMIN);
+
+        // "Contact admin" (D058): everyday users write to the administrator through ntfy.
+        $this->router->add('GET', '/api/v1/admin-messages', $adminMessageController->status(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/admin-messages', $adminMessageController->send(...), Router::ACCESS_USER);
 
         // Account administration (system admins only; accounts are disabled, never deleted).
         $this->router->add('GET', '/api/v1/admin/users', $userAdminController->list(...), Router::ACCESS_SYSTEM_ADMIN);

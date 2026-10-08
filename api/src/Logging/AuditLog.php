@@ -49,6 +49,7 @@ final class AuditLog
     public const ATTACHMENT_UPLOADED = 'attachment.uploaded';
     public const ATTACHMENT_DELETED = 'attachment.deleted';
     public const ADMIN_NOTIFICATION_QUEUED = 'notification.admin_queued';
+    public const ADMIN_MESSAGE_SENT = 'admin_message.sent';
     public const SYSTEM_DATA_RESET = 'system.data_reset';
 
     public function __construct(private readonly PDO $database)

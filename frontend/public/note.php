@@ -90,7 +90,13 @@ renderAppNavbar();
             </div>
             <div class="mb-3">
                 <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2">
-                    <label for="note-body" class="form-label mb-0">Note <span class="text-muted-brand small">(Markdown)</span></label>
+                    <div class="d-flex align-items-baseline gap-2">
+                        <label for="note-body" class="form-label mb-0">Note <span class="text-muted-brand small">(Markdown)</span></label>
+                        <!-- Opens the Markdown cheat sheet below; plain HTML, no script needed. -->
+                        <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-bs-toggle="modal" data-bs-target="#markdown-help-modal">
+                            <i class="bi bi-question-circle" aria-hidden="true"></i> Markdown help
+                        </button>
+                    </div>
                     <div class="btn-group btn-group-sm muninn-editor-tabs" role="tablist" aria-label="Editor view">
                         <button type="button" class="btn active" id="editor-write-tab" role="tab" aria-selected="true" aria-controls="note-body">Write</button>
                         <button type="button" class="btn" id="editor-preview-tab" role="tab" aria-selected="false" aria-controls="editor-preview">Preview</button>
@@ -123,6 +129,88 @@ renderAppNavbar();
             </div>
         </form>
     </section>
+
+    <!-- Markdown help: a cheat sheet for writing notes, including code blocks and their languages. -->
+    <div class="modal fade" id="markdown-help-modal" tabindex="-1" aria-labelledby="markdown-help-heading" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="markdown-help-heading">Writing notes with Markdown</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body muninn-markdown-help">
+                    <p>
+                        Notes are plain text with a few simple marks for formatting. The toolbar buttons add
+                        them for you, and <strong>Preview</strong> shows how the note will look.
+                    </p>
+
+                    <h3 class="h6 mt-3">Text and structure</h3>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr><th scope="col">You type</th><th scope="col">You get</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><code>**bold**</code></td><td><strong>bold</strong></td></tr>
+                                <tr><td><code>_italic_</code></td><td><em>italic</em></td></tr>
+                                <tr><td><code>~~struck out~~</code></td><td><del>struck out</del></td></tr>
+                                <tr><td><code># Heading</code> &hellip; <code>### Smaller heading</code></td><td>Headings, from largest to smaller</td></tr>
+                                <tr><td><code>- milk</code></td><td>A bulleted list item</td></tr>
+                                <tr><td><code>1. first</code></td><td>A numbered list item</td></tr>
+                                <tr><td><code>- [ ] to do</code><br><code>- [x] done</code></td><td>A checklist; tick the boxes when reading the note</td></tr>
+                                <tr><td><code>&gt; quoted text</code></td><td>A quotation</td></tr>
+                                <tr><td><code>[Muninn](https://www.dx.se)</code></td><td>A link</td></tr>
+                                <tr><td><code>---</code></td><td>A dividing line</td></tr>
+                                <tr><td>An empty line</td><td>A new paragraph (a single line break stays a line break)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="small text-muted-brand">
+                        Images are added with the image button, by pasting or by dragging a picture into
+                        the note. Images from other websites are shown as links, not loaded.
+                    </p>
+
+                    <h3 class="h6 mt-3">Code</h3>
+                    <p>
+                        For a short piece of code inside a sentence, put backticks around it:
+                        <code>`SELECT * FROM notes`</code>.
+                    </p>
+                    <p>
+                        For a code block, put three backticks on the line before and the line after the code.
+                        Write the language right after the first three backticks to get colours:
+                    </p>
+                    <pre class="muninn-markdown-help-example"><code>```sql
+SELECT title, updated_at
+FROM notes
+WHERE archived_at IS NULL;
+```</code></pre>
+                    <p class="mb-2">Languages Muninn colours, with the names you can write after the backticks:</p>
+                    <ul class="small muninn-markdown-help-languages">
+                        <li>SQL: <code>sql</code></li>
+                        <li>C#: <code>csharp</code>, <code>cs</code></li>
+                        <li>PHP: <code>php</code></li>
+                        <li>JavaScript: <code>javascript</code>, <code>js</code></li>
+                        <li>HTML / XML: <code>html</code>, <code>xml</code></li>
+                        <li>CSS: <code>css</code></li>
+                        <li>JSON: <code>json</code></li>
+                        <li>Bash / shell: <code>bash</code>, <code>sh</code></li>
+                        <li>PowerShell: <code>powershell</code>, <code>ps1</code></li>
+                        <li>Python: <code>python</code>, <code>py</code></li>
+                        <li>YAML: <code>yaml</code>, <code>yml</code></li>
+                        <li>Markdown: <code>markdown</code>, <code>md</code></li>
+                    </ul>
+                    <p class="small text-muted-brand mb-0">
+                        Without a language name Muninn guesses, and only adds colours when it is confident.
+                        A language not in the list is shown as plain code. The code button in the toolbar
+                        adds the backticks for you; type the language name after them.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 <?php
 renderPageEnd(['app-shell.js', 'markdown-renderer.js', 'note-editor.js', 'note-page.js'], '', [

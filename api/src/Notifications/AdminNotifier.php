@@ -26,6 +26,7 @@ final class AdminNotifier
     /** Kinds of notification; also stored in the audit log. */
     public const KIND_INVITATION_REQUEST = 'invitation_request';
     public const KIND_SIGN_IN_BLOCKED = 'sign_in_blocked';
+    public const KIND_USER_MESSAGE = 'user_message';
 
     /**
      * At most this many sign-in alerts per hour, so someone guessing passwords from many
@@ -106,6 +107,50 @@ final class AdminNotifier
             null,
             $ipAddress,
         );
+    }
+
+    /**
+     * A signed-in user wrote to the administrator with "Contact admin" (D058).
+     *
+     * Unlike the other notifications this one is sent straight away, not after the response:
+     * the user is waiting to hear whether the message arrived, so they can try again later
+     * instead of believing it was delivered. The caller has already validated the text and
+     * checked the user's hourly limit.
+     *
+     * @param string $messageText What the user wrote; line breaks are kept.
+     * @param string $contactDetails How the administrator can answer (optional, may be '').
+     * @return bool True when ntfy accepted the message.
+     */
+    public function sendUserMessage(string $displayName, string $username, string $messageText, string $contactDetails): bool
+    {
+        if (!$this->isEnabled) {
+            return false;
+        }
+
+        $notificationText = self::plainMultiLineText($messageText, 2000);
+        $notificationText .= "\n\n" . ($contactDetails === ''
+            ? 'No contact details given.'
+            : 'Reply to: ' . self::plainText($contactDetails, 200));
+        $message = $this->buildMessage(
+            'Muninn: message from ' . self::plainText($displayName, 100) . ' (' . self::plainText($username, 64) . ')',
+            $notificationText,
+            self::PRIORITY_DEFAULT,
+            ['speech_balloon'],
+            null,
+        );
+
+        try {
+            $statusCode = $this->transport->publish($this->serverUrl, $message, $this->accessToken, $this->timeoutSeconds);
+        } catch (Throwable $sendFailure) {
+            $statusCode = 0;
+        }
+        if ($statusCode >= 200 && $statusCode < 300) {
+            return true;
+        }
+        // Neither the token nor the user's text is logged.
+        $this->logger->warning('ntfy user message was not delivered.', ['http_status' => $statusCode]);
+
+        return false;
     }
 
     /**
@@ -199,6 +244,22 @@ final class AdminNotifier
         }
 
         return $message;
+    }
+
+    /**
+     * Like plainText, but keeps line breaks (at most two in a row) for multi-line messages.
+     * Windows line endings become plain "\n" first.
+     */
+    private static function plainMultiLineText(string $userText, int $maximumLength): string
+    {
+        $unixLineEndings = str_replace(["\r\n", "\r"], "\n", $userText);
+        $cleanLines = array_map(
+            static fn (string $lineText): string => rtrim((string) preg_replace('/[\p{C}]+/u', ' ', $lineText)),
+            explode("\n", $unixLineEndings),
+        );
+        $joinedText = (string) preg_replace("/\n{3,}/", "\n\n", implode("\n", $cleanLines));
+
+        return mb_substr(trim($joinedText), 0, $maximumLength);
     }
 
     /** Removes control characters and shortens text that came from users. */

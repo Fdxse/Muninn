@@ -586,3 +586,29 @@ so no library is added. `bin/send-test-notification.php` checks the settings on 
 
 Not in this version: per-user notification preferences (PROJECT.md), notifications to
 everyday users, and editing ntfy settings in the admin pages.
+
+## D058 — "Contact admin": users message the administrator through ntfy
+
+**Status:** Proposed (2026-10-08, asked for by the project owner; awaiting review in the PR)
+
+Every everyday user has a "Contact admin" button in the top bar. It opens a dialog with a
+message (up to 1000 characters, line breaks kept) and an optional "How can the admin reach
+you?" field. `POST /api/v1/admin-messages` pushes it to the administrator's ntfy topic (D057)
+with the sender's display name and username in the title.
+
+- **Sent straight away, not after the response** (unlike D057's alerts): the user is told
+  whether ntfy accepted it (`503 delivery_failed` otherwise), so nobody believes a lost
+  message arrived.
+- **Not stored.** Muninn keeps only an audit entry (`admin_message.sent`) without the text or
+  the contact details. Accounts have no email address, so the optional contact field is how
+  the administrator answers, outside Muninn.
+- **At most 5 messages per user per hour** (attempts count, delivered or not), counted from
+  the audit log; more get `429`. The button cannot be used to flood the administrator's phone.
+- Administrator accounts get no button and a `403` from the API: they are the recipient.
+- When ntfy is off the dialog says messages are not set up and the API answers
+  `503 messages_unavailable`.
+- Control characters are removed from the text before it is sent; the message is JSON, so it
+  cannot inject ntfy headers.
+
+Not in this version: answering inside Muninn (an inbox for the administrator and replies the
+user sees on their next visit). That would need a table and pages of its own.

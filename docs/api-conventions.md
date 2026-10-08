@@ -77,6 +77,8 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/invitation-requests` | user | `{note}` → 201; at most 5 open → 409 `too_many_open_requests` |
 | DELETE | `/api/v1/invitation-requests/{id}` | user (own) | cancel; revokes its link (204) |
 | POST | `/api/v1/invitation-requests/{id}/link` | user (own, approved) | → 201 with one-time `invitation_url`; replaces an earlier link |
+| GET | `/api/v1/admin-messages` | user (not admin) | `{enabled, max_per_hour, remaining_this_hour}` for the Contact admin dialog (D058) |
+| POST | `/api/v1/admin-messages` | user (not admin) | `{message, contact?}` → 201 when ntfy accepted it; 429 after 5 an hour; 503 `messages_unavailable` / `delivery_failed` |
 | GET | `/api/v1/admin/invitation-requests` | system admin | every request, pending first |
 | GET | `/api/v1/admin/invitation-requests/pending-count` | system admin | `{pending_count}`: requests awaiting a decision (nav badge) |
 | POST | `/api/v1/admin/invitation-requests/{id}/approve` | system admin | pending → approved |

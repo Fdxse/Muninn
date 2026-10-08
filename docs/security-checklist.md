@@ -163,3 +163,7 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | User-typed text (usernames) has control characters removed; messages are JSON, so nothing can inject ntfy headers | `AdminNotificationTest::testControlCharactersInUsernamesAreRemoved`; `HttpNtfyTransport` |
 | The token only goes to the configured server: redirects are not followed | `HttpNtfyTransport` (`CURLOPT_FOLLOWLOCATION` off, `follow_location` 0) |
 | Nothing is sent or recorded when ntfy is off | `AdminNotificationTest::testNothingIsSentWhenNtfyIsOff` |
+| Contact admin (D058): signed-in everyday users only; administrators get 403, visitors 401 | `AdminMessageTest::testAdministratorsAndSignedOutVisitorsCannotUseIt` |
+| Contact admin: at most 5 messages per user per hour, separate per user | `AdminMessageTest::testEachUserHasAnHourlyLimit` |
+| Contact admin: the text and contact details are never stored or logged; failures are logged without the token | `AdminMessageTest::testMessageIsSentToTheAdministratorStraightAway`, `testUndeliveredMessageIsReportedAndLoggedWithoutTheToken` |
+| Contact admin: input validated (length, single-line contact) and control characters removed | `AdminMessageTest::testInvalidInputIsRefused`, `testControlCharactersAreRemovedButLineBreaksKept` |
