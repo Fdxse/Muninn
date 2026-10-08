@@ -12,6 +12,19 @@ Summary:
 - Server configuration (`api/config/config.php`, frontend `includes/config.php`) is created once
   on each server and never shipped in a zip.
 
+## Upgrading to Week 3 (folders, tags, images)
+
+1. Deploy as usual, then run the new migration on the NAS from `/volume1/Muninn`:
+   `sudo php84 bin/migrate.php` (adds migration `0003_folders_tags_attachments`).
+2. In Web Station, set the Muninn PHP profile's `post_max_size` to at least `12M`, so 10 MB
+   images can be uploaded.
+3. Images are stored in `/volume1/Muninn/storage/attachments/` (created on the first upload).
+   The web server user needs write access to `/volume1/Muninn/storage`, which it already has for
+   the log. That folder is outside the document root (`/volume1/Muninn/public`), so images are
+   never served directly. Include it in NAS backups together with the database.
+4. FTP the frontend with overwrite on: it adds `assets/vendor/marked-18.0.14/`,
+   `assets/vendor/dompurify-3.4.16/` and two new scripts.
+
 ## Resetting test data
 
 To clear out test accounts and invitations and keep only the administrator account(s), run on
@@ -22,7 +35,8 @@ sudo php84 bin/reset-data.php --dry-run   # shows what would be deleted, changes
 sudo php84 bin/reset-data.php             # asks you to type DELETE ALL USER DATA, then deletes
 ```
 
-It deletes every non-admin account with its sessions, workspaces and notes (Trash included), all
+It deletes every non-admin account with its sessions, workspaces and notes (Trash included),
+folders, tags, note images (database rows and the files in `storage/attachments/`), all
 invitations and the sign-in attempt records. Admin accounts, the audit log and the schema stay.
 There is no undo, so back up the database first if anything might be worth keeping (D046).
 

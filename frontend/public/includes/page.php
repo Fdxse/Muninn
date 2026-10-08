@@ -114,12 +114,17 @@ function renderPageStart(string $pageTitle, string $assetPrefix = ''): void
  * Prints the bottom of a page with its scripts.
  *
  * @param list<string> $pageScripts Script files under assets/js/ to load after the shared ones.
+ * @param list<string> $vendorScripts Vendored libraries under assets/vendor/ the page needs
+ *                                    (e.g. the Markdown renderer); loaded before the page scripts.
  */
-function renderPageEnd(array $pageScripts, string $assetPrefix = ''): void
+function renderPageEnd(array $pageScripts, string $assetPrefix = '', array $vendorScripts = []): void
 {
     $allScripts = array_merge(['api-client.js', 'pwa.js'], $pageScripts);
     ?>
 <script src="<?= $assetPrefix ?>assets/vendor/bootstrap-5.3.8/js/bootstrap.bundle.min.js" defer></script>
+<?php foreach ($vendorScripts as $vendorScriptFile): ?>
+<script src="<?= $assetPrefix ?>assets/vendor/<?= escapeHtml($vendorScriptFile) ?>" defer></script>
+<?php endforeach; ?>
 <?php foreach ($allScripts as $scriptFile): ?>
 <script src="<?= $assetPrefix ?>assets/js/<?= escapeHtml($scriptFile) ?>" defer></script>
 <?php endforeach; ?>

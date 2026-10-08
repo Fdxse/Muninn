@@ -48,6 +48,11 @@ final class AttachmentController
         }
 
         $fileBytes = $request->rawBody();
+        // PHP silently drops a body larger than post_max_size, so an empty body that announced
+        // a length means "too large for this server", not "empty".
+        if ($fileBytes === '' && (int) $request->header('Content-Length') > 0) {
+            throw new HttpException(413, 'file_too_large', 'This image is too large for the server to accept.');
+        }
         if ($fileBytes === '') {
             throw HttpException::validation(['file' => 'The upload is empty.']);
         }

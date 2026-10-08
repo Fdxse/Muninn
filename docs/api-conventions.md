@@ -32,8 +32,9 @@ in the message so a user can quote it, and the same ID is in the server log.
 | 403 | Signed in but the request is not acceptable | `csrf_failed`, `origin_not_allowed`, `insufficient_role`, `admin_account` |
 | 404 | Not found **or not yours to know about** | `not_found`, `invitation_invalid` |
 | 405 | Wrong method (with `Allow` header) | `method_not_allowed` |
-| 409 | State conflict | `invitation_not_pending`, `revision_conflict`, `last_owner`, `already_member`, `personal_workspace`, `workspace_not_empty`, `cannot_disable_self` |
-| 415 | Body is not JSON | `unsupported_media_type` |
+| 409 | State conflict | `invitation_not_pending`, `revision_conflict`, `last_owner`, `already_member`, `personal_workspace`, `workspace_not_empty`, `cannot_disable_self`, `folder_name_taken`, `folder_limit`, `attachment_limit` |
+| 413 | Upload too large | `file_too_large` |
+| 415 | Body is not JSON (or, for uploads, not an image) | `unsupported_media_type` |
 | 422 | Semantically invalid input | `validation_failed` |
 | 429 | Rate limited (with `Retry-After`) | `rate_limited` |
 | 500 | Internal error, details only in the log | `internal_error` |
@@ -77,11 +78,52 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/workspaces/{id}/members` | Admin+ | `{username, role}` → 201 |
 | PATCH | `/api/v1/workspaces/{id}/members/{userId}` | Admin+ | `{role}` |
 | DELETE | `/api/v1/workspaces/{id}/members/{userId}` | Admin+ (or self) | remove, or leave (204) |
-| GET | `/api/v1/workspaces/{id}/notes` | Reader+ | notes without content, with a short `excerpt` |
-| POST | `/api/v1/workspaces/{id}/notes` | Editor+ | `{title?, content?}` → 201 |
-| GET | `/api/v1/notes/{id}` | Reader+ | one note with `content` and `revision` |
-| PATCH | `/api/v1/notes/{id}` | Editor+ | `{revision, title?, content?}`; stale revision → 409 `revision_conflict` |
+| GET | `/api/v1/workspaces/{id}/notes` | Reader+ | notes without content, with a short `excerpt`, `folder_id` and `tags`; optional `?folder=<id>` or `?folder=none`, and `?tag=<name>` |
+| POST | `/api/v1/workspaces/{id}/notes` | Editor+ | `{title?, content?, folder_id?, tags?}` → 201 |
+| GET | `/api/v1/notes/{id}` | Reader+ | one note with `content`, `revision`, `folder_id`, `folder_name` and `tags` |
+| PATCH | `/api/v1/notes/{id}` | Editor+ | `{revision, title?, content?, folder_id?, tags?}`; stale revision → 409 `revision_conflict` |
 | DELETE | `/api/v1/notes/{id}` | Editor+ | move to Trash (204) |
+| GET | `/api/v1/workspaces/{id}/folders` | Reader+ | folders with `note_count` (active notes) |
+| POST | `/api/v1/workspaces/{id}/folders` | Editor+ | `{name}` → 201; duplicate name → 409 `folder_name_taken` |
+| PATCH | `/api/v1/folders/{id}` | Editor+ | `{name}` rename |
+| DELETE | `/api/v1/folders/{id}` | Editor+ | delete (204); its notes move to "No folder" |
+| GET | `/api/v1/workspaces/{id}/tags` | Reader+ | tags used by active notes, with `note_count` |
+| POST | `/api/v1/notes/{id}/attachments` | Editor+ | raw image bytes as the body → 201 with the attachment and its `markdown` |
+| GET | `/api/v1/notes/{id}/attachments` | Reader+ | the note's attachments |
+| GET | `/api/v1/attachments/{id}/content` | Reader+ | the image itself (used by `<img>` tags) |
+
+### Folders and tags
+
+Folders are flat and belong to one workspace (D033). `folder_id` on a note may be a folder of the
+same workspace or `null` ("No folder"); any other ID, including another workspace's folder, gives
+422 on `folder_id`. Leaving `folder_id` out of a PATCH keeps the folder.
+
+Tags belong to one workspace (D034) and are set through the note: `tags` is a list of names
+(1–50 characters, no commas, at most 20 per note). A leading `#` is dropped, duplicates are
+compared ignoring case and the first spelling used in the workspace is kept. Sending `tags`
+replaces the note's tags; leaving it out keeps them. Tags no note uses any more disappear.
+
+### Attachments (images)
+
+Uploads are the file itself as the request body, not a multipart form:
+
+```http
+POST /api/v1/notes/{id}/attachments
+Content-Type: image/png            (any image/* or application/octet-stream)
+X-Filename: Sk%C3%A4rmbild.png     (optional, percent-encoded, display only)
+X-CSRF-Token: …
+```
+
+The API decides the type from the bytes: PNG, JPEG, GIF and WebP are accepted (SVG never), up to
+`attachments.max_upload_bytes` (default 10 MB, 413 `file_too_large`) and 12 000 pixels per side;
+anything else is 422. Other body types are 415. Files are stored under random names outside the
+web root. The response's `markdown` (`![name](attachment:<id>)`) is what the editor inserts.
+
+`GET /api/v1/attachments/{id}/content` requires read access to the attachment's note; unknown
+IDs, other workspaces' attachments and attachments of trashed notes all give the same 404. It is
+served with the detected `Content-Type`, `nosniff`, `Content-Disposition: inline`,
+`Cache-Control: private, max-age=300`, an `ETag` (SHA-256, so `If-None-Match` gives 304) and
+`Cross-Origin-Resource-Policy: same-site`.
 
 Workspace roles follow D029: Admins may only add, change and remove Editors and Readers; Owners
 manage everyone. Removing or demoting the last Owner gives 409 `last_owner`. A caller who is not

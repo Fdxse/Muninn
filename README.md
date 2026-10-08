@@ -3,10 +3,11 @@
 **Your notes. Your knowledge.** A self-hosted, multi-user, mobile-first note application
 (PHP 8 + MariaDB API, Bootstrap 5.3 + vanilla JavaScript PWA).
 
-Current state: **Course MVP Week 2** — invitation-only accounts, sign-in/sign-out, invitation and
+Current state: **Course MVP Week 3** — invitation-only accounts, sign-in/sign-out, invitation and
 user administration, personal and shared workspaces with Owner/Admin/Editor/Reader roles, note
-create/read/edit/delete with conflict detection, installable PWA shell. Markdown rendering,
-folders, tags and images come in Week 3.
+create/read/edit/delete with conflict detection, sanitised Markdown with tickable checklists,
+code blocks and links, folders and tags, image attachments (upload or paste), installable PWA
+shell. Search, history, Archive and Trash come in Week 4.
 
 ## Where things are
 

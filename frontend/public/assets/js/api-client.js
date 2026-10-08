@@ -87,6 +87,53 @@
         return responseData;
     }
 
+    /**
+     * Uploads a file (an image) as the raw request body and resolves with the "data" part.
+     * The API detects the real file type itself; the filename is display text only.
+     */
+    async function uploadFile(path, fileBlob, fileName) {
+        if (csrfToken === null) {
+            await loadCurrentUser();
+        }
+        var requestHeaders = {
+            'Accept': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'Content-Type': fileBlob.type || 'application/octet-stream',
+        };
+        if (fileName) {
+            requestHeaders['X-Filename'] = encodeURIComponent(fileName);
+        }
+
+        var response;
+        try {
+            response = await fetch(apiBaseUrl + path, {
+                method: 'POST',
+                credentials: 'include',
+                headers: requestHeaders,
+                body: fileBlob,
+            });
+        } catch (networkError) {
+            throw new ApiError(0, 'network_error', 'Cannot reach Muninn. Check your connection and try again.');
+        }
+
+        var responseJson = null;
+        try {
+            responseJson = await response.json();
+        } catch (parseError) {
+            responseJson = null;
+        }
+        if (!response.ok) {
+            var errorBody = responseJson && responseJson.error ? responseJson.error : {};
+            throw new ApiError(
+                response.status,
+                errorBody.code || 'unknown_error',
+                errorBody.message || 'The upload failed. Please try again.',
+                errorBody.fields
+            );
+        }
+        return responseJson ? responseJson.data : null;
+    }
+
     /** Endpoints that work without a session, so no CSRF token is needed first. */
     function isPublicPath(path) {
         return path === '/api/v1/auth/login' || path.indexOf('/api/v1/invitations/') === 0;
@@ -200,6 +247,7 @@
     window.MuninnApi = {
         ApiError: ApiError,
         request: request,
+        uploadFile: uploadFile,
         loadCurrentUser: loadCurrentUser,
         signOut: signOut,
         goTo: goTo,

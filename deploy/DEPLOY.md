@@ -46,12 +46,15 @@ folder is. The `.htaccess` refuses to serve it.
 
 1. Create both folders. The `secrets` share must **not** be served by Web Station.
 2. Give the web server user (`http`) read access to both folders, and write access to
-   `/volume1/secrets/muninn/storage` (logs).
+   `/volume1/secrets/muninn/storage` (logs, and note images in `storage/attachments/`, which
+   the API creates on the first upload).
 3. Run `Deploy-Api.ps1` once (see "Every release" below) to copy the files.
 4. In Web Station, use a PHP profile with **PHP 8.2 or newer** and the extensions
    `pdo_mysql`, `mbstring`, `openssl` and `sodium` (sodium enables Argon2id password hashing).
    If the profile uses `open_basedir`, add **both** `/volume1/web/muninn` and
    `/volume1/secrets/muninn`, otherwise PHP cannot load the application folder.
+   Set **`post_max_size` to at least `12M`** in the profile's core settings, so 10 MB images
+   can be uploaded (PHP drops larger request bodies; Muninn then answers "too large").
 5. Web server: the folder must be served by **Apache 2.4** (the included `.htaccess` routes
    requests to `index.php`). It works in either setup, with no code changes:
    - **Staging, sub-folder:** `https://fehre.synology.me/muninn/api/v1/health`
@@ -77,6 +80,8 @@ Copy `config/config.example.php` to `config/config.php` in the application folde
 - `logging.file_path`: e.g. `/volume1/secrets/muninn/storage/api.log`;
 - `security.trusted_proxies`: the reverse proxy's IP **only if** you put Synology's reverse
   proxy in front of Web Station; otherwise leave it empty.
+- `attachments` (optional): `storage_path` defaults to `storage/attachments` in the application
+  folder; `max_upload_bytes` defaults to `10000000` (10 MB). Keep the folder outside any web root.
 
 Make `config.php` readable only by the web server user. It is never in a release zip, so
 later deploys never overwrite it.
