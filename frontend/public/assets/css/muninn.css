@@ -51,6 +51,8 @@
     --muninn-gold-700: #76592c;
     /* Darker gray for muted text on the light page background (#6B7280 there is only 4:1). */
     --muninn-gray-600: #4b5563;
+    /* Pale gold behind highlighted search words (dark text on it stays well above WCAG AA). */
+    --muninn-gold-tint: #f3e6d1;
     /* The exact background colour baked into the dark logo images, so they sit seamlessly on it. */
     --muninn-logo-backdrop: #03111b;
 
@@ -314,8 +316,9 @@ body {
     height: auto;
 }
 
-/* Write / Preview switch: navy outline, the current view filled. */
-.muninn-editor-tabs .btn {
+/* Write / Preview and Notes / Archive switches: navy outline, the current choice filled. */
+.muninn-editor-tabs .btn,
+.muninn-toggle-group .btn {
     --bs-btn-color: var(--muninn-navy-900);
     --bs-btn-border-color: var(--muninn-navy-900);
     --bs-btn-hover-color: var(--muninn-white);
@@ -353,4 +356,27 @@ body {
 
 .muninn-note-page {
     max-width: 52rem;
+}
+
+/* Search results: two lines of context at most, with the matched words marked in pale gold. */
+.muninn-search-snippet {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+#search-results mark {
+    background-color: var(--muninn-gold-tint);
+    color: inherit;
+    border-radius: 0.15rem;
+}
+
+/* The selected version in a note's history: pale background and a navy edge, dark text. */
+.muninn-version-list .list-group-item.active {
+    background-color: var(--muninn-white);
+    border-color: var(--bs-list-group-border-color);
+    border-left: 0.3rem solid var(--muninn-navy-900);
+    color: var(--muninn-ink-800);
 }

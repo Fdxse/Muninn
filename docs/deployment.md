@@ -28,6 +28,23 @@ Summary:
 4. FTP the frontend with overwrite on: it adds `assets/vendor/marked-18.0.14/`,
    `assets/vendor/dompurify-3.4.16/` and two new scripts.
 
+## Upgrading to Week 4 (search, history, Archive, Trash)
+
+1. Deploy as usual, then run the new migration on the NAS from `/volume1/Muninn`:
+   `sudo php84 bin/migrate.php` (adds migration `0004_archive_history`).
+2. FTP the frontend with overwrite on: it adds `search.php`, `trash.php`, `history.php` and
+   their scripts.
+3. Schedule the daily Trash cleanup in DSM: **Control Panel → Task Scheduler → Create →
+   Scheduled Task → User-defined script**, user `root`, daily at e.g. 03:30, script:
+
+   ```sh
+   cd /volume1/Muninn && php84 bin/purge-trash.php
+   ```
+
+   It deletes notes that have been in Trash for more than 30 days (`trash.retention_days` in
+   `config/config.php`), with their history and image files, and prints one summary line. Try
+   it first over SSH with `sudo php84 bin/purge-trash.php --dry-run`, which only counts.
+
 ## Resetting test data
 
 To clear out test accounts and invitations and keep only the administrator account(s), run on
@@ -38,8 +55,8 @@ sudo php84 bin/reset-data.php --dry-run   # shows what would be deleted, changes
 sudo php84 bin/reset-data.php             # asks you to type DELETE ALL USER DATA, then deletes
 ```
 
-It deletes every non-admin account with its sessions, workspaces and notes (Trash included),
-folders, tags, note images (database rows and the files in `storage/attachments/`), all
+It deletes every non-admin account with its sessions, workspaces and notes (Trash and history
+included), folders, tags, note images (database rows and the files in `storage/attachments/`), all
 invitations and the sign-in attempt records. Admin accounts, the audit log and the schema stay.
 There is no undo, so back up the database first if anything might be worth keeping (D046).
 

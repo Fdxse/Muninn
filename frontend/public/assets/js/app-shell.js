@@ -25,8 +25,9 @@
             // Convenience only: the API itself refuses admin calls from non-admins.
             document.getElementById('nav-admin-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-users-item').classList.toggle('d-none', !currentUser.is_system_admin);
-            // Administrator accounts have no workspaces (D025), so they get no Workspaces link.
+            // Administrator accounts have no workspaces (D025), so they get no Workspaces or Search link.
             document.getElementById('nav-workspaces-item').classList.toggle('d-none', currentUser.is_system_admin);
+            document.getElementById('nav-search-item').classList.toggle('d-none', currentUser.is_system_admin);
 
             loadingIndicator.classList.add('d-none');
             document.dispatchEvent(new CustomEvent('muninn:user-ready', { detail: currentUser }));

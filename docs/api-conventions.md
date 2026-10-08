@@ -78,11 +78,21 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/workspaces/{id}/members` | Admin+ | `{username, role}` → 201 |
 | PATCH | `/api/v1/workspaces/{id}/members/{userId}` | Admin+ | `{role}` |
 | DELETE | `/api/v1/workspaces/{id}/members/{userId}` | Admin+ (or self) | remove, or leave (204) |
-| GET | `/api/v1/workspaces/{id}/notes` | Reader+ | notes without content, with a short `excerpt`, `folder_id` and `tags`; optional `?folder=<id>` or `?folder=none`, and `?tag=<name>` |
+| GET | `/api/v1/workspaces/{id}/notes` | Reader+ | notes without content, with a short `excerpt`, `folder_id` and `tags`; optional `?folder=<id>` or `?folder=none`, and `?tag=<name>`; `?archived=1` lists the Archive instead |
 | POST | `/api/v1/workspaces/{id}/notes` | Editor+ | `{title?, content?, folder_id?, tags?}` → 201 |
-| GET | `/api/v1/notes/{id}` | Reader+ | one note with `content`, `revision`, `folder_id`, `folder_name` and `tags` |
+| GET | `/api/v1/notes/{id}` | Reader+ | one note with `content`, `revision`, `folder_id`, `folder_name`, `tags`, `archived_at`, `history_count` and `history_limit` |
 | PATCH | `/api/v1/notes/{id}` | Editor+ | `{revision, title?, content?, folder_id?, tags?}`; stale revision → 409 `revision_conflict` |
 | DELETE | `/api/v1/notes/{id}` | Editor+ | move to Trash (204) |
+| POST | `/api/v1/notes/{id}/archive` | Editor+ | move to the Archive → the note |
+| POST | `/api/v1/notes/{id}/unarchive` | Editor+ | move back out of the Archive → the note |
+| GET | `/api/v1/notes/{id}/versions` | Reader+ | earlier versions, newest first, without content; `history_count`, `history_limit` |
+| GET | `/api/v1/notes/{id}/versions/{versionId}` | Reader+ | one earlier version with `content`, `folder_name` and `tags` |
+| POST | `/api/v1/notes/{id}/versions/{versionId}/restore` | Editor+ | `{revision}` → the note with that version's title, content, folder and tags; stale revision → 409 |
+| GET | `/api/v1/workspaces/{id}/trash` | Reader+ | trashed notes with `trashed_at`, `trashed_by`, `purge_after`; `retention_days` |
+| DELETE | `/api/v1/workspaces/{id}/trash` | Admin+ | empty the Trash for good → `{deleted_notes}` |
+| POST | `/api/v1/trash/{noteId}/restore` | Editor+ | bring a trashed note back → the note |
+| DELETE | `/api/v1/trash/{noteId}` | Admin+ | delete one trashed note for good (204) |
+| GET | `/api/v1/search?q=<words>` | user | notes in every workspace the caller can read; `&archived=1` includes the Archive; → `results`, `terms`, `limited` |
 | GET | `/api/v1/workspaces/{id}/folders` | Reader+ | folders with `note_count` (active notes) |
 | POST | `/api/v1/workspaces/{id}/folders` | Editor+ | `{name}` → 201; duplicate name → 409 `folder_name_taken` |
 | PATCH | `/api/v1/folders/{id}` | Editor+ | `{name}` rename |
@@ -102,6 +112,35 @@ Tags belong to one workspace (D034) and are set through the note: `tags` is a li
 (1–50 characters, no commas, at most 20 per note). A leading `#` is dropped, duplicates are
 compared ignoring case and the first spelling used in the workspace is kept. Sending `tags`
 replaces the note's tags; leaving it out keeps them. Tags no note uses any more disappear.
+
+### Archive, Trash and history
+
+Archived notes (D048) stay readable, editable and searchable on request, but leave the normal
+note list and the folder and tag counts. Archiving is not an edit: it changes neither the
+revision nor the history.
+
+Trash (D012, D039, D045): `DELETE /api/v1/notes/{id}` moves a note to Trash. `/api/v1/trash/{noteId}`
+only ever addresses trashed notes and `/api/v1/notes/{id}` only active ones, so an active note
+can never be purged by mistake (404). A restored note returns to its folder, or to the Archive
+if it was archived. Deleting for good removes the note, its history, tag links, attachment rows
+and image files, and tags no note uses any more. `bin/purge-trash.php` does the same daily for
+notes trashed more than `trash.retention_days` (default 30) days ago.
+
+History (D009, D037): every save keeps the state it replaces, unless nothing changed. Saves by
+the same person within 10 minutes of the last kept version count as one; a save by someone else
+always keeps the previous state. At most 100 earlier versions are kept per note (oldest go
+first). A restore is a normal save that needs the current `revision`, and the state it replaces
+is always kept, so a restore can be undone.
+
+### Search
+
+`GET /api/v1/search?q=…` (D011, D038) looks in every workspace the caller is a member of (any
+role) and nowhere else; administrator accounts find nothing. Every word must occur in the
+title, the text or a tag name, anywhere inside a word ("möte" finds "mötesanteckningar"),
+ignoring case; `%`, `_` and `!` are matched literally. Trashed notes are never searched;
+archived ones only with `&archived=1`. At most 50 results (title matches first, then most
+recently changed); `limited: true` means there may be more. `q` is required, at most 200
+characters, one line (422 otherwise).
 
 ### Attachments (images)
 

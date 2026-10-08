@@ -74,7 +74,25 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Clipboard paste uses the same upload endpoint | `note-editor.js`; e2e check |
 | Data reset deletes folders, tags, attachments and their files | `DataResetTest` |
 
+## Week 4 — Search, history, Archive and Trash
+
+| Control | Verified by |
+|---|---|
+| User A cannot discover user B's notes through search; joining or leaving a workspace changes exactly what is searchable | `SearchTest::testSearchNeverShowsOtherPeoplesNotes` |
+| Administrator accounts find nothing | `SearchTest::testAdministratorAccountsFindNothing` |
+| Trash is never searched; the Archive only on request | `SearchTest::testTrashIsNeverSearchedAndArchiveOnlyOnRequest` |
+| Search input: LIKE wildcards matched literally, length and control characters validated, sign-in required | `SearchTest::testWildcardCharactersAreMatchedLiterally`, `testInvalidQueriesAreRejected` |
+| User A cannot list, read or restore user B's history; version IDs only work with their own note; trashed notes' history is unavailable | `NoteHistoryTest::testHistoryIsInvisibleWithoutAccessToTheNote` |
+| Readers see history but cannot restore | `NoteHistoryTest::testReadersSeeHistoryButCannotRestore` |
+| Restore needs the current revision (no silent overwrite) and is itself undoable | `NoteHistoryTest::testRestoringAVersionIsANewSaveThatCanBeUndone` |
+| At most 100 versions kept | `NoteHistoryTest::testOnlyTheNewestHundredVersionsAreKept` |
+| Outsiders cannot list, restore, purge or empty another workspace's Trash | `TrashAndArchiveTest::testOutsidersCannotSeeOrTouchTheTrash` |
+| Readers cannot restore; Editors cannot delete for good; active notes can never be purged | `TrashAndArchiveTest::testTrashListRestoreAndRoles`, `testOnlyAdminsAndOwnersDeleteForGood` |
+| Purge removes history, tag links, unused tags, attachment rows and only that note's files | `TrashAndArchiveTest::testPurgingRemovesHistoryTagsAttachmentsAndFiles` |
+| Retention cleanup never deletes active or archived content, only Trash older than the limit | `TrashAndArchiveTest::testRetentionCleanupDeletesOnlyExpiredTrash` |
+| Restore, purge, empty Trash, scheduled cleanup and version restores are audited | `TrashAndArchiveTest`, `NoteHistoryTest`, `bin/purge-trash.php` |
+| Search highlighting built from text nodes and `<mark>` elements, never `innerHTML` | `search.js` code review |
+
 ## Open items for later weeks
 
-- Search and history authorization tests (Week 4).
 - Full security review against this list (Week 5).

@@ -275,11 +275,50 @@ Rendered notes show images only when they reference a Muninn attachment
 (`![alt](attachment:<id>)`). Any other image URL is shown as a link instead, so opening a note
 never contacts another server (no tracking pixels, no mixed content).
 
+## D037 — When a history version is kept
+
+**Status:** Proposed (2026-10-08), built on this default while the project owner decides
+
+Every save keeps the note state it replaces (title, content, folder and tag names) in
+`note_versions`, unless the save changes nothing. Saves by the same person within 10 minutes of
+the last kept version count as one change: only the state from before that burst is kept. A save
+by someone else always keeps the previous state, so merging never loses another person's work.
+At most 100 earlier versions are kept per note (D009); the oldest go first. Restoring a version is
+an ordinary save that needs the current revision, and the state it replaces is always kept, so a
+restore can be undone. Archiving, trashing and restoring from Trash are not edits and add no
+version. Readers may see history; Editors and up may restore.
+
+## D038 — Search matches parts of words
+
+**Status:** Proposed (2026-10-08), built on this default while the project owner decides
+
+Search uses `LIKE` on the note title, content and tag names, not MariaDB `FULLTEXT`: every word
+typed must occur somewhere, also inside a longer word, so Swedish compound words are found
+("möte" finds "mötesanteckningar"). The `utf8mb4_unicode_ci` collation makes matching ignore case
+and accents. Note volumes in Muninn are small enough that scanning is fast; `FULLTEXT` (relevance
+ranking, whole words only, minimum word length) can be added later if needed. Search covers only
+the workspaces `WorkspaceAuthorizer` says the caller may read, never Trash, and the Archive only on
+request. At most 50 results; title matches first.
+
+## D039 — Trash purge
+
+**Status:** Proposed (2026-10-08), built on this default while the project owner decides
+
+Deleting a note for good removes the note row, its version history, its tag links, its attachment
+rows and the attachment files, and tags no note uses any more. Files are deleted after the database
+transaction commits. Two ways lead there, both only for notes already in Trash:
+
+- Admins and Owners may delete one trashed note, or empty the whole Trash, right away
+  (`WorkspacePermission::PurgeNotes`). Editors can trash and restore but never destroy data. In a
+  personal workspace the user is the Owner, so they can always empty their own Trash.
+- `bin/purge-trash.php`, run daily by the Synology Task Scheduler, deletes notes trashed more than
+  `trash.retention_days` (default 30, D012) days ago. Without the task, notes simply stay in Trash.
+
 ## D041 — Manual, zip-based deployment
 
 **Status:** Accepted (2026-10-01)
 
-(D037–D040 are reserved for the decisions proposed for Weeks 4–5 in the Week 1 plan.)
+(D040 is reserved for password reset, proposed for Week 5 in the Week 1 plan.)
 
 Nothing deploys automatically. A GitHub Actions workflow builds `muninn-<version>.zip` (API with
 production autoloader, frontend, `DEPLOY.md`, `Deploy-Api.ps1`). The frontend is uploaded by
@@ -334,7 +373,7 @@ first, offers `--dry-run`, and deletes only after the exact phrase `DELETE ALL U
 This is a server-operator tool for clearing out test data, not account deletion: D031 still
 holds for the web interface (accounts are disabled, never deleted), and there is deliberately no
 API endpoint, so a stolen admin session can never wipe the system. Since Week 3 it also deletes
-folders, tags, attachments and the attachment files.
+folders, tags, attachments and the attachment files, and since Week 4 the note history.
 
 ## D043 — Brand colour palette
 
@@ -372,3 +411,14 @@ served only through `GET /api/v1/attachments/{id}/content` after the note's work
 is checked; attachments of trashed notes are unavailable. A new note is saved automatically when
 its first image is added, so the image has a note to belong to. Removing single attachments is
 left out of the MVP; files go with their note when Trash purge arrives (D039).
+
+## D048 — Archive
+
+**Status:** Accepted (2026-10-08, minor implementation choice)
+
+Archiving sets `notes.archived_at`. Archived notes stay readable and editable by the same roles,
+keep their attachments, and appear in search when the user ticks "Include archived notes"; they
+leave the workspace's normal note list and the folder and tag counts, and are shown in the
+workspace's Archive view instead. Archiving is done by Editors and up, is not an edit (no new
+revision or history version), and a trashed note that is restored returns to the Archive if it was
+archived.
