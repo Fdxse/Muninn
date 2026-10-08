@@ -361,7 +361,7 @@ WebP of the dark horizontal logo; the full-size originals are not deployed.
 
 ## D047 — Image attachments
 
-**Status:** Proposed (2026-10-08)
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Attachments are images (PNG, JPEG, GIF, WebP; never SVG) of at most 10 MB (configurable),
 belonging to one note. The type is detected from the file's bytes and checked with
