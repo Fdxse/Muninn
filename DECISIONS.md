@@ -241,7 +241,7 @@ authorized by a single, unchanging workspace.
 
 ## D033 — Folders are flat
 
-**Status:** Proposed (Week 1 plan; built in Week 3, awaiting the project owner's confirmation)
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Folders are one level deep and belong to one workspace. A note is in at most one folder or in
 "No folder". Deleting a folder never deletes notes: they move to "No folder"
@@ -250,7 +250,7 @@ by whoever may edit notes (Editor and up), since they only organise notes.
 
 ## D034 — Tags belong to a workspace
 
-**Status:** Proposed (Week 1 plan; built in Week 3, awaiting the project owner's confirmation)
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Tags are never global: each tag belongs to one workspace, so a tag name typed in one workspace
 can never be seen from another. Tags are set through the note (a list of names), created on
@@ -269,7 +269,7 @@ strict CSP. There is no server-side Markdown library.
 
 ## D036 — Only Muninn attachments render as images
 
-**Status:** Proposed (Week 1 plan; built in Week 3, awaiting the project owner's confirmation)
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Rendered notes show images only when they reference a Muninn attachment
 (`![alt](attachment:<id>)`). Any other image URL is shown as a link instead, so opening a note
