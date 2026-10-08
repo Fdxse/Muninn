@@ -164,7 +164,7 @@
         folderSelect.replaceChildren(MuninnApi.createElement('option', null, 'No folder'));
         folderSelect.firstChild.value = '';
         folderData.folders.forEach(function (folder) {
-            var folderOption = MuninnApi.createElement('option', null, folder.name);
+            var folderOption = MuninnApi.createElement('option', null, MuninnApi.folderOptionLabel(folder));
             folderOption.value = folder.id;
             folderSelect.appendChild(folderOption);
         });

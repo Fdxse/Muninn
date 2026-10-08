@@ -1,7 +1,7 @@
 /*
  * Notes home: loads the user's workspaces into the picker and lists the notes of the chosen
- * one, optionally narrowed to a folder and/or a tag, or its Archive instead. Editors can add,
- * rename and delete folders.
+ * one, optionally narrowed to a folder (sub-folders included) and/or a tag, or its Archive
+ * instead. Editors can add, move, rename and delete folders, up to 3 levels deep (D055).
  * All text is inserted with textContent, never innerHTML.
  */
 (function () {
@@ -24,12 +24,16 @@
     var foldersErrorAlert = document.getElementById('folders-error');
     var newFolderForm = document.getElementById('new-folder-form');
     var newFolderNameInput = document.getElementById('new-folder-name');
+    var newFolderParentSelect = document.getElementById('new-folder-parent');
     var folderManagementList = document.getElementById('folder-management-list');
     var showNotesButton = document.getElementById('show-notes-button');
     var showArchiveButton = document.getElementById('show-archive-button');
     var trashLink = document.getElementById('trash-link');
     var folderFilterRow = document.getElementById('folder-filter-row');
     var archiveHint = document.getElementById('archive-hint');
+
+    /** Deepest folder level the API allows (D055); top-level folders are level 1. */
+    var MAXIMUM_FOLDER_LEVEL = 3;
 
     /** Folder filter values besides folder IDs. */
     var ALL_FOLDERS = '';
@@ -91,7 +95,8 @@
         folderFilter.replaceChildren();
         var choices = [{ value: ALL_FOLDERS, label: 'All folders' }, { value: NO_FOLDER, label: 'No folder' }];
         currentFolders.forEach(function (folder) {
-            choices.push({ value: folder.id, label: folder.name + ' (' + folder.note_count + ')' });
+            // The count includes sub-folders, matching what choosing the folder lists.
+            choices.push({ value: folder.id, label: MuninnApi.folderOptionLabel(folder) + ' (' + folder.total_note_count + ')' });
         });
         choices.forEach(function (choice) {
             var folderOption = MuninnApi.createElement('option', null, choice.label);
@@ -131,17 +136,129 @@
         tagFilter.classList.toggle('d-none', workspaceTags.length === 0);
     }
 
-    /** Fills the folder management dialog. */
+    /** Finds a loaded folder by ID, or null. */
+    function folderById(folderId) {
+        for (var folderIndex = 0; folderIndex < currentFolders.length; folderIndex++) {
+            if (currentFolders[folderIndex].id === folderId) {
+                return currentFolders[folderIndex];
+            }
+        }
+        return null;
+    }
+
+    /** The IDs of every folder below the given one (its sub-folders, their sub-folders, ...). */
+    function descendantIdsOf(folderId) {
+        var descendantIds = [];
+        var parentIdsToVisit = [folderId];
+        while (parentIdsToVisit.length > 0) {
+            var visitedParentId = parentIdsToVisit.shift();
+            currentFolders.forEach(function (folder) {
+                if (folder.parent_id === visitedParentId && descendantIds.indexOf(folder.id) === -1) {
+                    descendantIds.push(folder.id);
+                    parentIdsToVisit.push(folder.id);
+                }
+            });
+        }
+        return descendantIds;
+    }
+
+    /** How many levels the folder's branch spans (1 when it has no sub-folders). */
+    function branchHeightOf(folder) {
+        var deepestLevel = folder.level;
+        descendantIdsOf(folder.id).forEach(function (descendantId) {
+            deepestLevel = Math.max(deepestLevel, folderById(descendantId).level);
+        });
+        return deepestLevel - folder.level + 1;
+    }
+
+    /**
+     * The places a folder can move to: the top level, or any folder that is not the folder
+     * itself or below it, and deep enough room for its whole branch. The API checks this again.
+     */
+    function moveTargetsFor(folder) {
+        var excludedIds = descendantIdsOf(folder.id).concat([folder.id]);
+        var branchHeight = branchHeightOf(folder);
+        return currentFolders.filter(function (candidateFolder) {
+            return excludedIds.indexOf(candidateFolder.id) === -1
+                && candidateFolder.level + branchHeight <= MAXIMUM_FOLDER_LEVEL;
+        });
+    }
+
+    /** Fills a <select> with "Top level" and the given folders, indented as a tree. */
+    function fillParentSelect(parentSelect, parentFolders, selectedParentId) {
+        parentSelect.replaceChildren(MuninnApi.createElement('option', null, 'Top level'));
+        parentSelect.firstChild.value = '';
+        parentFolders.forEach(function (parentFolder) {
+            var parentOption = MuninnApi.createElement('option', null, MuninnApi.folderOptionLabel(parentFolder));
+            parentOption.value = parentFolder.id;
+            parentSelect.appendChild(parentOption);
+        });
+        parentSelect.value = selectedParentId || '';
+        if (parentSelect.selectedIndex === -1) {
+            parentSelect.value = '';
+        }
+    }
+
+    /** Shows a small "move to" form under a folder in the management dialog. */
+    function showMoveForm(folder, folderItem) {
+        var existingForm = folderManagementList.querySelector('.muninn-folder-move-form');
+        if (existingForm) {
+            existingForm.remove();
+        }
+        var moveForm = MuninnApi.createElement('form', 'muninn-folder-move-form d-flex flex-wrap gap-2 w-100 mt-2');
+        moveForm.noValidate = true;
+        var moveSelectId = 'move-folder-' + folder.id;
+        var moveLabel = MuninnApi.createElement('label', 'visually-hidden', 'Move "' + folder.name + '" into');
+        moveLabel.htmlFor = moveSelectId;
+        var moveSelect = MuninnApi.createElement('select', 'form-select form-select-sm flex-grow-1 w-auto');
+        moveSelect.id = moveSelectId;
+        fillParentSelect(moveSelect, moveTargetsFor(folder), folder.parent_id);
+        var confirmButton = MuninnApi.createElement('button', 'btn btn-primary btn-sm', 'Move');
+        confirmButton.type = 'submit';
+        var cancelMoveButton = MuninnApi.createElement('button', 'btn btn-outline-secondary btn-sm', 'Cancel');
+        cancelMoveButton.type = 'button';
+        cancelMoveButton.addEventListener('click', function () {
+            moveForm.remove();
+        });
+        moveForm.addEventListener('submit', function (submitEvent) {
+            submitEvent.preventDefault();
+            moveFolder(folder, moveSelect.value === '' ? null : moveSelect.value);
+        });
+        moveForm.appendChild(moveLabel);
+        moveForm.appendChild(moveSelect);
+        moveForm.appendChild(confirmButton);
+        moveForm.appendChild(cancelMoveButton);
+        folderItem.appendChild(moveForm);
+        moveSelect.focus();
+    }
+
+    /** Fills the folder management dialog: the folder tree, and the "create inside" choices. */
     function showFolderManagement() {
         folderManagementList.replaceChildren();
+        // A new folder can go inside any folder that is not yet at the deepest level.
+        fillParentSelect(newFolderParentSelect, currentFolders.filter(function (folder) {
+            return folder.level < MAXIMUM_FOLDER_LEVEL;
+        }), newFolderParentSelect.value);
         if (currentFolders.length === 0) {
             folderManagementList.appendChild(MuninnApi.createElement('li', 'list-group-item text-muted-brand', 'No folders yet.'));
             return;
         }
         currentFolders.forEach(function (folder) {
-            var folderItem = MuninnApi.createElement('li', 'list-group-item d-flex align-items-center gap-2');
-            folderItem.appendChild(MuninnApi.createElement('span', 'flex-grow-1 text-break', folder.name));
+            // Sub-folders are indented by level (CSS classes, so no inline styles are needed).
+            var folderItem = MuninnApi.createElement('li', 'list-group-item d-flex flex-wrap align-items-center gap-2 muninn-folder-level-' + folder.level);
+            var folderNameLabel = MuninnApi.createElement('span', 'flex-grow-1 text-break');
+            folderNameLabel.appendChild(iconElement(folder.level > 1 ? 'bi-arrow-return-right' : 'bi-folder'));
+            folderNameLabel.appendChild(document.createTextNode(' ' + folder.name));
+            folderItem.appendChild(folderNameLabel);
             folderItem.appendChild(MuninnApi.createElement('small', 'text-muted-brand text-nowrap', folder.note_count + (folder.note_count === 1 ? ' note' : ' notes')));
+
+            var moveButton = MuninnApi.createElement('button', 'btn btn-outline-secondary btn-sm');
+            moveButton.type = 'button';
+            moveButton.setAttribute('aria-label', 'Move folder ' + folder.name);
+            moveButton.appendChild(iconElement('bi-folder-symlink'));
+            moveButton.addEventListener('click', function () {
+                showMoveForm(folder, folderItem);
+            });
 
             var renameButton = MuninnApi.createElement('button', 'btn btn-outline-secondary btn-sm');
             renameButton.type = 'button';
@@ -159,6 +276,7 @@
                 deleteFolder(folder);
             });
 
+            folderItem.appendChild(moveButton);
             folderItem.appendChild(renameButton);
             folderItem.appendChild(deleteButton);
             folderManagementList.appendChild(folderItem);
@@ -266,10 +384,30 @@
         }
     }
 
+    async function moveFolder(folder, newParentId) {
+        MuninnApi.showAlert(foldersErrorAlert, '');
+        try {
+            await MuninnApi.request('PATCH', '/api/v1/folders/' + encodeURIComponent(folder.id), { parent_id: newParentId });
+            await refreshList();
+        } catch (moveError) {
+            MuninnApi.showAlert(foldersErrorAlert, (moveError.fields && moveError.fields.parent_id) || moveError.message);
+        }
+    }
+
     async function deleteFolder(folder) {
+        // Notes and sub-folders move up one level (D055): into the parent, or to the top level.
+        var parentFolder = folder.parent_id ? folderById(folder.parent_id) : null;
+        var subFolderCount = currentFolders.filter(function (candidateFolder) {
+            return candidateFolder.parent_id === folder.id;
+        }).length;
         var question = 'Delete the folder "' + folder.name + '"?';
         if (folder.note_count > 0) {
-            question += ' Its ' + folder.note_count + (folder.note_count === 1 ? ' note moves' : ' notes move') + ' to "No folder".';
+            question += ' Its ' + folder.note_count + (folder.note_count === 1 ? ' note moves' : ' notes move')
+                + (parentFolder ? ' to "' + parentFolder.name + '".' : ' to "No folder".');
+        }
+        if (subFolderCount > 0) {
+            question += ' Its ' + subFolderCount + (subFolderCount === 1 ? ' sub-folder moves' : ' sub-folders move')
+                + (parentFolder ? ' into "' + parentFolder.name + '".' : ' to the top level.');
         }
         if (!window.confirm(question)) {
             return;
@@ -287,7 +425,10 @@
         submitEvent.preventDefault();
         MuninnApi.showAlert(foldersErrorAlert, '');
         try {
-            await MuninnApi.request('POST', workspacePath() + '/folders', { name: newFolderNameInput.value });
+            await MuninnApi.request('POST', workspacePath() + '/folders', {
+                name: newFolderNameInput.value,
+                parent_id: newFolderParentSelect.value === '' ? null : newFolderParentSelect.value,
+            });
             newFolderNameInput.value = '';
             await refreshList();
             newFolderNameInput.focus();

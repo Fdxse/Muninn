@@ -580,3 +580,12 @@ a.btn {
     border-left: 0.3rem solid var(--muninn-navy-900);
     color: var(--muninn-ink-800);
 }
+
+/* Folder management: sub-folders (D055) are indented by level. */
+.muninn-folder-level-2 {
+    padding-left: 2rem;
+}
+
+.muninn-folder-level-3 {
+    padding-left: 3.25rem;
+}

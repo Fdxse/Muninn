@@ -88,14 +88,25 @@ renderAppNavbar();
                 </div>
                 <div class="modal-body">
                     <div id="folders-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
-                    <form id="new-folder-form" class="d-flex gap-2 mb-3" novalidate>
-                        <label for="new-folder-name" class="visually-hidden">New folder name</label>
-                        <input type="text" class="form-control" id="new-folder-name" maxlength="100" placeholder="New folder name" required>
-                        <button type="submit" class="btn btn-primary text-nowrap">
-                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Add
-                        </button>
+                    <form id="new-folder-form" class="row g-2 mb-3" novalidate>
+                        <div class="col-12 col-sm-6">
+                            <label for="new-folder-name" class="visually-hidden">New folder name</label>
+                            <input type="text" class="form-control" id="new-folder-name" maxlength="100" placeholder="New folder name" required>
+                        </div>
+                        <div class="col">
+                            <label for="new-folder-parent" class="visually-hidden">Create inside</label>
+                            <select class="form-select" id="new-folder-parent"></select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary text-nowrap">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Add
+                            </button>
+                        </div>
                     </form>
-                    <p class="small text-muted-brand">Deleting a folder never deletes notes: they move to "No folder".</p>
+                    <p class="small text-muted-brand">
+                        Folders can be up to 3 levels deep. Deleting a folder never deletes notes: its notes and
+                        sub-folders move up one level, into the folder above it or to "No folder".
+                    </p>
                     <ul id="folder-management-list" class="list-group"></ul>
                 </div>
             </div>
