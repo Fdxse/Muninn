@@ -6,6 +6,9 @@ Summary:
 
 - Deployment is manual by design. GitHub builds a zip (`.github/workflows/release.yml`); nothing
   is pushed to any server automatically.
+- A release zip is built automatically after every merge to main, once CI has passed on that
+  commit: Actions → Release → the newest run → Artifacts, named `muninn-main-<date>-<commit>`.
+  A version tag (`v*`) or Actions → Release → Run workflow still builds one on demand.
 - **API** → NAS via `Deploy-Api.ps1`, then `php bin/migrate.php` over SSH. Web root is the
   API folder's `public/` subfolder, served as `https://api.dx.se` (CNAME of `fehre.synology.me`).
 - **Frontend** → FTP the contents of `frontend/` to the `www.dx.se` web root.
