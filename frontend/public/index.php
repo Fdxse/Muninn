@@ -4,7 +4,8 @@
  * Signed-in home: the notes of one workspace. A workspace picker switches between the user's
  * personal workspace and the shared workspaces they belong to; the folder picker and tag chips
  * narrow the list, and Editors can manage the workspace's folders. A switch shows the workspace's
- * Archive instead, and links lead to its Trash and to search across all workspaces.
+ * Archive instead, and a link leads to its Trash. Search lives in the top menu (search.php), so it
+ * is reachable from every page and the note list starts higher on a phone.
  * Signed-out visitors are sent to login.php by assets/js/app-shell.js.
  */
 
@@ -38,16 +39,6 @@ renderAppNavbar();
         </div>
 
         <p id="workspace-role-hint" class="small text-muted-brand mb-2"></p>
-
-        <!-- Search covers every workspace; it is a plain form so it also works as a bookmark. -->
-        <form class="d-flex gap-2 mb-3" action="search.php" method="get" role="search">
-            <label for="home-search-input" class="visually-hidden">Search all notes</label>
-            <input type="search" class="form-control" id="home-search-input" name="q" maxlength="200"
-                   placeholder="Search all notes" autocomplete="off">
-            <button type="submit" class="btn btn-outline-secondary" aria-label="Search">
-                <i class="bi bi-search" aria-hidden="true"></i>
-            </button>
-        </form>
 
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
             <div class="btn-group btn-group-sm muninn-toggle-group" role="group" aria-label="Which notes to show">
