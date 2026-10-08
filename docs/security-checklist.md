@@ -93,6 +93,33 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Restore, purge, empty Trash, automatic cleanup and version restores are audited | `TrashAndArchiveTest`, `NoteHistoryTest`, `ExpiredTrashCleanup` |
 | Search highlighting built from text nodes and `<mark>` elements, never `innerHTML` | `search.js` code review |
 
-## Open items for later weeks
+## Week 5 — password reset, invitation requests, admin workspaces, review
 
-- Full security review against this list (Week 5).
+| Control | Verified by |
+|---|---|
+| Reset tokens 256-bit, hash-only, single use, 24 h default (72 h max), newest link replaces older ones | `PasswordResetTest::testResetLinkSetsNewPasswordAndSignsOutEverywhere`, `testLinkCannotBeReused`, `testNewLinkRevokesOlderOneAndUnusableLinksFailIdentically` |
+| Used, replaced, expired, unknown and malformed reset links give an identical 404 | `PasswordResetTest::testNewLinkRevokesOlderOneAndUnusableLinksFailIdentically` |
+| A reset signs the account out everywhere; disabling an account revokes its reset links | `PasswordResetTest::testResetLinkSetsNewPasswordAndSignsOutEverywhere`, `testDisablingTheAccountRevokesItsLink` |
+| Reset token guesses rate limited per IP; only admins create links, never for themselves or disabled accounts | `PasswordResetTest::testInvalidTokenGuessesAreRateLimitedPerIp`, `testAdminRulesForCreatingLinks`, `testEverydayUserCannotCreateResetLinks` |
+| Changing one's own password needs the current one, is rate limited like sign-in, needs CSRF, signs out other sessions | `PasswordResetTest::testUserChangesOwnPasswordAndOtherSessionsEnd`, `testWrongCurrentPasswordIsRejectedAndRateLimited`, `testChangingOwnPasswordNeedsCsrfToken` |
+| Users see and act on only their own invitation requests (others' look nonexistent) | `InvitationRequestTest::testUsersSeeAndTouchOnlyTheirOwnRequests` |
+| Only admins approve or decline; links only after approval; decline, cancel and a disabled requester stop the link | `InvitationRequestTest` |
+| Requested links are ordinary single-use invitations; a new link revokes the old one | `InvitationRequestTest::testNewLinkReplacesTheOldOne`, `testFullFlowFromRequestToNewAccount` |
+| Request state changes lock the request and invitation rows (no decline/accept race) | `InvitationRequestService::lockRequest` code review |
+| Admin workspace pages show no note titles, counts or content; personal workspaces are not reachable | `WorkspaceAdminTest::testListShowsSharedWorkspacesWithoutContent`, `testPersonalWorkspacesAreNotManageable` |
+| Member management by admins keeps the one-Owner rule, is audited, and grants admins no note access | `WorkspaceAdminTest` |
+| Admin workspace endpoints are 404 for everyday users, including the workspace's own Owner | `WorkspaceAdminTest::testEverydayUsersCannotUseAdminWorkspaceEndpoints` |
+| No new password or token reaches the log file or any table; new events audited | `AuditAndSecretsTest::testPasswordResetAndRequestedInvitationLeakNoSecrets` |
+| Data reset also clears invitation requests and reset links | `DataResetTest` |
+| Frontend: no `innerHTML`, `eval` or inline script anywhere; reset token in the URL fragment and removed from history | code review (grep), `reset-password.js` |
+| SQL review: every query with input uses bound parameters; the few built clauses are fixed strings from code | code review (grep for concatenated SQL) |
+| Contrast: outline buttons, danger text and checkbox borders meet WCAG AA | `muninn.css`, screenshots at 390 px |
+
+## Week 5 review notes
+
+- Reviewed every route in `Application::registerRoutes` against SECURITY.md: each protected route
+  is behind the session check in the pipeline, admin routes are 404 for everyone else, every
+  state change needs the CSRF token, and every workspace route goes through `WorkspaceAuthorizer`.
+- Accepted trade-off D050: administrators can add any everyday account to a shared workspace.
+- Out of the application's reach (hosting): HTTPS redirect and HSTS for the frontend on one.com,
+  and backups of the NAS database (see known limitations).

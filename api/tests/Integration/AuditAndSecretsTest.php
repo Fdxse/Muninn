@@ -77,6 +77,57 @@ final class AuditAndSecretsTest extends IntegrationTestCase
         }
     }
 
+    /**
+     * Week 5 flows: password reset links (D040), changing one's own password, and links created
+     * through invitation requests (D049). Same proof: audited, and no secret stored or logged.
+     */
+    public function testPasswordResetAndRequestedInvitationLeakNoSecrets(): void
+    {
+        $this->createUser('admin', self::DEFAULT_PASSWORD, true);
+        $aliceId = $this->createUser('alice');
+        $adminCredentials = $this->login('admin');
+        $aliceCredentials = $this->login('alice');
+
+        // Alice changes her own password.
+        $changedPassword = 'changed password that must never leak';
+        $this->sendAs($aliceCredentials, 'POST', '/api/v1/auth/password', [
+            'current_password' => self::DEFAULT_PASSWORD,
+            'new_password' => $changedPassword,
+        ]);
+
+        // The administrator creates a reset link and Alice uses it.
+        $resetUrl = (string) $this->sendAs($adminCredentials, 'POST', '/api/v1/admin/users/' . $aliceId . '/password-reset', [])->json()['data']['reset_url'];
+        $resetToken = substr($resetUrl, strpos($resetUrl, '#token=') + 7);
+        $resetPassword = 'reset password that must never leak';
+        $this->send('POST', '/api/v1/password-resets/complete', ['token' => $resetToken, 'password' => $resetPassword]);
+
+        // Alice asks for an invitation, it is approved, and she creates the link.
+        $aliceCredentials = $this->login('alice', $resetPassword);
+        $requestId = (string) $this->sendAs($aliceCredentials, 'POST', '/api/v1/invitation-requests', ['note' => 'Carl'])->json()['data']['invitation_request']['id'];
+        $this->sendAs($adminCredentials, 'POST', '/api/v1/admin/invitation-requests/' . $requestId . '/approve');
+        $requestedUrl = (string) $this->sendAs($aliceCredentials, 'POST', '/api/v1/invitation-requests/' . $requestId . '/link')->json()['data']['invitation_url'];
+        $requestedToken = substr($requestedUrl, strpos($requestedUrl, '#token=') + 7);
+
+        $recordedEventCounts = $this->database->query('SELECT event_type, COUNT(*) FROM audit_log GROUP BY event_type')->fetchAll(PDO::FETCH_KEY_PAIR);
+        foreach ([
+            AuditLog::PASSWORD_CHANGED,
+            AuditLog::PASSWORD_RESET_CREATED,
+            AuditLog::PASSWORD_RESET_COMPLETED,
+            AuditLog::INVITATION_REQUEST_CREATED,
+            AuditLog::INVITATION_REQUEST_APPROVED,
+            AuditLog::INVITATION_REQUEST_LINK_CREATED,
+        ] as $expectedEventType) {
+            self::assertSame(1, (int) ($recordedEventCounts[$expectedEventType] ?? 0), $expectedEventType);
+        }
+
+        $logContents = is_file($this->logFilePath) ? (string) file_get_contents($this->logFilePath) : '';
+        $databaseDump = $this->dumpAllTables();
+        foreach ([$changedPassword, $resetPassword, $resetToken, $requestedToken, $aliceCredentials['session_token']] as $secretValue) {
+            self::assertStringNotContainsString($secretValue, $logContents, 'Secret found in log file.');
+            self::assertStringNotContainsString($secretValue, $databaseDump, 'Secret found in database.');
+        }
+    }
+
     /** Concatenates every value of every table into one string. */
     private function dumpAllTables(): string
     {

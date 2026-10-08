@@ -1,6 +1,6 @@
 # Known limitations
 
-Current state after Week 4. Updated as the MVP grows.
+Current state after Week 5. Updated as the MVP grows.
 
 - **Only images can be attached** (PNG, JPEG, GIF, WebP up to 10 MB). Other file types, and
   images from other websites, are not shown in notes (D036: an outside image appears as a link).
@@ -27,10 +27,16 @@ Current state after Week 4. Updated as the MVP grows.
 - **Members are added by exact username.** Workspace Owners and Admins can therefore confirm
   whether an active username exists; there is no user directory or autocomplete.
 - **A disabled user stays listed as a member** of their workspaces (marked "disabled account").
-  If they were a shared workspace's only Owner, nobody can manage its members until they are
-  re-enabled; system administrator membership management is part of the Week 5 admin work.
-- **No password reset.** A forgotten password needs an administrator (planned as D040).
-- **No email.** Administrators copy invitation links and send them themselves.
+  If they were a shared workspace's only Owner, a system administrator gives the workspace a new
+  Owner on the admin Workspaces page (D050).
+- **No self-service password reset.** Someone who forgot their password asks an administrator
+  for a one-time reset link (D040).
+- **No email.** Administrators copy invitation and reset links and send them themselves; users
+  whose invitation request was approved do the same with their link (D049).
+- **Approved invitation requests do not expire.** The user can create a link until an
+  administrator withdraws the approval; each link itself expires after 72 hours.
+- **The admin Workspaces page lists at most 500 shared workspaces** and the admin request list
+  shows the newest 200 requests.
 - **Splash and hero images are stored but not used yet.** iOS needs one startup image per device
   size; Android builds its splash from the icon and the manifest colour
   (`assets/branding/ASSET-MANIFEST.md`).
