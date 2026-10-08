@@ -51,7 +51,7 @@ security check:
 Each route declares its access level (`public`, `user`, `system_admin`) where it is registered
 in `Application::registerRoutes()`.
 
-## Data model (migrations 0001–0005)
+## Data model (migrations 0001–0006)
 
 - `users`: UUID id, lowercase unique username, display name, password hash
   (Argon2id or bcrypt), `is_system_admin`, `status` (active/disabled).
@@ -68,8 +68,9 @@ in `Application::registerRoutes()`.
   (D048), and an optional `folder_id`.
 - `note_versions`: earlier states of a note (title, content, folder, tag names, who saved it
   and when), at most 100 per note (D009, D037). Removed with the note when it is purged.
-- `folders`: flat, one level, per workspace (D033); unique name per workspace. Deleting one sets
-  its notes' `folder_id` to NULL (`ON DELETE SET NULL`).
+- `folders`: per workspace (D033), unique name per workspace, optional `parent_folder_id` for
+  sub-folders up to 3 levels deep (D055). Deleting one through the API first moves its notes and
+  sub-folders up to its parent; the foreign keys' `ON DELETE SET NULL` is only a safety net.
 - `tags` and `note_tags`: tags per workspace (D034), unique name per workspace, linked to notes.
   Unused tags are removed when a note's tags change.
 - `password_resets`: one-time reset links created by an administrator (D040), hash only.
@@ -146,11 +147,14 @@ inserted into the DOM with `textContent`, never `innerHTML`. A strict CSP allows
 styles from the site itself only, images from the site and the API, and network calls to the
 site and the API.
 
-Note Markdown is rendered in the browser (D035) by `markdown-renderer.js` with two vendored
-libraries, `assets/vendor/marked-18.0.14` (MIT) and `assets/vendor/dompurify-3.4.16`
-(Apache-2.0 / MPL-2.0), loaded only on the note page:
+Note Markdown is rendered in the browser (D035) by `markdown-renderer.js` with three vendored
+libraries, `assets/vendor/marked-18.0.14` (MIT), `assets/vendor/dompurify-3.4.16`
+(Apache-2.0 / MPL-2.0) and a 12-language build of `assets/vendor/highlightjs-11.12.0`
+(BSD-3-Clause, D054), loaded only on the note and history pages:
 
 1. marked parses GitHub-flavoured Markdown with raw HTML turned off (typed HTML shows as text).
+   Code blocks are coloured by highlight.js here, which escapes the code and adds only
+   `<span class="hljs-…">` tags; that output goes through step 3 like the rest.
 2. Images render only for `attachment:<id>` references; other image URLs become plain links (D036).
 3. DOMPurify sanitises the HTML; a hook adds `rel="noopener noreferrer nofollow"` to links and
    drops any image whose source is not the API's attachment URL. The result is inserted as a
@@ -160,6 +164,8 @@ Checklist boxes in the read view are clickable for Editors: a tick rewrites that
 the source (fenced code blocks are skipped) and saves with the note's revision. The editor
 (`note-editor.js`) is a textarea with a formatting toolbar, Write/Preview switch, and image
 upload by button, clipboard paste or drag and drop, all through the same upload endpoint.
+Below the text, "Images on this note" lists the note's images; Remove deletes one for good
+(D056) and takes its Markdown out of the text, which the user then saves.
 
 The PWA is a manifest, the raven app icons and a service worker that caches nothing
 (installability only, per CLAUDE.md).

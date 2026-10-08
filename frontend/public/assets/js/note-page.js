@@ -1,7 +1,7 @@
 /*
  * Note page: shows one note as sanitised Markdown, edits it with optimistic concurrency (title,
- * content, folder and tags), adds images, ticks checklist boxes, creates new notes, archives
- * them, links to their history and moves notes to Trash. Markdown rendering lives in markdown-renderer.js, the editor controls in
+ * content, folder and tags), adds and removes images, ticks checklist boxes, creates new notes,
+ * archives them, links to their history and moves notes to Trash. Markdown rendering lives in markdown-renderer.js, the editor controls in
  * note-editor.js.
  */
 (function () {
@@ -35,6 +35,8 @@
     var bodyInput = document.getElementById('note-body');
     var saveButton = document.getElementById('save-note-button');
     var cancelButton = document.getElementById('cancel-edit-button');
+    var imagesSection = document.getElementById('note-images');
+    var imageList = document.getElementById('note-image-list');
 
     var fieldInputIds = { title: 'note-title', content: 'note-body', folder_id: 'note-folder', tags: 'note-tags' };
 
@@ -136,6 +138,7 @@
         MuninnApi.showFieldErrors(fieldInputIds, {});
         noteEditor.showWrite();
         noteEditor.showStatus('', false);
+        loadImageList();
 
         noteView.classList.add('d-none');
         noteForm.classList.remove('d-none');
@@ -161,7 +164,7 @@
         folderSelect.replaceChildren(MuninnApi.createElement('option', null, 'No folder'));
         folderSelect.firstChild.value = '';
         folderData.folders.forEach(function (folder) {
-            var folderOption = MuninnApi.createElement('option', null, folder.name);
+            var folderOption = MuninnApi.createElement('option', null, MuninnApi.folderOptionLabel(folder));
             folderOption.value = folder.id;
             folderSelect.appendChild(folderOption);
         });
@@ -210,7 +213,103 @@
             imageFile,
             imageFile.name || 'pasted-image'
         );
+        // Refreshed after the editor has inserted the Markdown, so the row shows it as used.
+        window.setTimeout(loadImageList, 0);
         return uploadData.attachment.markdown;
+    }
+
+    /** Matches every Markdown image that shows the given attachment, with the line break after it. */
+    function attachmentMarkdownPattern(attachmentId) {
+        return new RegExp('!\\[[^\\]\\n]*\\]\\(attachment:' + attachmentId + '\\)[ \\t]*\\n?', 'g');
+    }
+
+    /** True when the editor's text still shows the attachment. */
+    function editorUsesAttachment(attachmentId) {
+        return attachmentMarkdownPattern(attachmentId).test(bodyInput.value);
+    }
+
+    /** Builds one row of the image list: thumbnail, name, whether the text uses it, Remove button. */
+    function buildImageListItem(attachment) {
+        var listItem = MuninnApi.createElement('li', 'd-flex align-items-center gap-2 py-1 border-bottom');
+
+        var thumbnail = MuninnApi.createElement('img', 'muninn-note-image-thumbnail rounded');
+        thumbnail.src = MuninnMarkdown.attachmentUrl('attachment:' + attachment.id);
+        thumbnail.alt = '';
+        thumbnail.loading = 'lazy';
+        listItem.appendChild(thumbnail);
+
+        var nameColumn = MuninnApi.createElement('div', 'flex-grow-1 small text-break');
+        nameColumn.appendChild(MuninnApi.createElement('div', null, attachment.filename));
+        if (!editorUsesAttachment(attachment.id)) {
+            nameColumn.appendChild(MuninnApi.createElement('div', 'text-muted-brand', 'Not shown in the note text'));
+        }
+        listItem.appendChild(nameColumn);
+
+        var removeButton = MuninnApi.createElement('button', 'btn btn-outline-danger btn-sm');
+        removeButton.type = 'button';
+        var removeIcon = MuninnApi.createElement('i', 'bi bi-x-lg');
+        removeIcon.setAttribute('aria-hidden', 'true');
+        removeButton.appendChild(removeIcon);
+        removeButton.appendChild(document.createTextNode(' Remove'));
+        // The visible label is the same on every row, so screen readers also hear which image.
+        removeButton.setAttribute('aria-label', 'Remove image ' + attachment.filename);
+        removeButton.addEventListener('click', function () {
+            removeImage(attachment, removeButton);
+        });
+        listItem.appendChild(removeButton);
+
+        return listItem;
+    }
+
+    /** Loads the note's images into the editor's image list; the list hides itself when empty. */
+    async function loadImageList() {
+        if (!currentNote) {
+            imagesSection.classList.add('d-none');
+            return;
+        }
+        try {
+            var attachmentData = await MuninnApi.request('GET', '/api/v1/notes/' + encodeURIComponent(currentNote.id) + '/attachments');
+            imageList.replaceChildren();
+            attachmentData.attachments.forEach(function (attachment) {
+                imageList.appendChild(buildImageListItem(attachment));
+            });
+            imagesSection.classList.toggle('d-none', attachmentData.attachments.length === 0);
+        } catch (listError) {
+            // The list is a convenience; the editor works without it.
+            imagesSection.classList.add('d-none');
+        }
+    }
+
+    /**
+     * Removes one image for good after confirmation, then takes its Markdown out of the editor.
+     * The text change is saved with the note as usual; the image file itself is gone at once.
+     */
+    async function removeImage(attachment, removeButton) {
+        var usedInText = editorUsesAttachment(attachment.id);
+        var confirmMessage = 'Remove the image "' + attachment.filename + '" for good? This cannot be undone.'
+            + (usedInText ? ' It is also taken out of the note text; save the note to keep that change.' : '');
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+        removeButton.disabled = true;
+        try {
+            await MuninnApi.request('DELETE', '/api/v1/attachments/' + encodeURIComponent(attachment.id));
+        } catch (removeError) {
+            removeButton.disabled = false;
+            // A 404 means the image was already gone; refresh the list either way.
+            noteEditor.showStatus(removeError.status === 404 ? 'That image was already removed.' : removeError.message, removeError.status !== 404);
+            await loadImageList();
+            return;
+        }
+        if (usedInText) {
+            bodyInput.value = bodyInput.value.replace(attachmentMarkdownPattern(attachment.id), '');
+            // Lets the page know there is something to save.
+            bodyInput.dispatchEvent(new Event('input', { bubbles: true }));
+            noteEditor.showStatus('Image removed. Save the note to keep the text change.', false);
+        } else {
+            noteEditor.showStatus('Image removed.', false);
+        }
+        await loadImageList();
     }
 
     noteEditor = MuninnNoteEditor.attach({

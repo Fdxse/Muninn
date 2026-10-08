@@ -136,3 +136,17 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Demo passwords are random (144 bits), printed once, stored only as password hashes | `bin/seed-demo.php`; `DemoDataTest` signs in with them |
 | Setup check only reads; flags non-production mode, insecure cookies, pending migrations, missing admin, storage inside the web root, world-readable `config.php` | `bin/check-setup.php` run locally |
 | Demo, setup and admin scripts refuse to run from a web request | `bin/cli-guard.php` |
+
+## After the MVP — sub-folders, syntax highlighting, image removal
+
+| Control | Verified by |
+|---|---|
+| Removing an image needs Editor+; Readers get 403, non-members and admins the same 404 as an unknown ID; CSRF required | `AttachmentTest::testOnlyEditorsOfTheNoteCanRemoveImages` |
+| Removing deletes the row and the file of that image only, and is audited | `AttachmentTest::testEditorsCanRemoveOneImage` |
+| Images of trashed notes cannot be removed (kept for restore) | `AttachmentTest::testImagesOfTrashedNotesCannotBeRemoved` |
+| A folder's parent must be in the same workspace (same 422 as an unknown ID); outsiders cannot move folders | `SubFolderTest::testParentsNeverCrossWorkspaces` |
+| No loops, at most 3 levels, tree changes serialised per workspace | `SubFolderTest::testFoldersCanBeAtMostThreeLevelsDeep`, `testFoldersCannotBeMovedIntoThemselves`; `FolderService::inTreeTransaction` |
+| Deleting a folder never deletes notes or sub-folders; they move up one level | `SubFolderTest::testDeletingAFolderMovesItsNotesAndSubFoldersUpOneLevel` |
+| The sub-folder filter only walks folders of the listed workspace | `NoteService::listInWorkspace` (workspace condition on both parts of the recursive query); `SubFolderTest::testFilteringByAFolderIncludesItsSubFolders` |
+| Readers cannot create or move folders | `SubFolderTest::testReadersCannotCreateOrMoveSubFolders` |
+| Highlighted code still goes through DOMPurify; highlight.js escapes the code and adds only `span` classes | `markdown-renderer.js` code review; local check that `<script>` in a code block stays text |

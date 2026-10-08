@@ -241,7 +241,8 @@ authorized by a single, unchanging workspace.
 
 ## D033 — Folders are flat
 
-**Status:** Accepted (2026-10-08, confirmed by the project owner)
+**Status:** Accepted (2026-10-08, confirmed by the project owner). The "one level" part is
+replaced by D055 (sub-folders); the rest still applies.
 
 Folders are one level deep and belong to one workspace. A note is in at most one folder or in
 "No folder". Deleting a folder never deletes notes: they move to "No folder"
@@ -513,3 +514,48 @@ folder, which `index.php` would use anyway. D042's split layout stays supported 
 whose document root cannot be a subfolder. On the NAS, command-line scripts run as
 `sudo php84 bin/<script>.php` from `/volume1/Muninn`, and `bin/check-setup.php` reports anything
 that would break or weaken the installation (it changes nothing).
+
+## D054 — Syntax highlighting with a custom highlight.js build
+
+**Status:** Accepted (2026-10-08, library approved by the project owner)
+
+Code blocks in notes are coloured by highlight.js 11.12.0 (BSD-3-Clause), vendored in
+`assets/vendor/highlightjs-11.12.0` like marked and DOMPurify (no CDN). It is a custom build from
+the official build tool with 12 languages (PHP, JavaScript, SQL, HTML/XML, CSS, JSON, Bash,
+PowerShell, Python, YAML, Markdown, C#): about 79 KB, 27 KB gzipped, against about 129 KB for
+the stock "common" build. It loads only on the note and history pages. Highlighting happens in
+marked's code renderer, before DOMPurify, so its output is sanitised like everything else. A
+block's language comes from its fence (```` ```php ````); a block without one is coloured only
+when automatic detection is confident, and an unknown language stays plain. The colours are
+Muninn palette tokens in `muninn.css` rather than a stock theme, each at least 4.5:1 on white.
+
+## D055 — Sub-folders, at most 3 levels deep
+
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
+
+A folder may sit inside another folder of the same workspace, at most 3 levels deep (a top-level
+folder is level 1). Migration 0006 adds `folders.parent_folder_id`; existing folders become
+top-level folders. Folder names stay unique per workspace (D033), so a name always identifies
+one folder in pickers and moving a folder can never clash with a sibling's name.
+
+- Folders can be created inside a folder and moved (`parent_id` on POST and PATCH). The API
+  refuses a parent from another workspace (same 422 as an unknown ID), a move into the folder
+  itself or one of its sub-folders, and anything that would put a folder deeper than level 3.
+- Every tree change locks the workspace row first, so concurrent moves cannot build a loop.
+- Deleting a folder moves its notes (Archive and Trash included) and its sub-folders up one
+  level, into its parent; for a top-level folder that is "No folder" and the top level, as
+  before. Nothing is deleted with a folder.
+- Choosing a folder in the note list also lists the notes in its sub-folders. The list returns
+  `note_count` (notes directly in the folder) and `total_note_count` (sub-folders included).
+
+## D056 — Removing one image from a note
+
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
+
+`DELETE /api/v1/attachments/{id}` removes one image for good: its row, then its file, and writes
+an `attachment.deleted` audit entry. It needs note-editing rights (Editor and up) on an active
+note; trashed notes keep their images for a restore. The API does not change the note's text:
+the editor's "Images on this note" list removes the image's Markdown from the text it is editing
+and the user saves as usual, so the note's revision and history work exactly as for any edit.
+An image that no longer exists (a removed image in an unsaved note, or in an old version) is
+shown as its name followed by "(image removed)" instead of a broken image.

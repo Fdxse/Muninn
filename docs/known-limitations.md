@@ -1,20 +1,23 @@
 # Known limitations
 
-State at the end of the Course MVP (Week 6). The stretch goals in `COURSE-MVP.md` (Magic Links,
-geotagging, ntfy, API tokens, export/backup, offline editing, real-time collaboration) are not
-built.
+State at the end of the Course MVP (Week 6), updated for sub-folders, syntax highlighting and
+image removal (D054–D056). The stretch goals in `COURSE-MVP.md` (Magic Links, geotagging, ntfy,
+API tokens, export/backup, offline editing, real-time collaboration) are not built.
 
 - **Only images can be attached** (PNG, JPEG, GIF, WebP up to 10 MB). Other file types, and
   images from other websites, are not shown in notes (D036: an outside image appears as a link).
-- **Attachments cannot be removed one by one.** Deleting the image's Markdown hides it; the
-  file stays with the note and is removed when the note is deleted for good from Trash.
+- **A removed image is gone for good.** Removing an image (D056) deletes its file at once, so
+  older versions in the history that showed it say "(image removed)" instead. Deleting only the
+  image's Markdown from the text still keeps the file until it is removed or the note is purged.
 - **The NAS must accept 10 MB request bodies.** If PHP's `post_max_size` is lower, larger images
   are refused with "too large for the server" (see `deploy/DEPLOY.md`).
-- **No syntax highlighting** in code blocks, and no tables toolbar button (tables written in
-  Markdown do render).
+- **Syntax highlighting knows 12 languages** (PHP, JavaScript, SQL, HTML/XML, CSS, JSON, Bash,
+  PowerShell, Python, YAML, Markdown, C#; D054). Other languages show as plain code. There is no
+  tables toolbar button (tables written in Markdown do render).
 - **Ticking a checklist box saves the whole note** with its revision; if someone else saved the
   note in the meantime, the tick is refused and the page asks for a reload.
-- **Folders are one level deep** (D033); there are no sub-folders.
+- **Folders are at most 3 levels deep** (D055), and folder names are unique in the whole
+  workspace, so two sub-folders in different places cannot share a name.
 - **Note lists show at most 500 notes per workspace,** most recently changed first. Folder and
   tag filters and search narrow the list. The Trash also shows at most 500 notes.
 - **Search shows at most 50 results** and matches words literally (no spelling tolerance or

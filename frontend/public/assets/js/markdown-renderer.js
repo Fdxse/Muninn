@@ -14,6 +14,10 @@
  *      (no inline scripts) is the last line of defence.
  *
  * The sanitised result is inserted as a DOM fragment, never through innerHTML.
+ *
+ * Code blocks are coloured by highlight.js (D054) inside layer 1: it escapes the code itself and
+ * adds only <span class="hljs-…"> tags, and its output still goes through DOMPurify. Pages that
+ * do not load highlight.js simply show plain code blocks.
  */
 (function () {
     'use strict';
@@ -49,6 +53,39 @@
         return referenceMatch ? attachmentUrlPrefix + referenceMatch[1] + '/content' : null;
     }
 
+    /** Auto-detected languages below this highlight.js relevance score are shown as plain text. */
+    var minimumAutoDetectRelevance = 5;
+
+    /**
+     * Returns the HTML for a fenced or indented code block: highlighted when highlight.js is
+     * loaded and knows the language (or can tell it with confidence), otherwise escaped plain text.
+     */
+    function renderCodeBlock(codeText, languageInfo) {
+        // Only the first word of the info string ("php startinline") names the language.
+        var languageName = String(languageInfo || '').trim().split(/\s+/)[0].toLowerCase();
+        var highlighter = window.hljs;
+        var highlightedHtml = null;
+        var detectedLanguage = '';
+
+        if (highlighter && languageName !== '' && highlighter.getLanguage(languageName)) {
+            highlightedHtml = highlighter.highlight(codeText, { language: languageName, ignoreIllegals: true }).value;
+            detectedLanguage = languageName;
+        } else if (highlighter && languageName === '') {
+            // No language given: guess, but only show colours when the guess is confident.
+            var autoResult = highlighter.highlightAuto(codeText);
+            if (autoResult.relevance >= minimumAutoDetectRelevance) {
+                highlightedHtml = autoResult.value;
+                detectedLanguage = autoResult.language || '';
+            }
+        }
+
+        var languageClass = /^[a-z0-9+#-]+$/.test(detectedLanguage) ? ' language-' + detectedLanguage : '';
+        if (highlightedHtml === null) {
+            return '<pre><code>' + escapeHtml(codeText) + '</code></pre>\n';
+        }
+        return '<pre><code class="hljs' + escapeHtml(languageClass) + '">' + highlightedHtml + '</code></pre>\n';
+    }
+
     var markdownParser = new window.marked.Marked({
         gfm: true,
         // A single line break in a note is a line break, as people expect when typing on a phone.
@@ -60,6 +97,10 @@
             // Layer 1: raw HTML in a note is displayed as the text it is.
             html: function (htmlToken) {
                 return escapeHtml(htmlToken.text);
+            },
+            // Code blocks, coloured when possible (D054).
+            code: function (codeToken) {
+                return renderCodeBlock(codeToken.text, codeToken.lang);
             },
             // Layer 2: only Muninn attachments become images (D036).
             image: function (imageToken) {
@@ -161,6 +202,15 @@
         var renderedHtml = markdownParser.parse(markdownSource || '');
         var safeFragment = window.DOMPurify.sanitize(renderedHtml, sanitiserSettings);
         container.replaceChildren(safeFragment);
+
+        // An image that no longer exists (removed, or an old version's image) shows a short
+        // note instead of the browser's broken-image icon.
+        Array.prototype.forEach.call(container.querySelectorAll('img.muninn-note-image'), function (noteImage) {
+            noteImage.addEventListener('error', function () {
+                var missingLabel = (noteImage.getAttribute('alt') || 'Image') + ' (image removed)';
+                noteImage.replaceWith(MuninnApi.createElement('span', 'muninn-missing-image', missingLabel));
+            });
+        });
 
         var taskCheckboxes = container.querySelectorAll('input[type="checkbox"]');
         // Only allow ticking when every checkbox maps to exactly one source line.

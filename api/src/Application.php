@@ -368,7 +368,7 @@ final class Application
         // Folders and tags belong to one workspace each (D033, D034).
         $this->router->add('GET', '/api/v1/workspaces/{id}/folders', $folderController->list(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/workspaces/{id}/folders', $folderController->create(...), Router::ACCESS_USER);
-        $this->router->add('PATCH', '/api/v1/folders/{id}', $folderController->rename(...), Router::ACCESS_USER);
+        $this->router->add('PATCH', '/api/v1/folders/{id}', $folderController->update(...), Router::ACCESS_USER);
         $this->router->add('DELETE', '/api/v1/folders/{id}', $folderController->delete(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/workspaces/{id}/tags', $tagController->list(...), Router::ACCESS_USER);
 
@@ -376,5 +376,6 @@ final class Application
         $this->router->add('GET', '/api/v1/notes/{id}/attachments', $attachmentController->list(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/notes/{id}/attachments', $attachmentController->upload(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/attachments/{id}/content', $attachmentController->content(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/attachments/{id}', $attachmentController->delete(...), Router::ACCESS_USER);
     }
 }

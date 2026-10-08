@@ -107,6 +107,67 @@ final class AttachmentTest extends WorkspaceTestCase
         self::assertSame(1, $this->attachmentStorage()->countFiles());
     }
 
+    public function testEditorsCanRemoveOneImage(): void
+    {
+        $keptAttachment = $this->uploadAttachment($this->alice, $this->aliceNote['id'], self::tinyPng(), 'image/png', 'keep.png')->json()['data']['attachment'];
+        $removedAttachment = $this->uploadAttachment($this->alice, $this->aliceNote['id'], self::tinyPng(), 'image/png', 'remove.png')->json()['data']['attachment'];
+        self::assertSame(2, $this->attachmentStorage()->countFiles());
+
+        $deleteResponse = $this->sendAs($this->alice, 'DELETE', '/api/v1/attachments/' . $removedAttachment['id']);
+        self::assertSame(204, $deleteResponse->statusCode(), $deleteResponse->body());
+
+        // The row and the file are gone; the other image is untouched.
+        $listResponse = $this->sendAs($this->alice, 'GET', '/api/v1/notes/' . $this->aliceNote['id'] . '/attachments');
+        self::assertSame([$keptAttachment['id']], array_column($listResponse->json()['data']['attachments'], 'id'));
+        self::assertSame(1, $this->attachmentStorage()->countFiles());
+        $this->assertError($this->downloadAs($this->alice, $removedAttachment['id']), 404, 'not_found');
+        self::assertSame(200, $this->downloadAs($this->alice, $keptAttachment['id'])->statusCode());
+        self::assertSame(1, (int) $this->scalar("SELECT COUNT(*) FROM audit_log WHERE event_type = 'attachment.deleted'"));
+
+        // Deleting it again is a plain 404, like any unknown ID.
+        $this->assertError($this->sendAs($this->alice, 'DELETE', '/api/v1/attachments/' . $removedAttachment['id']), 404, 'not_found');
+        $this->assertError($this->sendAs($this->alice, 'DELETE', '/api/v1/attachments/not-a-uuid'), 404, 'not_found');
+    }
+
+    public function testOnlyEditorsOfTheNoteCanRemoveImages(): void
+    {
+        $sharedWorkspaceId = $this->createSharedWorkspace($this->alice);
+        self::assertSame(201, $this->addMember($this->alice, $sharedWorkspaceId, 'bob', 'reader')->statusCode());
+        $sharedNote = $this->createNote($this->alice, $sharedWorkspaceId);
+        $sharedAttachment = $this->uploadAttachment($this->alice, $sharedNote['id'], self::tinyPng())->json()['data']['attachment'];
+        $privateAttachment = $this->uploadAttachment($this->alice, $this->aliceNote['id'], self::tinyPng())->json()['data']['attachment'];
+
+        // A Reader may look but not remove.
+        $this->assertError($this->sendAs($this->bob, 'DELETE', '/api/v1/attachments/' . $sharedAttachment['id']), 403, 'insufficient_role');
+        // A non-member gets the same 404 as for a made-up ID.
+        $this->assertError($this->sendAs($this->bob, 'DELETE', '/api/v1/attachments/' . $privateAttachment['id']), 404, 'not_found');
+        // System administrators never touch note content.
+        $admin = $this->signedInUser('sysadmin', true);
+        $this->assertError($this->sendAs($admin, 'DELETE', '/api/v1/attachments/' . $sharedAttachment['id']), 404, 'not_found');
+        // Without a CSRF token nothing happens.
+        $wrongTokenResponse = $this->send(
+            'DELETE',
+            '/api/v1/attachments/' . $sharedAttachment['id'],
+            null,
+            ['X-CSRF-Token' => 'wrong'],
+            [self::COOKIE_NAME => $this->alice['session_token']],
+        );
+        $this->assertError($wrongTokenResponse, 403, 'csrf_failed');
+
+        self::assertSame(2, (int) $this->scalar('SELECT COUNT(*) FROM attachments'));
+        self::assertSame(2, $this->attachmentStorage()->countFiles());
+    }
+
+    public function testImagesOfTrashedNotesCannotBeRemoved(): void
+    {
+        $attachment = $this->uploadAttachment($this->alice, $this->aliceNote['id'], self::tinyPng())->json()['data']['attachment'];
+        self::assertSame(204, $this->sendAs($this->alice, 'DELETE', '/api/v1/notes/' . $this->aliceNote['id'])->statusCode());
+
+        // The image is kept with the trashed note so a restore brings it back.
+        $this->assertError($this->sendAs($this->alice, 'DELETE', '/api/v1/attachments/' . $attachment['id']), 404, 'not_found');
+        self::assertSame(1, $this->attachmentStorage()->countFiles());
+    }
+
     public function testNonImagesAndDisguisedFilesAreRefused(): void
     {
         $notePath = $this->aliceNote['id'];

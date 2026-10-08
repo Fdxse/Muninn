@@ -51,6 +51,14 @@ Summary:
    `sudo php84 bin/seed-demo.php` creates demo data (see `docs/demo.md`).
 4. Then work through the "Going live checklist" in `deploy/DEPLOY.md`.
 
+## Upgrading to sub-folders, syntax highlighting and image removal
+
+1. Deploy as usual, then on the NAS from `/volume1/Muninn`: `sudo php84 bin/migrate.php` (adds
+   migration `0006_sub_folders`; existing folders become top-level folders, nothing else changes).
+2. FTP the frontend with overwrite on: it adds `assets/vendor/highlightjs-11.12.0/` and changes
+   `note.php`, `history.php`, `index.php`, `assets/css/muninn.css` and several scripts in
+   `assets/js/`.
+
 ## Resetting test data
 
 To clear out test accounts and invitations and keep only the administrator account(s), run on

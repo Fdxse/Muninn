@@ -199,6 +199,17 @@
         return parsedDate.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
     }
 
+    /**
+     * The text for a folder in a drop-down list: sub-folders (D055) are indented under their
+     * parent and marked with an arrow, since <option> elements cannot be styled reliably.
+     * The folder list from the API is already in tree order.
+     */
+    function folderOptionLabel(folder) {
+        var folderLevel = folder.level || 1;
+        var indentation = new Array(folderLevel).join('\u00A0\u00A0\u00A0');
+        return indentation + (folderLevel > 1 ? '\u21B3 ' : '') + folder.name;
+    }
+
     /** Creates an element with optional class names and text (never parses HTML). */
     function createElement(tagName, classNames, textContent) {
         var newElement = document.createElement(tagName);
@@ -275,6 +286,7 @@
         showAlert: showAlert,
         formatDateTime: formatDateTime,
         createElement: createElement,
+        folderOptionLabel: folderOptionLabel,
         queryParameter: queryParameter,
         copyLinkText: copyLinkText,
         rememberWorkspace: rememberWorkspace,

@@ -112,6 +112,41 @@ final class AttachmentService
     }
 
     /**
+     * Deletes one attachment of an active note: its row first, then its file. The note row is
+     * locked so the delete cannot race a trash, purge or upload of the same note.
+     *
+     * The file is removed only after the row is gone for good, so a failed commit never leaves a
+     * row without its file. A file that cannot be removed is merely an orphan on disk: nobody can
+     * reach it any more, because every download starts from the row.
+     *
+     * @return array<string, mixed> The deleted attachment, as it was (for the audit log).
+     * @throws HttpException 404 when it is not an attachment of an active note in the workspace.
+     */
+    public function delete(WorkspaceMembership $membership, string $attachmentId): array
+    {
+        $attachment = $this->find($membership, $attachmentId);
+
+        $this->database->beginTransaction();
+        try {
+            $this->lockActiveNote($membership, (string) $attachment['note_id']);
+            $deleteStatement = $this->database->prepare('DELETE FROM attachments WHERE id = :id AND workspace_id = :workspace_id');
+            $deleteStatement->execute(['id' => $attachmentId, 'workspace_id' => $membership->workspaceId]);
+            if ($deleteStatement->rowCount() !== 1) {
+                // Someone else deleted it between find() and the lock.
+                throw HttpException::notFound();
+            }
+            $this->database->commit();
+        } catch (Throwable $deleteFailure) {
+            $this->database->rollBack();
+            throw $deleteFailure;
+        }
+
+        $this->attachmentStorage->delete($attachmentId);
+
+        return $attachment;
+    }
+
+    /**
      * Lists a note's attachments, oldest first. The caller has authorized the note.
      *
      * @return list<array<string, mixed>>

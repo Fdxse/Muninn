@@ -47,6 +47,7 @@ final class AuditLog
     public const NOTE_VERSION_RESTORED = 'note.version_restored';
     public const FOLDER_DELETED = 'folder.deleted';
     public const ATTACHMENT_UPLOADED = 'attachment.uploaded';
+    public const ATTACHMENT_DELETED = 'attachment.deleted';
     public const SYSTEM_DATA_RESET = 'system.data_reset';
 
     public function __construct(private readonly PDO $database)

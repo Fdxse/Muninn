@@ -6,7 +6,8 @@
  *   note.php?workspace=<workspace id>  write a new note in that workspace
  *
  * The note is shown as sanitised, rendered Markdown (assets/js/markdown-renderer.js). The editor
- * is a textarea with a Markdown toolbar, preview and image upload/paste (assets/js/note-editor.js).
+ * is a textarea with a Markdown toolbar, preview and image upload/paste (assets/js/note-editor.js),
+ * plus a list of the note's images where each one can be removed.
  */
 
 declare(strict_types=1);
@@ -111,6 +112,11 @@ renderAppNavbar();
                 <div id="note-body-feedback" class="invalid-feedback"></div>
                 <p id="editor-status" class="small text-muted-brand mt-1 mb-0" aria-live="polite"></p>
             </div>
+            <!-- The note's images, each removable for good (filled by note-page.js; hidden when there are none). -->
+            <section id="note-images" class="mb-3 d-none" aria-labelledby="note-images-heading">
+                <h2 id="note-images-heading" class="h6 mb-2">Images on this note</h2>
+                <ul id="note-image-list" class="list-unstyled mb-0 muninn-note-image-list"></ul>
+            </section>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary" id="save-note-button">Save</button>
                 <button type="button" class="btn btn-outline-secondary" id="cancel-edit-button">Cancel</button>
@@ -122,4 +128,5 @@ renderAppNavbar();
 renderPageEnd(['app-shell.js', 'markdown-renderer.js', 'note-editor.js', 'note-page.js'], '', [
     'marked-18.0.14/marked.umd.js',
     'dompurify-3.4.16/purify.min.js',
+    'highlightjs-11.12.0/highlight.min.js',
 ]);

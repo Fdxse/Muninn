@@ -79,7 +79,8 @@ final class NoteService
      * Lists the active notes of a workspace, most recently changed first, without content.
      * Archived notes are listed only when $listArchived is true, and then only they are listed.
      *
-     * @param string|null $folderFilter A folder ID, FOLDER_FILTER_NONE, or null for all folders.
+     * @param string|null $folderFilter A folder ID (its sub-folders' notes included), FOLDER_FILTER_NONE,
+     *                                  or null for all folders.
      * @param string|null $tagFilter    Only notes carrying this tag (case-insensitive), or null.
      * @return list<array<string, mixed>>
      */
@@ -99,8 +100,22 @@ final class NoteService
         if ($folderFilter === self::FOLDER_FILTER_NONE) {
             $whereConditions[] = 'notes.folder_id IS NULL';
         } elseif ($folderFilter !== null) {
-            $whereConditions[] = 'notes.folder_id = :folder_id';
+            // The folder and all its sub-folders (D055), walked within this workspace only, so
+            // another workspace's folder ID matches nothing. Sub-folders are at most 3 levels deep;
+            // the level guard only stops a damaged tree from recursing endlessly.
+            $whereConditions[] = 'notes.folder_id IN (
+                WITH RECURSIVE folder_branch (id, branch_level) AS (
+                    SELECT id, 1 FROM folders WHERE id = :folder_id AND workspace_id = :folder_workspace_id
+                    UNION ALL
+                    SELECT folders.id, folder_branch.branch_level + 1
+                    FROM folders JOIN folder_branch ON folders.parent_folder_id = folder_branch.id
+                    WHERE folders.workspace_id = :branch_workspace_id AND folder_branch.branch_level < 10
+                )
+                SELECT id FROM folder_branch
+            )';
             $queryParameters['folder_id'] = $folderFilter;
+            $queryParameters['folder_workspace_id'] = $membership->workspaceId;
+            $queryParameters['branch_workspace_id'] = $membership->workspaceId;
         }
         if ($tagFilter !== null) {
             // The tag must be one of THIS workspace's tags; tag names never cross workspaces (D034).
