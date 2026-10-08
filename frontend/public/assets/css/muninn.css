@@ -406,6 +406,72 @@ a.btn {
     overflow-wrap: normal;
 }
 
+/*
+ * Syntax highlighting (D054): colours for highlight.js's classes, taken from the Muninn palette
+ * instead of a stock theme. Every colour keeps at least 4.5:1 contrast on the white code block.
+ */
+.muninn-note-content .hljs-comment,
+.muninn-note-content .hljs-quote {
+    color: var(--muninn-gray-600);
+    font-style: italic;
+}
+
+.muninn-note-content .hljs-keyword,
+.muninn-note-content .hljs-built_in,
+.muninn-note-content .hljs-literal,
+.muninn-note-content .hljs-selector-tag,
+.muninn-note-content .hljs-type {
+    color: var(--muninn-slate-600);
+    font-weight: 600;
+}
+
+.muninn-note-content .hljs-title,
+.muninn-note-content .hljs-section,
+.muninn-note-content .hljs-name {
+    color: var(--muninn-navy-900);
+    font-weight: 600;
+}
+
+/* Strings: a dark green derived from the success colour (about 6.5:1 on white). */
+.muninn-note-content .hljs-string,
+.muninn-note-content .hljs-regexp,
+.muninn-note-content .hljs-link,
+.muninn-note-content .hljs-addition {
+    color: #0f6b4f;
+}
+
+.muninn-note-content .hljs-number,
+.muninn-note-content .hljs-symbol,
+.muninn-note-content .hljs-variable,
+.muninn-note-content .hljs-template-variable,
+.muninn-note-content .hljs-bullet {
+    color: var(--muninn-gold-700);
+}
+
+.muninn-note-content .hljs-attr,
+.muninn-note-content .hljs-attribute,
+.muninn-note-content .hljs-property,
+.muninn-note-content .hljs-selector-class,
+.muninn-note-content .hljs-selector-id,
+.muninn-note-content .hljs-params {
+    color: var(--muninn-slate-600);
+}
+
+/* PHP tags, preprocessor lines, decorators: a dark rust derived from the warning colour (about 7.3:1). */
+.muninn-note-content .hljs-meta,
+.muninn-note-content .hljs-doctag,
+.muninn-note-content .hljs-deletion {
+    color: #9a3412;
+}
+
+.muninn-note-content .hljs-emphasis {
+    font-style: italic;
+}
+
+.muninn-note-content .hljs-strong {
+    font-weight: 700;
+}
+
 .muninn-note-content blockquote {
     padding-left: 1rem;
     border-left: 0.25rem solid var(--muninn-gold-500);

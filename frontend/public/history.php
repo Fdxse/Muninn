@@ -63,4 +63,5 @@ renderAppNavbar();
 renderPageEnd(['app-shell.js', 'markdown-renderer.js', 'note-history.js'], '', [
     'marked-18.0.14/marked.umd.js',
     'dompurify-3.4.16/purify.min.js',
+    'highlightjs-11.12.0/highlight.min.js',
 ]);
