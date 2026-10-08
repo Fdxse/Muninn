@@ -30,7 +30,12 @@ use Muninn\Api\Invitations\InvitationService;
 use Muninn\Api\Logging\AppLogger;
 use Muninn\Api\Logging\AuditLog;
 use Muninn\Api\Notes\NoteController;
+use Muninn\Api\Notes\NoteHistory;
+use Muninn\Api\Notes\NotePurger;
 use Muninn\Api\Notes\NoteService;
+use Muninn\Api\Notes\TrashController;
+use Muninn\Api\Search\SearchController;
+use Muninn\Api\Search\SearchService;
 use Muninn\Api\Tags\TagController;
 use Muninn\Api\Tags\TagService;
 use Muninn\Api\Users\UserRepository;
@@ -203,12 +208,22 @@ final class Application
         $userAdminController = new UserAdminController($userRepository, $this->sessionService, $auditLog);
         $workspaceController = new WorkspaceController($workspaceService, $workspaceAuthorizer, $auditLog);
         $tagService = new TagService($this->database);
-        $noteService = new NoteService($this->database, $tagService);
-        $noteController = new NoteController($noteService, $workspaceAuthorizer, $auditLog);
+        $noteHistory = new NoteHistory($this->database);
+        $noteService = new NoteService($this->database, $tagService, $noteHistory);
+        $noteController = new NoteController($noteService, $noteHistory, $workspaceAuthorizer, $auditLog);
+        $attachmentStorage = new AttachmentStorage(self::attachmentStorageFolder($this->config));
+        $trashController = new TrashController(
+            $noteService,
+            new NotePurger($this->database, $tagService, $attachmentStorage),
+            $workspaceAuthorizer,
+            $auditLog,
+            $this->config->getInt('trash.retention_days'),
+        );
+        $searchController = new SearchController(new SearchService($this->database, $tagService), $workspaceAuthorizer);
         $folderController = new FolderController(new FolderService($this->database), $workspaceAuthorizer, $auditLog);
         $tagController = new TagController($tagService, $workspaceAuthorizer);
         $attachmentController = new AttachmentController(
-            new AttachmentService($this->database, new AttachmentStorage(self::attachmentStorageFolder($this->config))),
+            new AttachmentService($this->database, $attachmentStorage),
             $noteService,
             $workspaceAuthorizer,
             $auditLog,
@@ -254,6 +269,22 @@ final class Application
         $this->router->add('GET', '/api/v1/notes/{id}', $noteController->show(...), Router::ACCESS_USER);
         $this->router->add('PATCH', '/api/v1/notes/{id}', $noteController->update(...), Router::ACCESS_USER);
         $this->router->add('DELETE', '/api/v1/notes/{id}', $noteController->trash(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/notes/{id}/archive', $noteController->archive(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/notes/{id}/unarchive', $noteController->unarchive(...), Router::ACCESS_USER);
+
+        // Version history (D009, D037): earlier states of an active note.
+        $this->router->add('GET', '/api/v1/notes/{id}/versions', $noteController->listVersions(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/notes/{id}/versions/{versionId}', $noteController->showVersion(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/notes/{id}/versions/{versionId}/restore', $noteController->restoreVersion(...), Router::ACCESS_USER);
+
+        // Trash (D012, D039). /trash/{noteId} only ever addresses notes that are in Trash.
+        $this->router->add('GET', '/api/v1/workspaces/{id}/trash', $trashController->list(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/workspaces/{id}/trash', $trashController->empty(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/trash/{noteId}/restore', $trashController->restore(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/trash/{noteId}', $trashController->purge(...), Router::ACCESS_USER);
+
+        // Search across every workspace the caller may read (D011, D038).
+        $this->router->add('GET', '/api/v1/search', $searchController->search(...), Router::ACCESS_USER);
 
         // Folders and tags belong to one workspace each (D033, D034).
         $this->router->add('GET', '/api/v1/workspaces/{id}/folders', $folderController->list(...), Router::ACCESS_USER);

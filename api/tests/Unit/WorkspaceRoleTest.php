@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pins the role permission matrix of decision D029, so a change to it is always deliberate.
+ * Pins the role permission matrix of decisions D029 and D039, so a change to it is always deliberate.
  */
 final class WorkspaceRoleTest extends TestCase
 {
@@ -18,10 +18,10 @@ final class WorkspaceRoleTest extends TestCase
     public static function permissionMatrix(): iterable
     {
         $expectedMatrix = [
-            'reader' => ['ReadNotes' => true, 'WriteNotes' => false, 'ManageMembers' => false, 'ManageWorkspace' => false],
-            'editor' => ['ReadNotes' => true, 'WriteNotes' => true, 'ManageMembers' => false, 'ManageWorkspace' => false],
-            'admin' => ['ReadNotes' => true, 'WriteNotes' => true, 'ManageMembers' => true, 'ManageWorkspace' => false],
-            'owner' => ['ReadNotes' => true, 'WriteNotes' => true, 'ManageMembers' => true, 'ManageWorkspace' => true],
+            'reader' => ['ReadNotes' => true, 'WriteNotes' => false, 'PurgeNotes' => false, 'ManageMembers' => false, 'ManageWorkspace' => false],
+            'editor' => ['ReadNotes' => true, 'WriteNotes' => true, 'PurgeNotes' => false, 'ManageMembers' => false, 'ManageWorkspace' => false],
+            'admin' => ['ReadNotes' => true, 'WriteNotes' => true, 'PurgeNotes' => true, 'ManageMembers' => true, 'ManageWorkspace' => false],
+            'owner' => ['ReadNotes' => true, 'WriteNotes' => true, 'PurgeNotes' => true, 'ManageMembers' => true, 'ManageWorkspace' => true],
         ];
 
         foreach ($expectedMatrix as $roleValue => $permissionExpectations) {

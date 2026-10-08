@@ -61,6 +61,34 @@ final class WorkspaceAuthorizer
     }
 
     /**
+     * Returns the IDs of every workspace in which the user holds $permission. Used by queries
+     * that span workspaces, such as search, so they follow exactly the same rules as
+     * findMembership(): administrators and inactive users get none at all.
+     *
+     * @return list<string>
+     */
+    public function workspaceIdsWithPermission(User $user, WorkspacePermission $permission): array
+    {
+        if ($user->isSystemAdmin || !$user->isActive()) {
+            return [];
+        }
+
+        $selectStatement = $this->database->prepare(
+            'SELECT workspace_id, role FROM workspace_members WHERE user_id = :user_id ORDER BY workspace_id'
+        );
+        $selectStatement->execute(['user_id' => $user->id]);
+
+        $permittedWorkspaceIds = [];
+        foreach ($selectStatement->fetchAll() as $membershipRow) {
+            if (WorkspaceRole::from((string) $membershipRow['role'])->allows($permission)) {
+                $permittedWorkspaceIds[] = (string) $membershipRow['workspace_id'];
+            }
+        }
+
+        return $permittedWorkspaceIds;
+    }
+
+    /**
      * Returns the membership when the user holds $permission in the workspace.
      *
      * @throws HttpException 404 when the user is not a member (or the workspace does not exist),

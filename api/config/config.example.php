@@ -92,6 +92,12 @@ return [
         'max_upload_bytes' => 10000000,
     ],
 
+    'trash' => [
+        // OPTIONAL. Days a deleted note stays in Trash before bin/purge-trash.php (run daily by
+        // the NAS Task Scheduler) deletes it for good, with its history and images. 1 to 3650.
+        'retention_days' => 30,
+    ],
+
     'logging' => [
         // REQUIRED. Absolute path of the application log file. Must be OUTSIDE the web root.
         'file_path' => '/volume1/secrets/muninn/storage/api.log',

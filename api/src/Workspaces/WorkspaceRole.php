@@ -9,9 +9,9 @@ namespace Muninn\Api\Workspaces;
  * permission matrix is defined (together with WorkspacePermission::minimumRole()); endpoints ask
  * WorkspaceAuthorizer, which asks this class.
  *
- *   Reader  read notes (later also history and search)
- *   Editor  + create, edit and delete (trash) notes
- *   Admin   + add, change and remove Editors and Readers
+ *   Reader  read notes, their history and Trash; search
+ *   Editor  + create, edit, archive and delete (trash) notes; restore from Trash and history
+ *   Admin   + add, change and remove Editors and Readers; delete notes from Trash for good
  *   Owner   + manage Admins and Owners, rename and delete the workspace
  *
  * A workspace always keeps at least one Owner.
