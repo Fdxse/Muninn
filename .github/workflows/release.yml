@@ -1,6 +1,8 @@
 # Builds the deployment zip. It never deploys anything: download the zip and follow DEPLOY.md.
 #
 #   - Push a tag like v0.1.0 → a GitHub release is created with the zip attached.
+#   - Every merge to main → once CI has passed on that commit, a zip is built automatically;
+#     download it from the run's Artifacts section (Actions → Release).
 #   - Or run it manually (Actions → Release → Run workflow) → download the zip from the run's
 #     Artifacts section; it unzips straight to the release folder (no zip inside a zip).
 name: Release
@@ -9,20 +11,43 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+  # Fires when the CI workflow finishes. The job below only builds when that CI run was a
+  # successful push to main, so a merge with failing tests never produces a release zip.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   build:
+    # Tags and manual runs always build. After CI, build only for a green push to main (not for
+    # failed runs, and not for CI runs triggered by pull requests).
+    if: >-
+      github.event_name != 'workflow_run' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
     runs-on: ubuntu-24.04
     steps:
+      # After CI, check out the exact commit CI tested; main may already have moved on.
+      # For tags and manual runs, head_sha is empty and the default ref is used.
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Work out the version label
         id: version
+        env:
+          TESTED_COMMIT: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_run" ]; then
+            # Automatic build after a merge: label with the commit CI tested.
+            echo "label=main-$(date -u +%Y%m%d)-${TESTED_COMMIT::7}" >> "$GITHUB_OUTPUT"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             echo "label=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           else
             echo "label=manual-$(date -u +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
