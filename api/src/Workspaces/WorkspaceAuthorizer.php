@@ -89,6 +89,40 @@ final class WorkspaceAuthorizer
     }
 
     /**
+     * Returns every membership the user holds, ordered by workspace name. Used by lists that
+     * span workspaces, such as the chat channel list (D062), so they follow exactly the same
+     * rules as findMembership(): administrators and inactive users get none at all.
+     *
+     * @return list<WorkspaceMembership>
+     */
+    public function listMemberships(User $user): array
+    {
+        if ($user->isSystemAdmin || !$user->isActive()) {
+            return [];
+        }
+
+        $selectStatement = $this->database->prepare(
+            'SELECT workspaces.id, workspaces.name, workspaces.kind, workspace_members.role
+             FROM workspace_members
+             JOIN workspaces ON workspaces.id = workspace_members.workspace_id
+             WHERE workspace_members.user_id = :user_id
+             ORDER BY workspaces.name, workspaces.id'
+        );
+        $selectStatement->execute(['user_id' => $user->id]);
+
+        return array_map(
+            static fn (array $membershipRow): WorkspaceMembership => new WorkspaceMembership(
+                workspaceId: (string) $membershipRow['id'],
+                workspaceName: (string) $membershipRow['name'],
+                workspaceKind: (string) $membershipRow['kind'],
+                userId: $user->id,
+                role: WorkspaceRole::from((string) $membershipRow['role']),
+            ),
+            $selectStatement->fetchAll(),
+        );
+    }
+
+    /**
      * Returns the membership when the user holds $permission in the workspace.
      *
      * @throws HttpException 404 when the user is not a member (or the workspace does not exist),

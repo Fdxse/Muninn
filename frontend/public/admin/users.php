@@ -2,8 +2,8 @@
 
 /**
  * Account administration for system administrators: list accounts, disable and re-enable them
- * (decision D031: accounts are disabled, never deleted), and create one-time password reset
- * links (D040). Non-admins get 404 from the API and
+ * (decision D031: accounts are disabled, never deleted), create one-time password reset
+ * links (D040) and set each account's chat level (D062). Non-admins get 404 from the API and
  * this page then shows "not available".
  */
 
@@ -27,6 +27,8 @@ renderAppNavbar('../');
         <p class="small text-muted-brand">
             Disabling an account signs it out everywhere and blocks sign-in. Its notes are kept.
             A password reset link lets someone who forgot their password choose a new one.
+            Chat decides where someone may chat: nowhere, only in workspaces they own, in all their
+            workspaces, or also shout out to everyone. You cannot read chats yourself.
         </p>
         <div id="users-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
 

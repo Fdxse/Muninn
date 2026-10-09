@@ -16,6 +16,10 @@ use Muninn\Api\Attachments\AttachmentStorage;
 use Muninn\Api\Auth\AuthController;
 use Muninn\Api\Broadcasts\BroadcastController;
 use Muninn\Api\Broadcasts\BroadcastService;
+use Muninn\Api\Chat\ChatController;
+use Muninn\Api\Chat\ChatPolicy;
+use Muninn\Api\Chat\ChatService;
+use Muninn\Api\Chat\ExpiredChatCleanup;
 use Muninn\Api\Auth\PasswordResetController;
 use Muninn\Api\Auth\PasswordResetService;
 use Muninn\Api\Auth\PasswordService;
@@ -85,6 +89,7 @@ final class Application
     private SessionService $sessionService;
     private SessionCookie $sessionCookie;
     private ExpiredTrashCleanup $expiredTrashCleanup;
+    private ExpiredChatCleanup $expiredChatCleanup;
     private AdminNotifier $adminNotifier;
     private NtfyTransport $ntfyTransport;
     private MagicLinkService $magicLinkService;
@@ -189,9 +194,9 @@ final class Application
 
     /**
      * Housekeeping that runs after the response to a signed-in request has been sent: deletes
-     * notes whose time in Trash has run out (D039), at most once per hour. Anonymous requests
-     * never trigger it, so nobody can make the server do this work without an account.
-     * Never throws.
+     * notes whose time in Trash has run out (D039) and chat messages older than the chat
+     * retention (D062), each at most once per hour. Anonymous requests never trigger it, so
+     * nobody can make the server do this work without an account. Never throws.
      *
      * @return int|null Notes deleted, or null when nothing ran.
      */
@@ -201,6 +206,9 @@ final class Application
             return null;
         }
         $this->housekeepingDue = false;
+
+        // Runs on its own hourly schedule; its count is audited, not returned.
+        $this->expiredChatCleanup->runIfDue();
 
         return $this->expiredTrashCleanup->runIfDue();
     }
@@ -438,6 +446,23 @@ final class Application
         // Broadcast messages from the administrator (D061).
         $broadcastController = new BroadcastController(new BroadcastService($this->database), $auditLog, $this->adminNotifier);
 
+        // Chat (D062): one channel per shared workspace plus a global one; ChatPolicy decides access.
+        $chatService = new ChatService($this->database);
+        $chatController = new ChatController(
+            $chatService,
+            new ChatPolicy($workspaceAuthorizer),
+            $workspaceAuthorizer,
+            $auditLog,
+            $this->config->getInt('chat.retention_days'),
+        );
+        $this->expiredChatCleanup = new ExpiredChatCleanup(
+            $this->database,
+            $chatService,
+            $auditLog,
+            $this->logger,
+            $this->config->getInt('chat.retention_days'),
+        );
+
         // Health check: reveals nothing about versions or the database.
         $this->router->add('GET', '/api/v1/health', fn (): Response => Response::data(['status' => 'ok']), Router::ACCESS_PUBLIC);
 
@@ -489,6 +514,7 @@ final class Application
         $this->router->add('POST', '/api/v1/admin/users/{id}/disable', $userAdminController->disable(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/users/{id}/enable', $userAdminController->enable(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/users/{id}/password-reset', $passwordResetController->create(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('PATCH', '/api/v1/admin/users/{id}/chat-access', $userAdminController->changeChatAccess(...), Router::ACCESS_SYSTEM_ADMIN);
 
         // The administrator's overview page (D060).
         $this->router->add('GET', '/api/v1/admin/overview', $systemOverviewController->overview(...), Router::ACCESS_SYSTEM_ADMIN);
@@ -533,6 +559,14 @@ final class Application
         $this->router->add('DELETE', '/api/v1/workspaces/{id}/trash', $trashController->empty(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/trash/{noteId}/restore', $trashController->restore(...), Router::ACCESS_USER);
         $this->router->add('DELETE', '/api/v1/trash/{noteId}', $trashController->purge(...), Router::ACCESS_USER);
+
+        // Chat (D062). Signed-in users only; ChatPolicy checks the chat level, membership and role.
+        $this->router->add('GET', '/api/v1/chat', $chatController->overview(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/chat/global/messages', $chatController->listGlobal(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/chat/global/messages', $chatController->postGlobal(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/workspaces/{id}/chat/messages', $chatController->listWorkspace(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/workspaces/{id}/chat/messages', $chatController->postWorkspace(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/chat/messages/{id}', $chatController->delete(...), Router::ACCESS_USER);
 
         // Search across every workspace the caller may read (D011, D038).
         $this->router->add('GET', '/api/v1/search', $searchController->search(...), Router::ACCESS_USER);

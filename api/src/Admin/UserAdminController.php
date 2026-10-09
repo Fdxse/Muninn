@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Muninn\Api\Admin;
 
 use Muninn\Api\Auth\PasswordResetService;
+use Muninn\Api\Chat\ChatAccessLevel;
 use Muninn\Api\Auth\SessionService;
 use Muninn\Api\Database\UtcTimestamp;
 use Muninn\Api\Http\HttpException;
@@ -20,6 +21,7 @@ use Muninn\Api\Users\UserRepository;
  *   GET  /api/v1/admin/users
  *   POST /api/v1/admin/users/{id}/disable
  *   POST /api/v1/admin/users/{id}/enable
+ *   PATCH /api/v1/admin/users/{id}/chat-access  {"chat_access": "off|own_workspaces|member_workspaces|global"} (D062)
  *
  * Accounts are disabled, never deleted, in the MVP. A disabled user's sessions are revoked
  * at once, their password reset links stop working, and they cannot sign in; their workspaces
@@ -46,6 +48,8 @@ final class UserAdminController
             'display_name' => $userRow['display_name'],
             'is_system_admin' => (bool) $userRow['is_system_admin'],
             'status' => $userRow['status'],
+            // How much chat the account may use (D062). Administrator accounts never chat.
+            'chat_access' => (bool) $userRow['is_system_admin'] ? ChatAccessLevel::Off->value : $userRow['chat_access'],
             'created_at' => UtcTimestamp::toIso((string) $userRow['created_at']),
             'last_login_at' => UtcTimestamp::toIsoOrNull($userRow['last_login_at']),
         ], $userRows)]);
@@ -79,6 +83,35 @@ final class UserAdminController
         $this->auditLog->record(AuditLog::USER_ENABLED, $adminUser->id, 'user', $targetUserId, $context->clientIp);
 
         return Response::noContent();
+    }
+
+    /**
+     * PATCH /api/v1/admin/users/{id}/chat-access  {"chat_access": "..."}
+     *
+     * Takes effect on the user's next request: every chat endpoint reads the level afresh.
+     * Administrator accounts cannot chat at all (D062), so their level cannot be changed.
+     */
+    public function changeChatAccess(Request $request, RequestContext $context): Response
+    {
+        $adminUser = $context->requireSession()->user;
+        $targetUserId = $this->existingUserId($request);
+        $targetUser = $this->userRepository->findById($targetUserId);
+        if ($targetUser === null || $targetUser->isSystemAdmin) {
+            throw HttpException::validation(['chat_access' => 'Administrator accounts cannot use chat.']);
+        }
+
+        $newChatAccess = ChatAccessLevel::tryFromInput($request->jsonBody()['chat_access'] ?? null);
+        if ($newChatAccess === null) {
+            throw HttpException::validation(['chat_access' => 'Choose one of: ' . implode(', ', ChatAccessLevel::inputValues()) . '.']);
+        }
+
+        $this->userRepository->setChatAccess($targetUserId, $newChatAccess);
+        $this->auditLog->record(AuditLog::USER_CHAT_ACCESS_CHANGED, $adminUser->id, 'user', $targetUserId, $context->clientIp, [
+            'from' => $targetUser->chatAccess->value,
+            'to' => $newChatAccess->value,
+        ]);
+
+        return Response::data(['chat_access' => $newChatAccess->value]);
     }
 
     /** @throws HttpException 404 when {id} is not an existing user. */

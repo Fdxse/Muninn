@@ -329,6 +329,8 @@
             // Administrator accounts have no workspaces (D025), so they get no Workspaces or Search link.
             document.getElementById('nav-workspaces-item').classList.toggle('d-none', currentUser.is_system_admin);
             document.getElementById('nav-search-item').classList.toggle('d-none', currentUser.is_system_admin);
+            // Chat (D062): administrators never chat, and the administrator can switch it off per account.
+            document.getElementById('nav-chat-item').classList.toggle('d-none', currentUser.is_system_admin || currentUser.chat_access === 'off');
 
             loadingIndicator.classList.add('d-none');
             document.dispatchEvent(new CustomEvent('muninn:user-ready', { detail: currentUser }));

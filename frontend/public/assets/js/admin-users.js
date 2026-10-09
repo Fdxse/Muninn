@@ -1,6 +1,6 @@
 /*
- * Account administration: list accounts, disable and re-enable them, and create one-time
- * password reset links (D040).
+ * Account administration: list accounts, disable and re-enable them, create one-time
+ * password reset links (D040), and choose how much chat each account may use (D062).
  */
 (function () {
     'use strict';
@@ -15,6 +15,48 @@
     var resetResultPanel = document.getElementById('reset-link-result');
     var resetLinkText = document.getElementById('reset-link');
     var copyResetStatus = document.getElementById('copy-reset-link-status');
+
+    /** The chat levels (D062), in the order the drop-down shows them. */
+    var chatAccessLabels = [
+        ['off', 'No chat'],
+        ['own_workspaces', 'Own workspaces'],
+        ['member_workspaces', 'All their workspaces'],
+        ['global', 'All + shout out'],
+    ];
+
+    /**
+     * A drop-down that changes how much chat an account may use. It saves on change, and goes
+     * back to the saved level when saving fails.
+     */
+    function buildChatAccessSelect(user) {
+        var chatSelect = MuninnApi.createElement('select', 'form-select form-select-sm w-auto');
+        chatSelect.setAttribute('aria-label', 'Chat for ' + user.username);
+        chatAccessLabels.forEach(function (levelAndLabel) {
+            var levelOption = MuninnApi.createElement('option', null, 'Chat: ' + levelAndLabel[1]);
+            levelOption.value = levelAndLabel[0];
+            chatSelect.appendChild(levelOption);
+        });
+        chatSelect.value = user.chat_access;
+        var savedLevel = user.chat_access;
+
+        chatSelect.addEventListener('change', async function () {
+            chatSelect.disabled = true;
+            MuninnApi.showAlert(errorAlert, '');
+            try {
+                var changeResult = await MuninnApi.request('PATCH', '/api/v1/admin/users/' + encodeURIComponent(user.id) + '/chat-access', {
+                    chat_access: chatSelect.value,
+                });
+                savedLevel = changeResult.chat_access;
+            } catch (changeError) {
+                chatSelect.value = savedLevel;
+                MuninnApi.showAlert(errorAlert, (changeError.fields && changeError.fields.chat_access) || changeError.message);
+            } finally {
+                chatSelect.disabled = false;
+            }
+        });
+
+        return chatSelect;
+    }
 
     /** Builds one table row for an account. */
     function buildUserRow(user) {
@@ -37,6 +79,10 @@
         var actionCell = MuninnApi.createElement('td', 'text-end');
         if (user.id !== currentUserId) {
             var buttonGroup = MuninnApi.createElement('div', 'd-flex flex-wrap justify-content-end gap-2');
+            // Administrator accounts never chat (D062), so they get no chat choice.
+            if (!user.is_system_admin) {
+                buttonGroup.appendChild(buildChatAccessSelect(user));
+            }
             if (isActive) {
                 var resetButton = MuninnApi.createElement('button', 'btn btn-sm btn-outline-secondary', 'Reset password');
                 resetButton.type = 'button';

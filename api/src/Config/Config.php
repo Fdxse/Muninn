@@ -54,6 +54,10 @@ final class Config
             // Days a note stays in Trash before the API deletes it for good (D012, D039).
             'retention_days' => 30,
         ],
+        'chat' => [
+            // Days a chat message is kept before the API deletes it for good (D062).
+            'retention_days' => 90,
+        ],
         'magic_links' => [
             // Magic Links (D059). The cookie a browser gets after opening a link; separate from
             // the sign-in cookie. Needs a name without the __Host- prefix on plain-http development.
@@ -194,6 +198,11 @@ final class Config
             if ($allowedOrigin === '*' || !preg_match('#^https?://[^/\s]+$#', $allowedOrigin)) {
                 throw new ConfigException('cors.allowed_origins must contain exact origins like https://www.dx.se (no paths, no "*").');
             }
+        }
+
+        $chatRetentionDays = $this->get('chat.retention_days');
+        if (!is_int($chatRetentionDays) || $chatRetentionDays < 1 || $chatRetentionDays > 3650) {
+            throw new ConfigException('chat.retention_days must be a whole number of days from 1 to 3650.');
         }
 
         // A retention of 0 days would let the daily cleanup destroy notes the moment they are trashed.

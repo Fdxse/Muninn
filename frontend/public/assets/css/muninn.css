@@ -282,9 +282,11 @@ a.btn {
         gap: 0 !important;
     }
 
-    /* Administrators have one more icon (Overview, D060); on phones their bar shows the raven
-       symbol without the "Muninn" word so every icon still fits. Everyday users keep the word. */
-    .muninn-navbar:has(#nav-admin-overview-item:not(.d-none)) .muninn-wordmark {
+    /* Administrators have one more icon (Overview, D060), and everyday users who may chat have the
+       Chat icon (D062); on phones their bar shows the raven symbol without the "Muninn" word so
+       every icon still fits. Everyday users without chat keep the word. */
+    .muninn-navbar:has(#nav-admin-overview-item:not(.d-none)) .muninn-wordmark,
+    .muninn-navbar:has(#nav-chat-item:not(.d-none)) .muninn-wordmark {
         display: none;
     }
 
@@ -731,4 +733,47 @@ a.btn {
 .muninn-result-bar-fill {
     height: 100%;
     background: var(--muninn-slate-600);
+}
+
+/*
+ * Chat (D062). The message list scrolls on its own, so the input stays in view; on phones it
+ * uses most of the screen height (dvh follows the browser bars on iOS and Android).
+ */
+.muninn-chat-log {
+    background-color: var(--muninn-surface-raised);
+    height: calc(100dvh - 19rem);
+    min-height: 16rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.muninn-chat-message {
+    max-width: 85%;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    background-color: var(--muninn-background-light);
+}
+
+/* The user's own messages sit on the right, in the secondary brand blue with light text. */
+.muninn-chat-message.is-own {
+    margin-left: auto;
+    background-color: var(--muninn-slate-600);
+    color: var(--muninn-white);
+}
+
+.muninn-chat-message.is-own .text-muted-brand {
+    color: var(--muninn-background-light) !important;
+}
+
+.muninn-chat-body {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+/* The delete button is small to look at but keeps a finger-sized target. */
+.muninn-chat-delete {
+    min-width: 2rem;
+    min-height: 1.75rem;
+    line-height: 1;
 }

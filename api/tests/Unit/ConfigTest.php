@@ -73,6 +73,16 @@ final class ConfigTest extends TestCase
         new Config($values);
     }
 
+    public function testChatRetentionDefaultsToNinetyDaysAndMustBePositive(): void
+    {
+        self::assertSame(90, (new Config($this->validValues()))->getInt('chat.retention_days'));
+
+        $invalidValues = $this->validValues();
+        $invalidValues['chat'] = ['retention_days' => 0];
+        $this->expectException(ConfigException::class);
+        new Config($invalidValues);
+    }
+
     public function testMissingConfigFileThrows(): void
     {
         $this->expectException(ConfigException::class);
