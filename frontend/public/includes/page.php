@@ -171,6 +171,14 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <span class="visually-hidden d-sm-none">Workspaces</span>
                 </a>
             </li>
+            <li class="nav-item d-none" id="nav-admin-overview-item">
+                <!-- The administrator's overview (D060): health, counts and activity. -->
+                <a class="nav-link" href="<?= $assetPrefix ?>admin/overview.php">
+                    <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Overview</span>
+                    <span class="visually-hidden d-sm-none">Overview</span>
+                </a>
+            </li>
             <li class="nav-item d-none" id="nav-admin-users-item">
                 <a class="nav-link" href="<?= $assetPrefix ?>admin/users.php">
                     <i class="bi bi-person-gear" aria-hidden="true"></i>

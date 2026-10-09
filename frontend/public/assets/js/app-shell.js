@@ -130,6 +130,7 @@
                 homeName.textContent = currentUser.display_name;
             }
             // Convenience only: the API itself refuses admin calls from non-admins.
+            document.getElementById('nav-admin-overview-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-users-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-workspaces-item').classList.toggle('d-none', !currentUser.is_system_admin);

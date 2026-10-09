@@ -63,6 +63,16 @@ final class ConfigTest extends TestCase
         new Config($values);
     }
 
+    public function testAuditLogArchiveAgeMustBeAtLeastOneMonth(): void
+    {
+        $values = $this->validValues();
+        self::assertSame(13, (new Config($values))->getInt('audit_log.archive_after_months'));
+        $values['audit_log'] = ['archive_after_months' => 0];
+
+        $this->expectException(ConfigException::class);
+        new Config($values);
+    }
+
     public function testMissingConfigFileThrows(): void
     {
         $this->expectException(ConfigException::class);

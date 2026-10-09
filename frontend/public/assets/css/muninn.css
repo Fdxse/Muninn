@@ -282,6 +282,12 @@ a.btn {
         gap: 0 !important;
     }
 
+    /* Administrators have one more icon (Overview, D060); on phones their bar shows the raven
+       symbol without the "Muninn" word so every icon still fits. Everyday users keep the word. */
+    .muninn-navbar:has(#nav-admin-overview-item:not(.d-none)) .muninn-wordmark {
+        display: none;
+    }
+
     .muninn-navbar .nav-link:has(.muninn-nav-badge) {
         position: relative;
     }
@@ -602,4 +608,91 @@ a.btn {
 
 .muninn-folder-level-3 {
     padding-left: 3.25rem;
+}
+
+/* ------------------------------------------------------------------------------------------
+ * Admin Overview (D060): stat tiles, weekly bars and the weekday × hour heat map.
+ * Plain CSS on the brand palette; no chart library.
+ * ------------------------------------------------------------------------------------------ */
+.muninn-stat-tile {
+    border-top: 3px solid var(--muninn-accent);
+}
+
+.muninn-overview-list dt,
+.muninn-overview-list dd {
+    border-bottom: 1px solid rgba(11, 26, 43, 0.08);
+    padding-bottom: 0.25rem;
+}
+
+/* Notes per week: a row of bars that grow from the bottom. */
+.muninn-week-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 72px;
+    border-bottom: 1px solid var(--muninn-gray-500);
+}
+
+.muninn-week-bar-column {
+    flex: 1 1 0;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.muninn-week-bar {
+    width: 100%;
+    background: var(--muninn-slate-600);
+    border-radius: 2px 2px 0 0;
+}
+
+/* The heat map scrolls sideways inside its card on narrow phones, never the whole page. */
+.muninn-heat-map-scroller {
+    overflow-x: auto;
+    /* Keeps the visually hidden cell numbers (position: absolute) inside the scroll box. */
+    position: relative;
+}
+
+.muninn-heat-map {
+    border-collapse: separate;
+    border-spacing: 2px;
+    min-width: 560px;
+    width: 100%;
+    font-size: 0.75rem;
+    /* Every hour column gets the same width, whatever its label says. */
+    table-layout: fixed;
+}
+
+.muninn-heat-day {
+    width: 2.5rem;
+    font-weight: 400;
+    padding-right: 0.35rem;
+    white-space: nowrap;
+    color: var(--muninn-text-muted);
+}
+
+.muninn-heat-hour {
+    font-weight: 400;
+    text-align: left;
+    color: var(--muninn-text-muted);
+    height: 1.25rem;
+}
+
+.muninn-heat-cell {
+    height: 1.4rem;
+    border-radius: 3px;
+}
+
+/* One hue (brand slate) from pale to dark; level 0 means no events at all. */
+.muninn-heat-0 { background: rgba(47, 75, 110, 0.06); }
+.muninn-heat-1 { background: rgba(47, 75, 110, 0.25); }
+.muninn-heat-2 { background: rgba(47, 75, 110, 0.5); }
+.muninn-heat-3 { background: rgba(47, 75, 110, 0.75); }
+.muninn-heat-4 { background: var(--muninn-navy-900); }
+
+.muninn-heat-swatch {
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 2px;
 }

@@ -124,6 +124,10 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | DELETE | `/api/v1/magic-links/{id}` | Admin+ | revoke (204); stops open visits at once |
 | GET | `/api/v1/admin/magic-links` | system admin | every link: workspace, kind of target, creator, status; no labels, folder names or note titles |
 | DELETE | `/api/v1/admin/magic-links/{id}` | system admin | revoke any link (204) |
+| GET | `/api/v1/admin/overview` | system admin | the Overview page (D060): `warnings`, `users`, `content`, `magic_links`, `activity` (7×24 grids, Monday first, in `timezone`), `sign_in_attempts` (usernames masked), `database`, `storage`, `audit_log`, `maintenance`, `software`; counts and sizes only |
+| GET | `/api/v1/admin/sign-in-attempts[?reveal=true]` | system admin | the sign-in section alone; `reveal=true` shows typed usernames and is audited (`admin.sign_in_usernames_revealed`) |
+| POST | `/api/v1/admin/audit-log/archive` | system admin | zip audit entries older than `audit_log.archive_after_months`, verify, then delete them → 201 `{archive}`; nothing old enough → 409 `nothing_to_archive`; another run → 409 `archive_running`; no zip extension → 503 `zip_unavailable` |
+| GET | `/api/v1/admin/audit-log/archives/{archiveId}` | system admin | download one archive (`archiveId` is its file name without `.zip`) |
 
 ### Magic Link visitors (D059)
 

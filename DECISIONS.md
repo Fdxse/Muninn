@@ -663,3 +663,56 @@ Builds on D019 (Accepted) and adds a third target: a whole workspace.
   last opened and how many times.
 - **Database.** Migration `0007_magic_links`: `magic_links` and `magic_link_sessions` (hashed
   visit tokens). `bin/reset-data.php` removes both.
+
+## D060 — Administrator Overview page and audit log archives
+
+**Status:** Proposed (2026-10-09). The project owner asked for the page and chose the two
+options below; awaiting review in the PR.
+
+A new admin page, Overview (`admin/overview.php`, first in the administrator's top bar), shows
+what an administrator needs to spot problems early. It is served by
+`GET /api/v1/admin/overview` (system administrators only, 404 for everyone else).
+
+- **What it shows.** A "Needs attention" list that is empty when all is well (low disk space,
+  pending migrations, development mode, blocked or many failed sign-ins, Trash cleanup behind,
+  errors in the application log, a large log file, zip extension missing; plus notices for
+  archivable audit entries, waiting invitation requests and Magic Links about to expire). Then
+  users (active, disabled, signed in recently, never or not for 90 days, open sessions), content
+  totals and notes created per week, weekday × hour heat maps of sign-ins and Magic Link visits
+  over 4 or 12 weeks, sign-in attempts, database size and largest tables, disk space, and the
+  audit log with its archives.
+- **No new tracking.** Everything comes from data Muninn already had: the audit log
+  (`auth.login_*`, `magic_link.opened`), the tables themselves, `information_schema`, the disk
+  and the log file. A Magic Link "visit" is one opening in a browser (one per visit cookie),
+  not every page view.
+- **Privacy.** Counts, sizes and time grids for the whole installation only. Nothing names a
+  note, folder, tag or Magic Link (D025, D050, D059), there is no per-user heat map or timeline,
+  and the users page's "last sign-in" stays the only per-person activity.
+- **Time zone.** Heat maps and weeks use `magic_links.timezone` (default `Europe/Stockholm`),
+  never the server's zone. The database groups per UTC hour and PHP moves each hour into the
+  display zone, so MariaDB's time zone tables are not needed.
+- **Typed usernames are kept, shown masked.** Failed sign-ins keep the username as it was
+  submitted (lower-cased and trimmed, as the sign-in check uses it), because a pattern such as
+  many tries of `admin` is worth seeing. People sometimes type a password into the username
+  field, so the page shows them masked (`a•••n`, always three dots so the length stays hidden)
+  with a mark when the name belongs to a real account. "Reveal usernames" asks the API again
+  with `?reveal=true`, and every reveal is recorded in the audit log
+  (`admin.sign_in_usernames_revealed`).
+- **The audit log is kept forever**, with an "Archive old entries" button. Entries older than
+  `audit_log.archive_after_months` (default 13) are written as JSON lines into
+  `audit-log-<UTC date>-<time>.zip` (with a `manifest.json`) in `audit_log.archive_path`
+  (default `storage/audit-archives`, outside the web root and inside the NAS backup). The zip is
+  opened again and read back; only when it holds every exported entry are those entries deleted,
+  in one transaction that is rolled back if the count differs. Any failure leaves the database
+  untouched. JSON lines rather than CSV keeps every value exactly as stored and cannot carry
+  spreadsheet formulas from typed usernames. Archives are listed on the page and downloaded
+  through the API only (`audit_log.archived` and `audit_log.archive_downloaded` are audited);
+  they are never public files and the API never deletes them. A MariaDB named lock stops two
+  archives running at once. Needs PHP's zip extension; the page and `check-setup` say when it
+  is missing.
+- **No chart library.** The heat map is an HTML table with CSS shades of the brand slate, with
+  the counts readable by screen readers and on hover; the weekly bars are plain CSS.
+
+Not in this version: push notifications when a warning appears, per-workspace numbers, and
+deleting archives from the page.
+

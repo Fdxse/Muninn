@@ -113,6 +113,17 @@ return [
         'visit_hours' => 12,
     ],
 
+    'audit_log' => [
+        // OPTIONAL. The audit log (sign-ins, admin actions, Magic Link visits) is kept forever.
+        // On the admin Overview page, entries older than this many months can be zipped into
+        // the archive folder and then removed from the database (D060). 1 to 1200.
+        'archive_after_months' => 13,
+        // OPTIONAL. Folder for those zip files. Must be OUTSIDE the web root and writable by
+        // the web server user. Empty (the default) means storage/audit-archives in the
+        // application folder.
+        'archive_path' => '',
+    ],
+
     'ntfy' => [
         // OPTIONAL. Push notifications to the administrator through your own ntfy server
         // (D057): new invitation requests and blocked sign-ins. Off until enabled.

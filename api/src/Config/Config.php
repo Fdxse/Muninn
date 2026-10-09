@@ -66,6 +66,13 @@ final class Config
             // How long one opening of a link lasts in a browser before the link must be opened again.
             'visit_hours' => 12,
         ],
+        'audit_log' => [
+            // The audit log is kept forever; entries older than this many months can be zipped
+            // and removed from the database from the admin Overview page (D060).
+            'archive_after_months' => 13,
+            // Empty means "<application folder>/storage/audit-archives" (see Application).
+            'archive_path' => '',
+        ],
         'ntfy' => [
             // Push notifications to the administrator (D057). Off until configured.
             'enabled' => false,
@@ -197,6 +204,12 @@ final class Config
 
         $this->validateNtfy();
         $this->validateMagicLinks();
+
+        // Archiving entries younger than a month would empty the audit log of current events.
+        $archiveAfterMonths = $this->get('audit_log.archive_after_months');
+        if (!is_int($archiveAfterMonths) || $archiveAfterMonths < 1 || $archiveAfterMonths > 1200) {
+            throw new ConfigException('audit_log.archive_after_months must be a whole number of months from 1 to 1200.');
+        }
 
         if ($this->isProduction() && !$this->getBool('session.cookie_secure')) {
             throw new ConfigException('session.cookie_secure must be true in production.');
