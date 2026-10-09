@@ -43,6 +43,46 @@
         }
     }
 
+    /*
+     * Unread chat messages (D063): a count on the Chat link, refreshed every minute while the page
+     * is visible, when it becomes visible again, and whenever the chat page has shown messages.
+     */
+    var CHAT_BADGE_INTERVAL_MILLISECONDS = 60000;
+    var chatBadgeTimer = null;
+
+    /** Shows the unread count on the Chat link (99+ above 99), or hides it at 0 or on failure. */
+    async function refreshChatBadge() {
+        var chatBadge = document.getElementById('nav-chat-badge');
+        try {
+            var unreadData = await MuninnApi.request('GET', '/api/v1/chat/unread');
+            var unreadCount = unreadData.total_unread;
+            chatBadge.replaceChildren(
+                document.createTextNode(unreadCount > 99 ? '99+' : String(unreadCount)),
+                MuninnApi.createElement('span', 'visually-hidden', unreadCount === 1 ? ' unread message' : ' unread messages')
+            );
+            chatBadge.classList.toggle('d-none', unreadCount === 0);
+        } catch (unreadError) {
+            chatBadge.classList.add('d-none');
+        }
+    }
+
+    /** Starts the once-a-minute refresh; a hidden tab skips it and refreshes when shown again. */
+    function startChatBadge() {
+        refreshChatBadge();
+        chatBadgeTimer = window.setInterval(function () {
+            if (!document.hidden) {
+                refreshChatBadge();
+            }
+        }, CHAT_BADGE_INTERVAL_MILLISECONDS);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) {
+                refreshChatBadge();
+            }
+        });
+        // The chat page marks messages as seen when it shows them.
+        document.addEventListener('muninn:chat-read', refreshChatBadge);
+    }
+
     // The Invitations page announces approvals and declines, so the badge follows along.
     document.addEventListener('muninn:invitation-requests-changed', refreshInvitationRequestsBadge);
 
@@ -330,7 +370,11 @@
             document.getElementById('nav-workspaces-item').classList.toggle('d-none', currentUser.is_system_admin);
             document.getElementById('nav-search-item').classList.toggle('d-none', currentUser.is_system_admin);
             // Chat (D062): administrators never chat, and the administrator can switch it off per account.
-            document.getElementById('nav-chat-item').classList.toggle('d-none', currentUser.is_system_admin || currentUser.chat_access === 'off');
+            var mayUseChat = !currentUser.is_system_admin && currentUser.chat_access !== 'off';
+            document.getElementById('nav-chat-item').classList.toggle('d-none', !mayUseChat);
+            if (mayUseChat && chatBadgeTimer === null) {
+                startChatBadge();
+            }
 
             loadingIndicator.classList.add('d-none');
             document.dispatchEvent(new CustomEvent('muninn:user-ready', { detail: currentUser }));

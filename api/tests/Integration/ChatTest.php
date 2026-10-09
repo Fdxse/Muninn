@@ -375,15 +375,77 @@ final class ChatTest extends WorkspaceTestCase
         self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM chat_messages'));
     }
 
+    /** The badge number for a user. */
+    private function totalUnread(array $credentials): int
+    {
+        return $this->assertOkData($this->getAs($credentials, '/api/v1/chat/unread'))['total_unread'];
+    }
+
+    public function testUnreadCountsFollowWhatEachUserHasSeen(): void
+    {
+        $this->setChatAccess($this->owner, 'global');
+        $this->postOk($this->owner, $this->workspaceMessagesPath(), 'One');
+        $this->postOk($this->owner, $this->workspaceMessagesPath(), 'Two');
+        $this->postOk($this->owner, '/api/v1/chat/global/messages', 'Hello everyone');
+
+        // Own messages never count as unread.
+        self::assertSame(0, $this->totalUnread($this->owner));
+        // The reader has two team messages and one global message waiting.
+        self::assertSame(3, $this->totalUnread($this->reader));
+        $readerOverview = $this->assertOkData($this->getAs($this->reader, '/api/v1/chat'));
+        self::assertSame(1, $readerOverview['global']['unread_count']);
+        self::assertSame(2, $readerOverview['workspaces'][0]['unread_count']);
+        // The outsider shares no workspace, so only the global message counts.
+        self::assertSame(1, $this->totalUnread($this->outsider));
+
+        // Opening the team chat marks it read; the global channel stays unread.
+        $openedChannel = $this->assertOkData($this->getAs($this->reader, $this->workspaceMessagesPath()));
+        self::assertSame(1, $this->totalUnread($this->reader));
+
+        // Scrolling back does not mark anything; a poll does.
+        $this->postOk($this->editor, $this->workspaceMessagesPath(), 'Three');
+        $this->getAs($this->reader, $this->workspaceMessagesPath(), ['before' => $openedChannel['messages'][1]['id']]);
+        self::assertSame(2, $this->totalUnread($this->reader));
+        $this->getAs($this->reader, $this->workspaceMessagesPath(), ['since' => $openedChannel['cursor']]);
+        self::assertSame(1, $this->totalUnread($this->reader));
+
+        // An older cursor never moves the marker back.
+        $this->getAs($this->reader, $this->workspaceMessagesPath(), ['since' => '2026-01-01T00:00:00Z']);
+        self::assertSame(1, $this->totalUnread($this->reader));
+
+        // Deleted messages stop counting.
+        $globalMessageId = (string) $this->scalar('SELECT id FROM chat_messages WHERE workspace_id IS NULL');
+        self::assertSame(204, $this->sendAs($this->owner, 'DELETE', '/api/v1/chat/messages/' . $globalMessageId)->statusCode());
+        self::assertSame(0, $this->totalUnread($this->reader));
+    }
+
+    public function testUnreadCountsOnlyCoverChatsTheUserMayOpen(): void
+    {
+        $this->postOk($this->owner, $this->workspaceMessagesPath(), 'Team news');
+        self::assertSame(1, $this->totalUnread($this->editor));
+
+        // Level "off", or losing the membership, means nothing to count.
+        $this->setChatAccess($this->editor, 'off');
+        self::assertSame(0, $this->totalUnread($this->editor));
+        $this->setChatAccess($this->editor, 'member_workspaces');
+        self::assertSame(204, $this->sendAs($this->owner, 'DELETE', '/api/v1/workspaces/' . $this->teamWorkspaceId . '/members/' . $this->editor['user_id'])->statusCode());
+        self::assertSame(0, $this->totalUnread($this->editor));
+
+        // Administrators never see a count.
+        self::assertSame(0, $this->totalUnread($this->admin));
+    }
+
     public function testDataResetDeletesAllChat(): void
     {
         $this->setChatAccess($this->owner, 'global');
         $this->postOk($this->owner, '/api/v1/chat/global/messages', 'Global');
         $this->postOk($this->owner, $this->workspaceMessagesPath(), 'Team');
+        $this->getAs($this->reader, $this->workspaceMessagesPath());
 
         $deletedRowCounts = (new DataResetService($this->database, $this->attachmentStorage()))->resetToAdministratorsOnly();
 
         self::assertSame(2, $deletedRowCounts['chat messages (D062)']);
         self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM chat_messages'));
+        self::assertSame(1, $deletedRowCounts['chat read markers (D063)']);
     }
 }

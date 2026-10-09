@@ -19,6 +19,9 @@ use PDO;
  */
 final class ChatService
 {
+    /** chat_read_markers.channel_key of the global channel. */
+    public const GLOBAL_CHANNEL_KEY = 'global';
+
     /** Messages shown when a channel opens, and per "show earlier messages". */
     public const PAGE_SIZE = 50;
 
@@ -227,6 +230,78 @@ final class ChatService
         $deleteStatement->execute();
 
         return $deleteStatement->rowCount();
+    }
+
+    /** The channel key used by chat_read_markers: the workspace ID, or 'global'. */
+    public static function channelKey(?string $workspaceId): string
+    {
+        return $workspaceId ?? self::GLOBAL_CHANNEL_KEY;
+    }
+
+    /**
+     * Records that the user has seen a channel up to $cursor (a cursor this API handed out with
+     * the messages they were shown). A marker never moves backwards, so an older tab that polls
+     * late cannot make messages unread again.
+     */
+    public function markRead(string $userId, ?string $workspaceId, string $cursor): void
+    {
+        $upsertStatement = $this->database->prepare(
+            'INSERT INTO chat_read_markers (user_id, channel_key, last_read_at)
+             VALUES (:user_id, :channel_key, :last_read_at)
+             ON DUPLICATE KEY UPDATE last_read_at = GREATEST(last_read_at, VALUES(last_read_at))'
+        );
+        $upsertStatement->execute([
+            'user_id' => $userId,
+            'channel_key' => self::channelKey($workspaceId),
+            'last_read_at' => self::cursorToDatabaseTime($cursor),
+        ]);
+    }
+
+    /**
+     * Unread messages per channel: written by someone else, not deleted, and newer than the user's
+     * marker for that channel (all of them when the user never opened it). Only the channels
+     * passed in are counted, so the caller decides access (ChatPolicy) exactly as for reading.
+     *
+     * @param list<string> $readableWorkspaceIds
+     * @return array<string, int> Channel key ('global' or a workspace ID) => unread count; channels
+     *                            without unread messages are left out.
+     */
+    public function countUnread(string $userId, array $readableWorkspaceIds, bool $includeGlobal): array
+    {
+        $channelConditions = [];
+        $parameters = [$userId, $userId];
+        if ($readableWorkspaceIds !== []) {
+            $channelConditions[] = 'chat_messages.workspace_id IN (' . implode(', ', array_fill(0, count($readableWorkspaceIds), '?')) . ')';
+            array_push($parameters, ...$readableWorkspaceIds);
+        }
+        if ($includeGlobal) {
+            $channelConditions[] = 'chat_messages.workspace_id IS NULL';
+        }
+        if ($channelConditions === []) {
+            return [];
+        }
+
+        // The alias must not be "channel_key": GROUP BY would then use chat_read_markers.channel_key.
+        $countStatement = $this->database->prepare(
+            'SELECT COALESCE(chat_messages.workspace_id, \'' . self::GLOBAL_CHANNEL_KEY . '\') AS unread_channel_key, COUNT(*) AS unread_count
+             FROM chat_messages
+             LEFT JOIN chat_read_markers
+                    ON chat_read_markers.user_id = ?
+                   AND chat_read_markers.channel_key = COALESCE(chat_messages.workspace_id, \'' . self::GLOBAL_CHANNEL_KEY . '\')
+             WHERE chat_messages.author_user_id <> ?
+               AND chat_messages.deleted_at IS NULL
+               AND (chat_read_markers.last_read_at IS NULL OR chat_messages.created_at > chat_read_markers.last_read_at)
+               AND (' . implode(' OR ', $channelConditions) . ')
+             GROUP BY unread_channel_key'
+        );
+        $countStatement->execute($parameters);
+
+        $unreadCounts = [];
+        foreach ($countStatement->fetchAll() as $countRow) {
+            $unreadCounts[(string) $countRow['unread_channel_key']] = (int) $countRow['unread_count'];
+        }
+
+        return $unreadCounts;
     }
 
     /**

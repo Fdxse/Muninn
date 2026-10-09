@@ -114,6 +114,14 @@ Summary:
    as two everyday users in different browsers, open Chat in the top bar and write in a shared
    workspace you both belong to. New messages appear within about 10 seconds.
 
+## Upgrading to unread chat badges (D063)
+
+1. Deploy as usual, then on the NAS from `/volume1/Muninn`: `sudo php84 bin/migrate.php` (adds
+   migration `0010_chat_read_markers`; no existing data changes).
+2. FTP the frontend with overwrite on: it changes `includes/page.php`, `assets/css/muninn.css`,
+   `assets/js/app-shell.js` and `assets/js/chat.js`.
+3. Everything already in a chat counts as unread once, until each user opens that chat.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when

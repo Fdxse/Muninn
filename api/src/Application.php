@@ -562,6 +562,7 @@ final class Application
 
         // Chat (D062). Signed-in users only; ChatPolicy checks the chat level, membership and role.
         $this->router->add('GET', '/api/v1/chat', $chatController->overview(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/chat/unread', $chatController->unread(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/chat/global/messages', $chatController->listGlobal(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/chat/global/messages', $chatController->postGlobal(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/workspaces/{id}/chat/messages', $chatController->listWorkspace(...), Router::ACCESS_USER);
