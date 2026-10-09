@@ -1,0 +1,689 @@
+<!doctype html>
+<!--
+    Muninn help: Manual. Static page, served as-is from the frontend server.
+    Every text block exists in English (lang="en") and Swedish (lang="sv"); help.js picks one
+    and help.css hides the other. The top bar and footer are the same on every help page, so
+    change them in all three files (index.html, quick-start.html, manual.html).
+-->
+<html lang="en" data-help-language="en" data-title-en="Manual · Muninn" data-title-sv="Manual · Muninn">
+<head>
+    <title>Manual · Muninn</title>
+    <meta name="description" content="The Muninn manual: everything Muninn can do.">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1a2b">
+    <link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="../assets/icons/favicon-16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="../assets/vendor/bootstrap-5.3.8/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/vendor/bootstrap-icons-1.13.1/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/muninn.css">
+    <link rel="stylesheet" href="help.css">
+    <!-- Not deferred on purpose: it picks the language before the page is drawn (see help.js). -->
+    <script src="help.js"></script>
+</head>
+<body>
+<a class="visually-hidden-focusable muninn-skip-link" href="#main-content">
+    <span lang="en">Skip to main content</span><span lang="sv">Hoppa till innehållet</span>
+</a>
+<!-- Top bar like the app's: the raven links back to Muninn, then the help pages and the language switch. -->
+<nav class="navbar navbar-expand muninn-navbar" aria-label="Help">
+    <div class="container-fluid px-3">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="../">
+            <img src="../assets/icons/muninn-symbol-64.png" alt="" width="32" height="32" class="rounded-circle">
+            <span class="muninn-wordmark">Muninn</span>
+        </a>
+        <ul class="navbar-nav ms-auto align-items-center gap-1">
+            <li class="nav-item">
+                <a class="nav-link" href="quick-start.html" data-help-nav="quick-start">
+                    <i class="bi bi-lightning" aria-hidden="true"></i>
+                    <!-- Icon only on phones, so the bar fits on one line. -->
+                    <span class="d-none d-sm-inline"><span lang="en">Quick start</span><span lang="sv">Snabbstart</span></span>
+                    <span class="visually-hidden d-sm-none"><span lang="en">Quick start</span><span lang="sv">Snabbstart</span></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="manual.html" data-help-nav="manual" aria-current="page">
+                    <i class="bi bi-book" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline"><span lang="en">Manual</span><span lang="sv">Manual</span></span>
+                    <span class="visually-hidden d-sm-none"><span lang="en">Manual</span><span lang="sv">Manual</span></span>
+                </a>
+            </li>
+            <li class="nav-item ms-1">
+                <!-- Language switch, wired up by help.js. Each button names its language in that language. -->
+                <div class="btn-group btn-group-sm help-language-switch" role="group" aria-label="Language / Språk">
+                    <button type="button" class="btn btn-outline-light" data-set-language="en" lang="en-GB" aria-pressed="false">EN</button>
+                    <button type="button" class="btn btn-outline-light" data-set-language="sv" lang="sv-SE" aria-pressed="false">SV</button>
+                </div>
+            </li>
+        </ul>
+    </div>
+</nav>
+<main id="main-content" class="container py-4 px-3 help-page">
+    <h1 class="h2 mb-3">
+        <span lang="en">Muninn manual</span>
+        <span lang="sv">Manual för Muninn</span>
+    </h1>
+    <p class="lead" lang="en">
+        Everything Muninn can do. New here? The <a href="quick-start.html">quick start</a> is shorter.
+    </p>
+    <p class="lead" lang="sv">
+        Allt Muninn kan. Ny här? <a href="quick-start.html">Snabbstarten</a> är kortare.
+    </p>
+    <p class="small text-muted-brand" lang="sv">
+        Appen är på engelska. Manualen skriver knappar och menyer som de står i appen,
+        till exempel <span class="help-ui-label">New note</span>.
+    </p>
+
+    <!-- Table of contents: one list per language, linking to the chapter headings below. -->
+    <nav class="help-toc card border-0 shadow-sm mt-4" aria-labelledby="toc-heading">
+        <div class="card-body">
+            <h2 id="toc-heading" class="h6 border-0 mt-0 pt-0">
+                <span lang="en">Contents</span><span lang="sv">Innehåll</span>
+            </h2>
+            <ol lang="en">
+                <li><a href="#account">Your account</a></li>
+                <li><a href="#install">Muninn on your phone</a></li>
+                <li><a href="#workspaces">Workspaces and roles</a></li>
+                <li><a href="#notes">Writing notes</a></li>
+                <li><a href="#images">Images</a></li>
+                <li><a href="#organise">Folders and tags</a></li>
+                <li><a href="#search">Search</a></li>
+                <li><a href="#history">History</a></li>
+                <li><a href="#archive-trash">Archive and Trash</a></li>
+                <li><a href="#magic-links">Magic Links</a></li>
+                <li><a href="#chat">Chat</a></li>
+                <li><a href="#admin-contact">Messages, invitations and help</a></li>
+                <li><a href="#administrators">For administrators</a></li>
+                <li><a href="#limits">Good to know</a></li>
+            </ol>
+            <ol lang="sv">
+                <li><a href="#account">Ditt konto</a></li>
+                <li><a href="#install">Muninn i mobilen</a></li>
+                <li><a href="#workspaces">Arbetsytor och roller</a></li>
+                <li><a href="#notes">Skriva anteckningar</a></li>
+                <li><a href="#images">Bilder</a></li>
+                <li><a href="#organise">Mappar och taggar</a></li>
+                <li><a href="#search">Sökning</a></li>
+                <li><a href="#history">Historik</a></li>
+                <li><a href="#archive-trash">Arkiv och papperskorg</a></li>
+                <li><a href="#magic-links">Magic Links</a></li>
+                <li><a href="#chat">Chatt</a></li>
+                <li><a href="#admin-contact">Meddelanden, inbjudningar och hjälp</a></li>
+                <li><a href="#administrators">För administratörer</a></li>
+                <li><a href="#limits">Bra att veta</a></li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- 1. Account -->
+    <section aria-labelledby="account">
+        <h2 id="account" class="h4">
+            <span lang="en">1. Your account</span><span lang="sv">1. Ditt konto</span>
+        </h2>
+        <div lang="en">
+            <h3 class="h6">Joining Muninn</h3>
+            <p>
+                There is no open sign-up. You join through an <strong>invitation link</strong> from the
+                administrator, or from another user whose request the administrator approved. The link lets
+                you choose a username, a display name and a password of at least 12 characters. It works once
+                and expires after a few days.
+            </p>
+            <h3 class="h6">Signing in and out</h3>
+            <p>
+                Sign in with your username and password. Muninn keeps you signed in on that device until you
+                tap <span class="help-ui-label">Sign out</span> (top right) or have not used it for a long time.
+                After several wrong passwords in a row, sign-in is paused for a while; wait and try again.
+            </p>
+            <h3 class="h6">Changing your password</h3>
+            <p>
+                Open <span class="help-ui-label">Account</span> (your name in the top bar) and use
+                <span class="help-ui-label">Change password</span>. Every other device you were signed in on is
+                signed out, which is also the way to sign out a phone you lost.
+            </p>
+            <h3 class="h6">Forgot your password?</h3>
+            <p>
+                Muninn sends no e-mail, so there is no "forgot password" button. Ask your administrator for a
+                <strong>reset link</strong>. It works once, for a limited time, and signs you out everywhere when used.
+            </p>
+        </div>
+        <div lang="sv">
+            <h3 class="h6">Gå med i Muninn</h3>
+            <p>
+                Det finns ingen öppen registrering. Du går med genom en <strong>inbjudningslänk</strong> från
+                administratören, eller från en annan användare vars förfrågan administratören har godkänt. Med länken
+                väljer du användarnamn, visningsnamn och ett lösenord på minst 12 tecken. Den fungerar en gång och
+                går ut efter några dagar.
+            </p>
+            <h3 class="h6">Logga in och ut</h3>
+            <p>
+                Logga in med ditt användarnamn och lösenord. Muninn håller dig inloggad på enheten tills du trycker
+                på <span class="help-ui-label">Sign out</span> (uppe till höger) eller inte har använt den på länge.
+                Efter flera felaktiga lösenord i rad pausas inloggningen en stund; vänta och försök igen.
+            </p>
+            <h3 class="h6">Byta lösenord</h3>
+            <p>
+                Öppna <span class="help-ui-label">Account</span> (ditt namn i översta raden) och använd
+                <span class="help-ui-label">Change password</span>. Alla andra enheter du var inloggad på loggas ut,
+                vilket också är sättet att logga ut en mobil du har tappat bort.
+            </p>
+            <h3 class="h6">Glömt lösenordet?</h3>
+            <p>
+                Muninn skickar ingen e-post, så det finns ingen knapp för glömt lösenord. Be administratören om en
+                <strong>återställningslänk</strong>. Den fungerar en gång under en begränsad tid och loggar ut dig
+                överallt när du använt den.
+            </p>
+        </div>
+    </section>
+
+    <!-- 2. Install -->
+    <section aria-labelledby="install">
+        <h2 id="install" class="h4">
+            <span lang="en">2. Muninn on your phone</span><span lang="sv">2. Muninn i mobilen</span>
+        </h2>
+        <div lang="en">
+            <p>
+                Muninn is a web app: nothing to download from an app store. Add it to your home screen and it opens
+                full screen with the raven icon, like any other app.
+            </p>
+            <ul>
+                <li><strong>iPhone and iPad:</strong> open Muninn in Safari, tap Share, then <em>Add to Home Screen</em>.</li>
+                <li><strong>Android:</strong> open Muninn in Chrome, open the ⋮ menu, then <em>Install app</em> or <em>Add to Home screen</em>.</li>
+                <li><strong>Computer:</strong> in Chrome or Edge, click the install icon in the address bar.</li>
+            </ul>
+            <p>Muninn needs an internet connection. It does not keep copies of your notes for offline use.</p>
+        </div>
+        <div lang="sv">
+            <p>
+                Muninn är en webbapp: inget att hämta från en appbutik. Lägg den på hemskärmen så öppnas den i
+                helskärm med korpikonen, som vilken app som helst.
+            </p>
+            <ul>
+                <li><strong>iPhone och iPad:</strong> öppna Muninn i Safari, tryck på Dela och sedan <em>Lägg till på hemskärmen</em>.</li>
+                <li><strong>Android:</strong> öppna Muninn i Chrome, öppna menyn ⋮ och välj <em>Installera app</em> eller <em>Lägg till på startskärmen</em>.</li>
+                <li><strong>Dator:</strong> i Chrome eller Edge klickar du på installationsikonen i adressfältet.</li>
+            </ul>
+            <p>Muninn behöver internetanslutning. Den sparar inga kopior av dina anteckningar för användning utan nät.</p>
+        </div>
+    </section>
+
+    <!-- 3. Workspaces -->
+    <section aria-labelledby="workspaces">
+        <h2 id="workspaces" class="h4">
+            <span lang="en">3. Workspaces and roles</span><span lang="sv">3. Arbetsytor och roller</span>
+        </h2>
+        <div lang="en">
+            <p>Every note lives in a <strong>workspace</strong>.</p>
+            <ul>
+                <li><strong>Your personal workspace</strong> is created with your account. Only you can see it.</li>
+                <li><strong>Shared workspaces</strong> are for working with others. Anyone can create one under
+                    <span class="help-ui-label">Workspaces</span> → <span class="help-ui-label">New shared workspace</span>,
+                    and becomes its Owner.</li>
+            </ul>
+            <p>Switch workspace with the <span class="help-ui-label">Workspace</span> picker on the notes page. New notes go into the workspace you are in.</p>
+            <h3 class="h6">Roles in a shared workspace</h3>
+        </div>
+        <div lang="sv">
+            <p>Varje anteckning ligger i en <strong>arbetsyta</strong> (workspace).</p>
+            <ul>
+                <li><strong>Din personliga arbetsyta</strong> skapas tillsammans med ditt konto. Bara du kan se den.</li>
+                <li><strong>Delade arbetsytor</strong> är till för att arbeta med andra. Vem som helst kan skapa en under
+                    <span class="help-ui-label">Workspaces</span> → <span class="help-ui-label">New shared workspace</span>,
+                    och blir då dess ägare (Owner).</li>
+            </ul>
+            <p>Byt arbetsyta med väljaren <span class="help-ui-label">Workspace</span> på anteckningssidan. Nya anteckningar hamnar i den arbetsyta du står i.</p>
+            <h3 class="h6">Roller i en delad arbetsyta</h3>
+        </div>
+        <div class="help-table-wrapper">
+            <table class="table table-sm bg-white" lang="en">
+                <thead><tr><th scope="col">Role</th><th scope="col">May</th></tr></thead>
+                <tbody>
+                    <tr><th scope="row">Reader</th><td>Read notes, their history and the workspace chat.</td></tr>
+                    <tr><th scope="row">Editor</th><td>Also write, edit, archive and delete notes, and write in the chat.</td></tr>
+                    <tr><th scope="row">Admin</th><td>Also add and remove Editors and Readers, empty the Trash and manage Magic Links.</td></tr>
+                    <tr><th scope="row">Owner</th><td>Everything, including other Admins and Owners, renaming and deleting the workspace.</td></tr>
+                </tbody>
+            </table>
+            <table class="table table-sm bg-white" lang="sv">
+                <thead><tr><th scope="col">Roll</th><th scope="col">Får</th></tr></thead>
+                <tbody>
+                    <tr><th scope="row">Reader</th><td>Läsa anteckningar, deras historik och arbetsytans chatt.</td></tr>
+                    <tr><th scope="row">Editor</th><td>Dessutom skriva, ändra, arkivera och radera anteckningar, och skriva i chatten.</td></tr>
+                    <tr><th scope="row">Admin</th><td>Dessutom lägga till och ta bort Editors och Readers, tömma papperskorgen och hantera Magic Links.</td></tr>
+                    <tr><th scope="row">Owner</th><td>Allt, även andra Admins och Owners, byta namn på och radera arbetsytan.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div lang="en">
+            <h3 class="h6">Members</h3>
+            <p>
+                Open a workspace under <span class="help-ui-label">Workspaces</span> to see its members. Admins and Owners
+                add people by their <strong>exact username</strong> (there is no user directory) and change or remove roles there.
+                A workspace can only be deleted when it is empty, so delete its notes first.
+            </p>
+        </div>
+        <div lang="sv">
+            <h3 class="h6">Medlemmar</h3>
+            <p>
+                Öppna en arbetsyta under <span class="help-ui-label">Workspaces</span> för att se dess medlemmar. Admins och
+                Owners lägger till personer med deras <strong>exakta användarnamn</strong> (det finns ingen användarkatalog)
+                och ändrar eller tar bort roller där. En arbetsyta kan bara raderas när den är tom, så radera anteckningarna först.
+            </p>
+        </div>
+    </section>
+
+    <!-- 4. Notes -->
+    <section aria-labelledby="notes">
+        <h2 id="notes" class="h4">
+            <span lang="en">4. Writing notes</span><span lang="sv">4. Skriva anteckningar</span>
+        </h2>
+        <div lang="en">
+            <p>
+                Tap <span class="help-ui-label">New note</span>, or open a note and tap <span class="help-ui-label">Edit</span>.
+                Notes are written in <strong>Markdown</strong>: plain text with a few marks for formatting. You do not need
+                to learn it, since the toolbar adds the marks for you, and <span class="help-ui-label">Preview</span> shows the
+                result. <span class="help-ui-label">Markdown help</span> in the editor lists every mark.
+            </p>
+            <pre><code># Shopping
+- [ ] milk
+- [x] bread
+
+**Bold**, _italic_ and a [link](https://example.com).</code></pre>
+            <ul>
+                <li><strong>Checklists:</strong> tick the boxes while reading the note, without opening the editor.</li>
+                <li><strong>Code:</strong> put three backticks (<code>```</code>) on the lines before and after the code.
+                    Write a language after the first backticks, such as <code>```sql</code>, to get colours.</li>
+                <li><strong>Links</strong> open in a new tab.</li>
+            </ul>
+            <h3 class="h6">When two people edit at once</h3>
+            <p>
+                Muninn never silently overwrites someone else's work. If another person saved the note after you opened it,
+                your save is stopped with a message. Copy your text, reload the page, and add your change to the new version.
+            </p>
+        </div>
+        <div lang="sv">
+            <p>
+                Tryck på <span class="help-ui-label">New note</span>, eller öppna en anteckning och tryck på
+                <span class="help-ui-label">Edit</span>. Anteckningar skrivs i <strong>Markdown</strong>: vanlig text med
+                några tecken för formatering. Du behöver inte lära dig det, eftersom verktygsraden lägger in tecknen åt dig,
+                och <span class="help-ui-label">Preview</span> visar resultatet. <span class="help-ui-label">Markdown help</span>
+                i redigeraren visar alla tecken.
+            </p>
+            <pre><code># Handla
+- [ ] mjölk
+- [x] bröd
+
+**Fetstil**, _kursiv_ och en [länk](https://example.com).</code></pre>
+            <ul>
+                <li><strong>Checklistor:</strong> bocka av rutorna när du läser anteckningen, utan att öppna redigeraren.</li>
+                <li><strong>Kod:</strong> skriv tre bakåtfnuttar (<code>```</code>) på raden före och raden efter koden.
+                    Skriv ett språk efter de första, till exempel <code>```sql</code>, så får koden färger.</li>
+                <li><strong>Länkar</strong> öppnas i en ny flik.</li>
+            </ul>
+            <h3 class="h6">När två personer redigerar samtidigt</h3>
+            <p>
+                Muninn skriver aldrig tyst över någon annans arbete. Om någon annan sparade anteckningen efter att du öppnade
+                den stoppas din sparning med ett meddelande. Kopiera din text, ladda om sidan och för in din ändring i den nya versionen.
+            </p>
+        </div>
+    </section>
+
+    <!-- 5. Images -->
+    <section aria-labelledby="images">
+        <h2 id="images" class="h4">
+            <span lang="en">5. Images</span><span lang="sv">5. Bilder</span>
+        </h2>
+        <div lang="en">
+            <p>While editing a note you can add a picture in three ways:</p>
+            <ul>
+                <li>the image button in the toolbar (on a phone this also offers the camera),</li>
+                <li>pasting a screenshot or copied image into the text,</li>
+                <li>dragging a picture file into the text on a computer.</li>
+            </ul>
+            <p>
+                PNG, JPEG, GIF and WebP images up to 10 MB are accepted. Images are private: only people who can read
+                the note can see them. Pictures from other websites are shown as links, not loaded.
+            </p>
+            <p>
+                To remove an image for good, use <span class="help-ui-label">Images on this note</span> in the editor.
+                This deletes the file at once, so older versions in the history show "(image removed)" instead.
+            </p>
+        </div>
+        <div lang="sv">
+            <p>När du redigerar en anteckning kan du lägga till en bild på tre sätt:</p>
+            <ul>
+                <li>bildknappen i verktygsraden (i mobilen kan du även välja kameran),</li>
+                <li>klistra in en skärmbild eller kopierad bild i texten,</li>
+                <li>dra en bildfil till texten på en dator.</li>
+            </ul>
+            <p>
+                Bilder i PNG, JPEG, GIF och WebP på upp till 10 MB tas emot. Bilderna är privata: bara de som kan läsa
+                anteckningen kan se dem. Bilder från andra webbplatser visas som länkar och laddas inte.
+            </p>
+            <p>
+                För att ta bort en bild för gott använder du <span class="help-ui-label">Images on this note</span> i redigeraren.
+                Filen raderas direkt, så äldre versioner i historiken visar ”(image removed)” i stället.
+            </p>
+        </div>
+    </section>
+
+    <!-- 6. Folders and tags -->
+    <section aria-labelledby="organise">
+        <h2 id="organise" class="h4">
+            <span lang="en">6. Folders and tags</span><span lang="sv">6. Mappar och taggar</span>
+        </h2>
+        <div lang="en">
+            <h3 class="h6">Folders</h3>
+            <p>
+                Each workspace has its own folders. Create, rename and move them with <span class="help-ui-label">Folders</span>
+                on the notes page. Folders can be up to three levels deep. Choose a note's folder while editing it.
+                Deleting a folder never deletes notes: its notes and sub-folders move up one level.
+            </p>
+            <h3 class="h6">Tags</h3>
+            <p>
+                Type tags while editing, separated by commas; Muninn suggests tags already in use. A note can have both a
+                folder and several tags.
+            </p>
+            <h3 class="h6">Filtering</h3>
+            <p>Above the note list, pick a folder and tap a tag to show only matching notes. Tap the tag again to clear it.</p>
+        </div>
+        <div lang="sv">
+            <h3 class="h6">Mappar</h3>
+            <p>
+                Varje arbetsyta har egna mappar. Skapa, byt namn på och flytta dem med <span class="help-ui-label">Folders</span>
+                på anteckningssidan. Mappar kan ligga i upp till tre nivåer. Välj anteckningens mapp när du redigerar den.
+                Att radera en mapp raderar aldrig anteckningar: dess anteckningar och undermappar flyttas upp en nivå.
+            </p>
+            <h3 class="h6">Taggar</h3>
+            <p>
+                Skriv taggar när du redigerar, åtskilda med kommatecken; Muninn föreslår taggar som redan används. En anteckning
+                kan ha både en mapp och flera taggar.
+            </p>
+            <h3 class="h6">Filtrera</h3>
+            <p>Ovanför anteckningslistan väljer du en mapp och trycker på en tagg för att bara visa det som matchar. Tryck på taggen igen för att ta bort filtret.</p>
+        </div>
+    </section>
+
+    <!-- 7. Search -->
+    <section aria-labelledby="search">
+        <h2 id="search" class="h4">
+            <span lang="en">7. Search</span><span lang="sv">7. Sökning</span>
+        </h2>
+        <div lang="en">
+            <p>
+                <span class="help-ui-label">Search</span> in the top bar looks for words in the titles, text and tags of every note
+                in all your workspaces. It ignores upper and lower case and accents, so "o" also finds "ö". Archived notes are
+                left out unless you tick <span class="help-ui-label">Include archived notes</span>. Notes in the Trash are never found.
+            </p>
+            <p>Search matches the words you type literally, without spelling tolerance, and shows at most 50 results.</p>
+        </div>
+        <div lang="sv">
+            <p>
+                <span class="help-ui-label">Search</span> i översta raden letar efter ord i rubriker, text och taggar i alla
+                anteckningar i alla dina arbetsytor. Den bryr sig inte om stora och små bokstäver eller accenter, så ”o” hittar
+                även ”ö”. Arkiverade anteckningar tas bara med om du kryssar i <span class="help-ui-label">Include archived notes</span>.
+                Anteckningar i papperskorgen hittas aldrig.
+            </p>
+            <p>Sökningen matchar orden exakt som du skriver dem, utan stavningstolerans, och visar högst 50 träffar.</p>
+        </div>
+    </section>
+
+    <!-- 8. History -->
+    <section aria-labelledby="history">
+        <h2 id="history" class="h4">
+            <span lang="en">8. History</span><span lang="sv">8. Historik</span>
+        </h2>
+        <div lang="en">
+            <p>
+                Every time a note is saved, the version it replaces is kept. Open the note and tap
+                <span class="help-ui-label">History</span> to see who changed what and when, and to read old versions.
+                <span class="help-ui-label">Restore this version</span> brings an old text back as a new version, so a restore can also be undone.
+            </p>
+            <p>Muninn keeps the latest 100 versions of each note. Several quick saves by the same person count as one version.</p>
+        </div>
+        <div lang="sv">
+            <p>
+                Varje gång en anteckning sparas behålls versionen den ersätter. Öppna anteckningen och tryck på
+                <span class="help-ui-label">History</span> för att se vem som ändrade vad och när, och för att läsa gamla versioner.
+                <span class="help-ui-label">Restore this version</span> tar tillbaka en gammal text som en ny version, så även en återställning kan ångras.
+            </p>
+            <p>Muninn sparar de senaste 100 versionerna av varje anteckning. Flera snabba sparningar av samma person räknas som en version.</p>
+        </div>
+    </section>
+
+    <!-- 9. Archive and Trash -->
+    <section aria-labelledby="archive-trash">
+        <h2 id="archive-trash" class="h4">
+            <span lang="en">9. Archive and Trash</span><span lang="sv">9. Arkiv och papperskorg</span>
+        </h2>
+        <div lang="en">
+            <p>
+                <strong>Archive</strong> notes you are done with but want to keep. They leave the normal list, stay readable under
+                <span class="help-ui-label">Archive</span> on the notes page, and can be found with search. Use
+                <span class="help-ui-label">Unarchive</span> to bring one back.
+            </p>
+            <p>
+                <strong>Delete</strong> moves a note to the <span class="help-ui-label">Trash</span> of its workspace. Editors can restore it
+                from there for 30 days; after that it is deleted for good, with its history and images. Workspace Admins and Owners can
+                also delete single notes forever or empty the whole Trash at once.
+            </p>
+        </div>
+        <div lang="sv">
+            <p>
+                <strong>Arkivera</strong> anteckningar som du är klar med men vill behålla. De försvinner ur den vanliga listan, går att läsa under
+                <span class="help-ui-label">Archive</span> på anteckningssidan och kan hittas med sökningen. Använd
+                <span class="help-ui-label">Unarchive</span> för att ta tillbaka en.
+            </p>
+            <p>
+                <strong>Radera</strong> (Delete) flyttar en anteckning till arbetsytans papperskorg, <span class="help-ui-label">Trash</span>.
+                Editors kan återställa den därifrån i 30 dagar; sedan raderas den för gott, med historik och bilder. Arbetsytans Admins och
+                Owners kan även radera enstaka anteckningar för gott eller tömma hela papperskorgen på en gång.
+            </p>
+        </div>
+    </section>
+
+    <!-- 10. Magic Links -->
+    <section aria-labelledby="magic-links">
+        <h2 id="magic-links" class="h4">
+            <span lang="en">10. Magic Links</span><span lang="sv">10. Magic Links</span>
+        </h2>
+        <div lang="en">
+            <p>
+                A Magic Link opens a whole workspace, one folder (with its sub-folders) or one note <strong>without signing in</strong>,
+                for example on a shared kitchen tablet. Workspace Admins and Owners create them from the workspace's page under
+                <span class="help-ui-label">Workspaces</span> → <span class="help-ui-label">Manage Magic Links</span>.
+            </p>
+            <ul>
+                <li><strong>Access:</strong> read only, or read and write. Write links can edit notes and add new ones, but never delete.</li>
+                <li><strong>Validity:</strong> every link has an end date, at most a year ahead, and can start later.</li>
+                <li><strong>Daily hours:</strong> optionally only between certain times each day, in Swedish time (for example 07:00–18:00).</li>
+                <li><strong>Revoke</strong> a link at any time; it stops working at once.</li>
+            </ul>
+            <div class="help-tip">
+                The link is shown <strong>only once</strong>, when you create it. Anyone who has it can use it, so share it only
+                with people you trust. To change a link's times, revoke it and create a new one. Notes saved through a write link
+                show the link's creator as the editor.
+            </div>
+        </div>
+        <div lang="sv">
+            <p>
+                En Magic Link öppnar en hel arbetsyta, en mapp (med undermappar) eller en anteckning <strong>utan inloggning</strong>,
+                till exempel på en delad surfplatta i köket. Arbetsytans Admins och Owners skapar dem från arbetsytans sida under
+                <span class="help-ui-label">Workspaces</span> → <span class="help-ui-label">Manage Magic Links</span>.
+            </p>
+            <ul>
+                <li><strong>Behörighet:</strong> bara läsa, eller läsa och skriva. Skrivlänkar kan ändra anteckningar och lägga till nya, men aldrig radera.</li>
+                <li><strong>Giltighet:</strong> varje länk har ett slutdatum, högst ett år fram, och kan börja gälla senare.</li>
+                <li><strong>Tider:</strong> valfritt bara mellan vissa klockslag varje dag, i svensk tid (till exempel 07:00–18:00).</li>
+                <li><strong>Återkalla</strong> (Revoke) en länk när som helst; den slutar fungera direkt.</li>
+            </ul>
+            <div class="help-tip">
+                Länken visas <strong>bara en gång</strong>, när du skapar den. Alla som har den kan använda den, så dela den bara
+                med personer du litar på. För att ändra en länks tider återkallar du den och skapar en ny. Anteckningar som sparas
+                via en skrivlänk visar länkens skapare som den som ändrade.
+            </div>
+        </div>
+    </section>
+
+    <!-- 11. Chat -->
+    <section aria-labelledby="chat">
+        <h2 id="chat" class="h4">
+            <span lang="en">11. Chat</span><span lang="sv">11. Chatt</span>
+        </h2>
+        <div lang="en">
+            <p>
+                <span class="help-ui-label">Chat</span> in the top bar has one chat per shared workspace and a common chat called
+                <strong>Everyone</strong>. Messages are plain text and are deleted after 90 days. You can delete your own messages;
+                workspace Admins and Owners can delete any message in their workspace's chat.
+            </p>
+            <ul>
+                <li>In a workspace chat, every member reads and Editors and up write.</li>
+                <li>Everyone can read the <strong>Everyone</strong> chat; only users the administrator allows can write there.</li>
+                <li>The administrator decides per user how much chat they get, and can turn it off. Administrators cannot read chats.</li>
+            </ul>
+        </div>
+        <div lang="sv">
+            <p>
+                <span class="help-ui-label">Chat</span> i översta raden har en chatt per delad arbetsyta och en gemensam chatt som
+                heter <strong>Everyone</strong>. Meddelanden är vanlig text och raderas efter 90 dagar. Du kan radera dina egna
+                meddelanden; arbetsytans Admins och Owners kan radera alla meddelanden i arbetsytans chatt.
+            </p>
+            <ul>
+                <li>I en arbetsytas chatt läser alla medlemmar, och Editors och uppåt skriver.</li>
+                <li>Alla kan läsa chatten <strong>Everyone</strong>; bara användare som administratören tillåter kan skriva där.</li>
+                <li>Administratören bestämmer för varje användare hur mycket chatt den får, och kan stänga av den. Administratörer kan inte läsa chattar.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- 12. Messages, invitations, contact -->
+    <section aria-labelledby="admin-contact">
+        <h2 id="admin-contact" class="h4">
+            <span lang="en">12. Messages, invitations and help</span><span lang="sv">12. Meddelanden, inbjudningar och hjälp</span>
+        </h2>
+        <div lang="en">
+            <h3 class="h6">Messages from the administrator</h3>
+            <p>
+                The administrator can show a banner under the top bar. Some are shown once, some stay until you close them with
+                their ✕, and some are short votes that stay until you have answered.
+            </p>
+            <h3 class="h6">Contact admin</h3>
+            <p>
+                <span class="help-ui-label">Contact admin</span> in the top bar sends a short message straight to the administrator's
+                phone. Muninn does not store it and there is no reply inside Muninn, so add an e-mail address or phone number if you
+                want an answer.
+            </p>
+            <h3 class="h6">Inviting someone</h3>
+            <p>
+                Under <span class="help-ui-label">Account</span> → <span class="help-ui-label">Invite someone</span>, write who should be
+                invited and why. Once the administrator approves, create the invitation link on the same page and send it yourself.
+                Each link works once and is shown only once.
+            </p>
+        </div>
+        <div lang="sv">
+            <h3 class="h6">Meddelanden från administratören</h3>
+            <p>
+                Administratören kan visa en banderoll under översta raden. Vissa visas en gång, vissa ligger kvar tills du stänger dem
+                med deras ✕, och vissa är korta omröstningar som ligger kvar tills du har svarat.
+            </p>
+            <h3 class="h6">Kontakta administratören</h3>
+            <p>
+                <span class="help-ui-label">Contact admin</span> i översta raden skickar ett kort meddelande direkt till administratörens
+                mobil. Muninn sparar det inte och det går inte att svara inne i Muninn, så skriv en e-postadress eller ett telefonnummer
+                om du vill ha svar.
+            </p>
+            <h3 class="h6">Bjuda in någon</h3>
+            <p>
+                Under <span class="help-ui-label">Account</span> → <span class="help-ui-label">Invite someone</span> skriver du vem som ska
+                bjudas in och varför. När administratören har godkänt skapar du inbjudningslänken på samma sida och skickar den själv.
+                Varje länk fungerar en gång och visas bara en gång.
+            </p>
+        </div>
+    </section>
+
+    <!-- 13. Administrators -->
+    <section aria-labelledby="administrators">
+        <h2 id="administrators" class="h4">
+            <span lang="en">13. For administrators</span><span lang="sv">13. För administratörer</span>
+        </h2>
+        <div lang="en">
+            <p>
+                The administrator account is separate from everyday accounts and <strong>has no notes</strong>. It manages people,
+                not content: it cannot read notes, chats or what a Magic Link opens. Use an everyday account for your own notes.
+            </p>
+            <ul>
+                <li><span class="help-ui-label">Overview</span>: things that need attention, user and content counts, when Muninn is used,
+                    failed sign-ins, storage, and the audit log. Usernames typed at failed sign-ins are hidden until you choose to
+                    reveal them, because people sometimes type their password there.</li>
+                <li><span class="help-ui-label">Users</span>: disable or enable accounts (disabling signs the person out everywhere and keeps
+                    their notes), create a one-time <strong>password reset link</strong>, and choose each person's chat level.</li>
+                <li><span class="help-ui-label">Invitations</span>: create invitation links (valid 1–30 days), and approve or decline
+                    users' invitation requests. A number on the icon shows requests waiting for you.</li>
+                <li><span class="help-ui-label">Workspaces</span>: every shared workspace and its Owners, without their notes. You can only
+                    manage members of a workspace that has no active Owner, to give it a new one. From here you can also revoke any Magic Link.</li>
+                <li><span class="help-ui-label">Broadcasts</span>: banners and votes for all users, with a start and an end time.</li>
+            </ul>
+            <p>
+                Muninn sends no e-mail. Copy each invitation or reset link when it is shown and send it yourself; it is shown only once.
+            </p>
+        </div>
+        <div lang="sv">
+            <p>
+                Administratörskontot är skilt från vanliga konton och <strong>har inga anteckningar</strong>. Det hanterar personer, inte
+                innehåll: det kan inte läsa anteckningar, chattar eller det en Magic Link öppnar. Använd ett vanligt konto för dina egna anteckningar.
+            </p>
+            <ul>
+                <li><span class="help-ui-label">Overview</span>: saker som behöver åtgärdas, antal användare och anteckningar, när Muninn används,
+                    misslyckade inloggningar, lagring och granskningsloggen. Användarnamn från misslyckade inloggningar är dolda tills du väljer
+                    att visa dem, eftersom folk ibland skriver sitt lösenord där.</li>
+                <li><span class="help-ui-label">Users</span>: stäng av eller aktivera konton (avstängning loggar ut personen överallt och behåller
+                    anteckningarna), skapa en engångslänk för <strong>lösenordsåterställning</strong> och välj varje persons chattnivå.</li>
+                <li><span class="help-ui-label">Invitations</span>: skapa inbjudningslänkar (giltiga 1–30 dagar) och godkänn eller avslå
+                    användarnas förfrågningar. En siffra på ikonen visar förfrågningar som väntar på dig.</li>
+                <li><span class="help-ui-label">Workspaces</span>: alla delade arbetsytor och deras ägare, utan anteckningarna. Du kan bara
+                    hantera medlemmar i en arbetsyta som saknar aktiv ägare, för att ge den en ny. Härifrån kan du också återkalla vilken Magic Link som helst.</li>
+                <li><span class="help-ui-label">Broadcasts</span>: banderoller och omröstningar till alla användare, med start- och sluttid.</li>
+            </ul>
+            <p>
+                Muninn skickar ingen e-post. Kopiera varje inbjudnings- eller återställningslänk när den visas och skicka den själv; den visas bara en gång.
+            </p>
+        </div>
+    </section>
+
+    <!-- 14. Limits -->
+    <section aria-labelledby="limits">
+        <h2 id="limits" class="h4">
+            <span lang="en">14. Good to know</span><span lang="sv">14. Bra att veta</span>
+        </h2>
+        <ul lang="en">
+            <li>Muninn needs a connection; there is no offline editing.</li>
+            <li>The note list shows the 500 most recently changed notes of a workspace; use folders, tags and search to narrow it.</li>
+            <li>Folder names must be unique within a workspace.</li>
+            <li>Only images can be attached, not other files.</li>
+            <li>Ticking a checklist box saves the note. If someone else saved it just before, reload and tick again.</li>
+            <li>The app's buttons and messages are in English.</li>
+        </ul>
+        <ul lang="sv">
+            <li>Muninn behöver uppkoppling; det går inte att redigera utan nät.</li>
+            <li>Anteckningslistan visar de 500 senast ändrade anteckningarna i en arbetsyta; använd mappar, taggar och sökning för att begränsa den.</li>
+            <li>Mappnamn måste vara unika inom en arbetsyta.</li>
+            <li>Bara bilder kan bifogas, inte andra filer.</li>
+            <li>Att bocka i en ruta i en checklista sparar anteckningen. Om någon annan sparade precis innan, ladda om och bocka igen.</li>
+            <li>Appens knappar och meddelanden är på engelska.</li>
+        </ul>
+    </section>
+</main>
+<footer class="help-footer container px-3 py-4 small text-muted-brand">
+    <p class="mb-1">
+        <span lang="en">Muninn: your notes, your knowledge.</span>
+        <span lang="sv">Muninn: dina anteckningar, din kunskap.</span>
+    </p>
+    <p class="mb-0">
+        <a href="../"><span lang="en">Open Muninn</span><span lang="sv">Öppna Muninn</span></a>
+        · <a href="index.html"><span lang="en">Help</span><span lang="sv">Hjälp</span></a>
+        · <a href="quick-start.html"><span lang="en">Quick start</span><span lang="sv">Snabbstart</span></a>
+        · <a href="manual.html"><span lang="en">Manual</span><span lang="sv">Manual</span></a>
+    </p>
+</footer>
+</body>
+</html>

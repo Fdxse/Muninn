@@ -91,6 +91,22 @@ renderAppNavbar();
                 <ul id="requests-list" class="list-group list-group-flush"></ul>
             </div>
         </section>
+
+        <!-- Links to the static help pages (help/). They open in a new tab so nothing here is lost. -->
+        <section class="card border-0 shadow-sm mb-4" aria-labelledby="help-heading">
+            <div class="card-body">
+                <h2 id="help-heading" class="h5 mb-2">Help</h2>
+                <p class="small text-muted-brand">How to use Muninn, in English and Swedish.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-primary" href="help/quick-start.html" target="_blank" rel="noopener">
+                        <i class="bi bi-lightning" aria-hidden="true"></i> Quick start
+                    </a>
+                    <a class="btn btn-outline-primary" href="help/manual.html" target="_blank" rel="noopener">
+                        <i class="bi bi-book" aria-hidden="true"></i> Manual
+                    </a>
+                </div>
+            </div>
+        </section>
     </div>
 </main>
 <?php
