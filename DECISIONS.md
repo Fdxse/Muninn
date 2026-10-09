@@ -589,7 +589,7 @@ everyday users, and editing ntfy settings in the admin pages.
 
 ## D058 — "Contact admin": users message the administrator through ntfy
 
-**Status:** Proposed (2026-10-08, asked for by the project owner; awaiting review in the PR)
+**Status:** Accepted (2026-10-08, confirmed by the project owner)
 
 Every everyday user has a "Contact admin" button in the top bar. It opens a dialog with a
 message (up to 1000 characters, line breaks kept) and an optional "How can the admin reach
@@ -615,8 +615,8 @@ user sees on their next visit). That would need a table and pages of its own.
 
 ## D059 — Magic Links: first version
 
-**Status:** Proposed (2026-10-08). The project owner chose to build it with whole-workspace links
-and the defaults below; awaiting review in the PR.
+**Status:** Accepted (2026-10-08, confirmed by the project owner, who chose whole-workspace
+links and the defaults below)
 
 Builds on D019 (Accepted) and adds a third target: a whole workspace.
 
@@ -835,3 +835,35 @@ are messages the user has not seen; awaiting review in the PR.
   deleted or left workspaces are simply never counted. `bin/reset-data.php` deletes all markers.
 
 Not in this version: push or ntfy notifications for new chat messages, and per-message "seen by".
+## D064 — Online help: quick start and manual in English and Swedish
+
+**Status:** Proposed (2026-10-09). The project owner asked for a quick start and a manual as
+static files on the frontend server, switchable between English and Swedish with JavaScript;
+awaiting review in the PR.
+
+- **Where.** `frontend/public/help/`: `index.html` (landing), `quick-start.html` and
+  `manual.html`, plus `help.css`, `help.js` and an `.htaccess`. They are plain HTML (no PHP, no
+  API calls), so they ship with the normal frontend FTP upload and work for visitors who are not
+  signed in. The help pages reuse the vendored Bootstrap, the brand CSS and the self-hosted fonts.
+- **Two languages in one file.** Every text block exists twice, marked `lang="en"` and
+  `lang="sv"`. `help.js` chooses the language and sets `data-help-language` on `<html>`;
+  `help.css` hides the other language. Choice order: `?lang=sv|en` in the address, then the
+  visitor's earlier choice (localStorage, ignored when blocked), then the browser's language list,
+  then English. Without JavaScript the pages show English. The script runs in `<head>` so the
+  wrong language never flashes. No translation library and no fetch of language files.
+- **Headers.** The app pages get their Content-Security-Policy from PHP; the help pages get a
+  similar strict policy from `help/.htaccess` (scripts, styles and fonts from this site only, no
+  network calls, no framing).
+- **Links from the app.** A "Help and quick start" link under the sign-in card and a Help card on
+  the Account page (opening in a new tab). The top bar is unchanged: on phones it is already full
+  of icons.
+- **Audience and content.** Written for everyday users only; the project owner chose no
+  administrator documentation for now. The app's interface is English only, so the Swedish text
+  names buttons as they appear in the app. The pages never mention server names, folders on the
+  NAS, configuration or other operational details, because the repository and the pages are public.
+- **Screenshots.** Phone screenshots (`help/images/*.jpg`, 390×780 shown at half size) taken from
+  a local test installation filled by `bin/seed-demo.php`, never from the live site, so no real
+  notes or names appear. Both languages share the same pictures, since the app is in English.
+  When the interface changes, retake them the same way.
+- **Keeping it current.** The top bar and footer are repeated in the three HTML files; a change to
+  a feature that the manual describes should update both languages in `manual.html`.

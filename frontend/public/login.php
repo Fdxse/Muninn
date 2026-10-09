@@ -46,6 +46,10 @@ renderPageStart('Sign in');
         Accounts are by invitation only.<br>
         Forgot your password? Ask your administrator for a reset link.
     </p>
+    <!-- The static help pages (help/), in English and Swedish. -->
+    <p class="small mt-3 mb-0 text-center">
+        <a href="help/" class="muninn-auth-help-link"><i class="bi bi-question-circle" aria-hidden="true"></i> Help and quick start</a>
+    </p>
 </main>
 <?php
 renderPageEnd(['login.js']);

@@ -321,6 +321,16 @@ a.btn {
     color: var(--muninn-text-on-dark);
 }
 
+/* The help link under the sign-in card: brand gold, readable on the dark backdrop. */
+.muninn-auth-help-link {
+    color: var(--muninn-gold-500);
+}
+
+.muninn-auth-help-link:hover,
+.muninn-auth-help-link:focus-visible {
+    color: var(--muninn-white);
+}
+
 .muninn-auth-card {
     width: 100%;
     max-width: 26rem;

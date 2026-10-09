@@ -1,0 +1,241 @@
+<!doctype html>
+<!--
+    Muninn help: Quick start. Static page, served as-is from the frontend server.
+    Every text block exists in English (lang="en") and Swedish (lang="sv"); help.js picks one
+    and help.css hides the other. The top bar and footer are the same on every help page, so
+    change them in all three files (index.html, quick-start.html, manual.html).
+-->
+<html lang="en" data-help-language="en" data-title-en="Quick start · Muninn" data-title-sv="Snabbstart · Muninn">
+<head>
+    <title>Quick start · Muninn</title>
+    <meta name="description" content="Get started with Muninn in five minutes.">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1a2b">
+    <link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="../assets/icons/favicon-16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="../assets/vendor/bootstrap-5.3.8/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/vendor/bootstrap-icons-1.13.1/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/muninn.css">
+    <link rel="stylesheet" href="help.css">
+    <!-- Not deferred on purpose: it picks the language before the page is drawn (see help.js). -->
+    <script src="help.js"></script>
+</head>
+<body>
+<a class="visually-hidden-focusable muninn-skip-link" href="#main-content">
+    <span lang="en">Skip to main content</span><span lang="sv">Hoppa till innehållet</span>
+</a>
+<!-- Top bar like the app's: the raven links back to Muninn, then the help pages and the language switch. -->
+<nav class="navbar navbar-expand muninn-navbar" aria-label="Help">
+    <div class="container-fluid px-3">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="../">
+            <img src="../assets/icons/muninn-symbol-64.png" alt="" width="32" height="32" class="rounded-circle">
+            <span class="muninn-wordmark">Muninn</span>
+        </a>
+        <ul class="navbar-nav ms-auto align-items-center gap-1">
+            <li class="nav-item">
+                <a class="nav-link active" href="quick-start.html" data-help-nav="quick-start" aria-current="page">
+                    <i class="bi bi-lightning" aria-hidden="true"></i>
+                    <!-- Icon only on phones, so the bar fits on one line. -->
+                    <span class="d-none d-sm-inline"><span lang="en">Quick start</span><span lang="sv">Snabbstart</span></span>
+                    <span class="visually-hidden d-sm-none"><span lang="en">Quick start</span><span lang="sv">Snabbstart</span></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="manual.html" data-help-nav="manual">
+                    <i class="bi bi-book" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline"><span lang="en">Manual</span><span lang="sv">Manual</span></span>
+                    <span class="visually-hidden d-sm-none"><span lang="en">Manual</span><span lang="sv">Manual</span></span>
+                </a>
+            </li>
+            <li class="nav-item ms-1">
+                <!-- Language switch, wired up by help.js. Each button names its language in that language. -->
+                <div class="btn-group btn-group-sm help-language-switch" role="group" aria-label="Language / Språk">
+                    <button type="button" class="btn btn-outline-light" data-set-language="en" lang="en-GB" aria-pressed="false">EN</button>
+                    <button type="button" class="btn btn-outline-light" data-set-language="sv" lang="sv-SE" aria-pressed="false">SV</button>
+                </div>
+            </li>
+        </ul>
+    </div>
+</nav>
+<main id="main-content" class="container py-4 px-3 help-page">
+    <h1 class="h2 mb-3">
+        <span lang="en">Quick start</span>
+        <span lang="sv">Snabbstart</span>
+    </h1>
+    <p class="lead" lang="en">From invitation to your first note in about five minutes.</p>
+    <p class="lead" lang="sv">Från inbjudan till din första anteckning på ungefär fem minuter.</p>
+
+    <ol class="help-steps mt-4">
+        <li>
+            <h2 class="h5 border-0 mt-0 pt-1">
+                <span lang="en">Create your account</span><span lang="sv">Skapa ditt konto</span>
+            </h2>
+            <div lang="en">
+                <p>
+                    Muninn is invitation only. Open the invitation link you were sent and choose a
+                    <strong>username</strong> (3–32 letters, digits, dots, underscores or hyphens), a
+                    <strong>display name</strong> and a <strong>password</strong> of at least 12 characters.
+                    A short sentence makes a good password. Each invitation link works once and expires.
+                </p>
+            </div>
+            <div lang="sv">
+                <p>
+                    Man kan bara gå med i Muninn genom en inbjudan. Öppna inbjudningslänken du fått och välj ett
+                    <strong>användarnamn</strong> (3–32 bokstäver, siffror, punkter, understreck eller bindestreck), ett
+                    <strong>visningsnamn</strong> och ett <strong>lösenord</strong> på minst 12 tecken.
+                    En kort mening blir ett bra lösenord. Varje inbjudningslänk fungerar en gång och går ut efter en tid.
+                </p>
+            </div>
+        </li>
+        <li>
+            <h2 class="h5 border-0 mt-0 pt-1">
+                <span lang="en">Sign in</span><span lang="sv">Logga in</span>
+            </h2>
+            <p lang="en">
+                Open Muninn and sign in with your username and password. You land on <span class="help-ui-label">Notes</span>,
+                in your <strong>personal workspace</strong>. Only you can see what you write there.
+            </p>
+            <p lang="sv">
+                Öppna Muninn och logga in med ditt användarnamn och lösenord. Du hamnar på <span class="help-ui-label">Notes</span>,
+                i din <strong>personliga arbetsyta</strong>. Bara du kan se det du skriver där.
+            </p>
+            <!-- Screenshots from a test installation with demo data; the app itself is in English. -->
+            <div class="help-figure-row">
+                <figure class="help-figure">
+                    <img src="images/sign-in.jpg" width="390" height="780" alt="" loading="lazy">
+                    <figcaption><span lang="en">Signing in.</span><span lang="sv">Inloggning.</span></figcaption>
+                </figure>
+                <figure class="help-figure">
+                    <img src="images/notes.jpg" width="390" height="780" alt="" loading="lazy">
+                    <figcaption><span lang="en">Your notes after signing in.</span><span lang="sv">Dina anteckningar efter inloggningen.</span></figcaption>
+                </figure>
+            </div>
+        </li>
+        <li>
+            <h2 class="h5 border-0 mt-0 pt-1">
+                <span lang="en">Put Muninn on your phone</span><span lang="sv">Lägg Muninn i mobilen</span>
+            </h2>
+            <div lang="en">
+                <p>Muninn works in the browser, and you can add it to your home screen so it opens like an app:</p>
+                <ul>
+                    <li><strong>iPhone and iPad (Safari):</strong> tap the Share button, then <em>Add to Home Screen</em>.</li>
+                    <li><strong>Android (Chrome):</strong> open the ⋮ menu, then <em>Install app</em> or <em>Add to Home screen</em>.</li>
+                    <li><strong>Computer (Chrome or Edge):</strong> click the install icon at the right end of the address bar.</li>
+                </ul>
+            </div>
+            <div lang="sv">
+                <p>Muninn fungerar i webbläsaren, och du kan lägga den på hemskärmen så att den öppnas som en app:</p>
+                <ul>
+                    <li><strong>iPhone och iPad (Safari):</strong> tryck på Dela-knappen och sedan <em>Lägg till på hemskärmen</em>.</li>
+                    <li><strong>Android (Chrome):</strong> öppna menyn ⋮ och välj <em>Installera app</em> eller <em>Lägg till på startskärmen</em>.</li>
+                    <li><strong>Dator (Chrome eller Edge):</strong> klicka på installationsikonen längst till höger i adressfältet.</li>
+                </ul>
+            </div>
+        </li>
+        <li>
+            <h2 class="h5 border-0 mt-0 pt-1">
+                <span lang="en">Write your first note</span><span lang="sv">Skriv din första anteckning</span>
+            </h2>
+            <div lang="en">
+                <p>
+                    Tap <span class="help-ui-label">New note</span>, give it a title and write. The toolbar adds
+                    bold text, headings, lists, <strong>checklists</strong>, code and links for you, and
+                    <span class="help-ui-label">Preview</span> shows how it will look. Add a picture with the image
+                    button, or paste a screenshot straight into the text. Then tap <span class="help-ui-label">Save</span>.
+                </p>
+                <p>When you read the note later you can tick the checklist boxes directly.</p>
+            </div>
+            <div lang="sv">
+                <p>
+                    Tryck på <span class="help-ui-label">New note</span>, ge anteckningen en rubrik och skriv. Verktygsraden
+                    lägger in fetstil, rubriker, listor, <strong>checklistor</strong>, kod och länkar åt dig, och
+                    <span class="help-ui-label">Preview</span> visar hur det kommer att se ut. Lägg till en bild med
+                    bildknappen, eller klistra in en skärmbild direkt i texten. Tryck sedan på <span class="help-ui-label">Save</span>.
+                </p>
+                <p>När du läser anteckningen senare kan du bocka av checklistan direkt.</p>
+            </div>
+            <!-- Screenshots from a test installation with demo data; the app itself is in English. -->
+            <div class="help-figure-row">
+                <figure class="help-figure">
+                    <img src="images/note-edit.jpg" width="390" height="780" alt="" loading="lazy">
+                    <figcaption><span lang="en">Writing a note.</span><span lang="sv">Skriva en anteckning.</span></figcaption>
+                </figure>
+                <figure class="help-figure">
+                    <img src="images/note-checklist.jpg" width="390" height="780" alt="" loading="lazy">
+                    <figcaption><span lang="en">The saved note.</span><span lang="sv">Den sparade anteckningen.</span></figcaption>
+                </figure>
+            </div>
+        </li>
+        <li>
+            <h2 class="h5 border-0 mt-0 pt-1">
+                <span lang="en">Find it again</span><span lang="sv">Hitta den igen</span>
+            </h2>
+            <p lang="en">
+                Put notes in <strong>folders</strong> and give them <strong>tags</strong> while editing, then filter the list
+                by folder or tag. <span class="help-ui-label">Search</span> in the top bar looks through the titles,
+                text and tags of every note you can reach.
+            </p>
+            <p lang="sv">
+                Lägg anteckningar i <strong>mappar</strong> och ge dem <strong>taggar</strong> när du redigerar, och filtrera
+                sedan listan på mapp eller tagg. <span class="help-ui-label">Search</span> i översta raden söker i rubriker,
+                text och taggar i alla anteckningar du har tillgång till.
+            </p>
+            <!-- Screenshots from a test installation with demo data; the app itself is in English. -->
+            <div class="help-figure-row">
+                <figure class="help-figure">
+                    <img src="images/search.jpg" width="390" height="780" alt="" loading="lazy">
+                    <figcaption><span lang="en">Search.</span><span lang="sv">Sökning.</span></figcaption>
+                </figure>
+            </div>
+        </li>
+        <li>
+            <h2 class="h5 border-0 mt-0 pt-1">
+                <span lang="en">Share with others</span><span lang="sv">Dela med andra</span>
+            </h2>
+            <p lang="en">
+                Under <span class="help-ui-label">Workspaces</span>, create a <strong>shared workspace</strong> and add
+                other Muninn users by their username. Choose what each may do: read, edit or manage. Switch between
+                your workspaces with the <span class="help-ui-label">Workspace</span> picker on the notes page.
+            </p>
+            <p lang="sv">
+                Under <span class="help-ui-label">Workspaces</span> skapar du en <strong>delad arbetsyta</strong> och lägger
+                till andra Muninn-användare med deras användarnamn. Välj vad var och en får göra: läsa, redigera eller
+                administrera. Byt mellan dina arbetsytor med väljaren <span class="help-ui-label">Workspace</span> på anteckningssidan.
+            </p>
+            <!-- Screenshots from a test installation with demo data; the app itself is in English. -->
+            <div class="help-figure-row">
+                <figure class="help-figure">
+                    <img src="images/workspace-members.jpg" width="390" height="780" alt="" loading="lazy">
+                    <figcaption><span lang="en">Adding members to a shared workspace.</span><span lang="sv">Lägga till medlemmar i en delad arbetsyta.</span></figcaption>
+                </figure>
+            </div>
+        </li>
+    </ol>
+
+    <div class="help-tip" lang="en">
+        <strong>Something went wrong?</strong> If you forget your password, ask your administrator for a
+        reset link. To reach the administrator from inside Muninn, use <span class="help-ui-label">Contact admin</span>
+        in the top bar. The <a href="manual.html">manual</a> explains everything in more detail.
+    </div>
+    <div class="help-tip" lang="sv">
+        <strong>Gick något fel?</strong> Om du glömmer ditt lösenord ber du administratören om en
+        återställningslänk. Du når administratören inifrån Muninn med <span class="help-ui-label">Contact admin</span>
+        i översta raden. I <a href="manual.html">manualen</a> står allt mer utförligt.
+    </div>
+</main>
+<footer class="help-footer container px-3 py-4 small text-muted-brand">
+    <p class="mb-1">
+        <span lang="en">Muninn: your notes, your knowledge.</span>
+        <span lang="sv">Muninn: dina anteckningar, din kunskap.</span>
+    </p>
+    <p class="mb-0">
+        <a href="../"><span lang="en">Open Muninn</span><span lang="sv">Öppna Muninn</span></a>
+        · <a href="index.html"><span lang="en">Help</span><span lang="sv">Hjälp</span></a>
+        · <a href="quick-start.html"><span lang="en">Quick start</span><span lang="sv">Snabbstart</span></a>
+        · <a href="manual.html"><span lang="en">Manual</span><span lang="sv">Manual</span></a>
+    </p>
+</footer>
+</body>
+</html>
