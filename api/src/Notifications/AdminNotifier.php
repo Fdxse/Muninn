@@ -27,6 +27,7 @@ final class AdminNotifier
     public const KIND_INVITATION_REQUEST = 'invitation_request';
     public const KIND_SIGN_IN_BLOCKED = 'sign_in_blocked';
     public const KIND_USER_MESSAGE = 'user_message';
+    public const KIND_BROADCAST_VOTE = 'broadcast_vote';
 
     /**
      * At most this many sign-in alerts per hour, so someone guessing passwords from many
@@ -71,6 +72,29 @@ final class AdminNotifier
             ['envelope'],
             $this->frontendBaseUrl . '/admin/invitations.php',
             $requestId,
+            'invitation_request',
+        );
+    }
+
+    /**
+     * A user answered one of the administrator's votes (D061). The project owner asked to hear
+     * about every vote as it comes in. Each user votes once per vote, so this cannot flood.
+     *
+     * @param string $question The vote's question, shortened in the message.
+     * @param list<string> $chosenLabels The answers the user picked.
+     */
+    public function broadcastVoted(string $voterDisplayName, string $voterUsername, string $question, array $chosenLabels, string $broadcastId): void
+    {
+        $chosenText = implode(', ', array_map(static fn (string $chosenLabel): string => self::plainText($chosenLabel, 100), $chosenLabels));
+        $this->queue(
+            self::KIND_BROADCAST_VOTE,
+            'Muninn: new vote from ' . self::plainText($voterDisplayName, 100) . ' (' . self::plainText($voterUsername, 64) . ')',
+            'Answered: ' . $chosenText . "\n\nQuestion: " . self::plainText($question, 200),
+            self::PRIORITY_DEFAULT,
+            ['ballot_box_with_check'],
+            $this->frontendBaseUrl . '/admin/broadcasts.php',
+            $broadcastId,
+            'broadcast',
         );
     }
 
@@ -103,6 +127,7 @@ final class AdminNotifier
             $blockedWhat . ' are blocked for ' . $windowMinutes . ' minutes after ' . $failureCount . ' failed attempts.',
             self::PRIORITY_HIGH,
             ['warning'],
+            null,
             null,
             null,
             $ipAddress,
@@ -210,6 +235,7 @@ final class AdminNotifier
         array $tags,
         ?string $clickUrl,
         ?string $targetId,
+        ?string $targetType,
         ?string $ipAddress = null,
     ): void {
         if (!$this->isEnabled) {
@@ -219,7 +245,7 @@ final class AdminNotifier
         $this->auditLog->record(
             AuditLog::ADMIN_NOTIFICATION_QUEUED,
             null,
-            $targetId === null ? null : 'invitation_request',
+            $targetId === null ? null : $targetType,
             $targetId,
             $ipAddress,
             ['kind' => $kind],

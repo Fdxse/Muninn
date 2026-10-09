@@ -6,7 +6,6 @@ namespace Muninn\Api\MagicLinks;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Exception;
 use Muninn\Api\Http\HttpException;
 use Muninn\Api\Http\InputReader;
 use Muninn\Api\Http\Request;
@@ -189,8 +188,8 @@ final class MagicLinkController
         $nowUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $latestAllowedEndUtc = $nowUtc->modify('+' . $this->maximumValidDays . ' days');
 
-        $validFromUtc = self::readTimestamp($requestBody, 'valid_from', $fieldErrors) ?? $nowUtc;
-        $validUntilUtc = self::readTimestamp($requestBody, 'valid_until', $fieldErrors)
+        $validFromUtc = InputReader::optionalUtcTimestamp($requestBody, 'valid_from', $fieldErrors) ?? $nowUtc;
+        $validUntilUtc = InputReader::optionalUtcTimestamp($requestBody, 'valid_until', $fieldErrors)
             ?? $validFromUtc->modify('+' . $this->defaultValidDays . ' days');
         if (!isset($fieldErrors['valid_from']) && !isset($fieldErrors['valid_until'])) {
             if ($validUntilUtc <= $validFromUtc) {
@@ -219,36 +218,6 @@ final class MagicLinkController
             dailyStartTime: $dailyStartTime,
             dailyEndTime: $dailyEndTime,
         );
-    }
-
-    /**
-     * Reads an optional ISO 8601 timestamp with an explicit offset ("...Z" or "...+02:00") and
-     * returns it in UTC, whole seconds. A timestamp without an offset is refused rather than
-     * guessed, so no server time zone is ever assumed.
-     *
-     * @param array<string, mixed> $requestBody
-     * @param array<string, string> $fieldErrors Receives the field's error, if any.
-     */
-    private static function readTimestamp(array $requestBody, string $fieldName, array &$fieldErrors): ?DateTimeImmutable
-    {
-        $timestampInput = InputReader::optionalString($requestBody, $fieldName);
-        if ($timestampInput === null || $timestampInput === '') {
-            return null;
-        }
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})$/', $timestampInput)) {
-            $fieldErrors[$fieldName] = 'Use a date and time like 2026-10-31T18:00:00Z.';
-            return null;
-        }
-        try {
-            $parsedMoment = new DateTimeImmutable($timestampInput);
-        } catch (Exception) {
-            $fieldErrors[$fieldName] = 'This is not a valid date and time.';
-            return null;
-        }
-        $momentUtc = $parsedMoment->setTimezone(new DateTimeZone('UTC'));
-
-        // Stored as whole seconds; drop any fraction so what is shown is exactly what applies.
-        return $momentUtc->setTime((int) $momentUtc->format('G'), (int) $momentUtc->format('i'), (int) $momentUtc->format('s'));
     }
 
     /**

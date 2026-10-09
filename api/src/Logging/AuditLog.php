@@ -60,6 +60,9 @@ final class AuditLog
     public const SIGN_IN_USERNAMES_REVEALED = 'admin.sign_in_usernames_revealed';
     public const AUDIT_LOG_ARCHIVED = 'audit_log.archived';
     public const AUDIT_LOG_ARCHIVE_DOWNLOADED = 'audit_log.archive_downloaded';
+    public const BROADCAST_CREATED = 'broadcast.created';
+    public const BROADCAST_UPDATED = 'broadcast.updated';
+    public const BROADCAST_DELETED = 'broadcast.deleted';
 
     public function __construct(private readonly PDO $database)
     {

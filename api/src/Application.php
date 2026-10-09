@@ -14,6 +14,8 @@ use Muninn\Api\Attachments\AttachmentController;
 use Muninn\Api\Attachments\AttachmentService;
 use Muninn\Api\Attachments\AttachmentStorage;
 use Muninn\Api\Auth\AuthController;
+use Muninn\Api\Broadcasts\BroadcastController;
+use Muninn\Api\Broadcasts\BroadcastService;
 use Muninn\Api\Auth\PasswordResetController;
 use Muninn\Api\Auth\PasswordResetService;
 use Muninn\Api\Auth\PasswordService;
@@ -433,6 +435,9 @@ final class Application
             $auditLog,
         );
 
+        // Broadcast messages from the administrator (D061).
+        $broadcastController = new BroadcastController(new BroadcastService($this->database), $auditLog, $this->adminNotifier);
+
         // Health check: reveals nothing about versions or the database.
         $this->router->add('GET', '/api/v1/health', fn (): Response => Response::data(['status' => 'ok']), Router::ACCESS_PUBLIC);
 
@@ -468,6 +473,16 @@ final class Application
         // "Contact admin" (D058): everyday users write to the administrator through ntfy.
         $this->router->add('GET', '/api/v1/admin-messages', $adminMessageController->status(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/admin-messages', $adminMessageController->send(...), Router::ACCESS_USER);
+
+        // Broadcast messages (D061): the administrator schedules them, everyday users see and answer them.
+        $this->router->add('GET', '/api/v1/broadcasts', $broadcastController->listShowing(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/broadcasts/{id}/seen', $broadcastController->markSeen(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/broadcasts/{id}/dismiss', $broadcastController->dismiss(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/broadcasts/{id}/vote', $broadcastController->vote(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/admin/broadcasts', $broadcastController->listAll(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/broadcasts', $broadcastController->create(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('PATCH', '/api/v1/admin/broadcasts/{id}', $broadcastController->update(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('DELETE', '/api/v1/admin/broadcasts/{id}', $broadcastController->delete(...), Router::ACCESS_SYSTEM_ADMIN);
 
         // Account administration (system admins only; accounts are disabled, never deleted).
         $this->router->add('GET', '/api/v1/admin/users', $userAdminController->list(...), Router::ACCESS_SYSTEM_ADMIN);

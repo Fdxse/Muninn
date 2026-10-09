@@ -37,6 +37,20 @@ final class DataResetTest extends WorkspaceTestCase
 
         // One pending invitation created by the admin.
         self::assertSame(201, $this->sendAs($admin, 'POST', '/api/v1/admin/invitations', ['note' => 'test'])->statusCode());
+
+        // An administrator's vote (D061) that Alice answered: her answer goes, the vote stays.
+        $pollResponse = $this->sendAs($admin, 'POST', '/api/v1/admin/broadcasts', [
+            'kind' => 'vote',
+            'message' => 'Coffee or tea?',
+            'options' => ['Coffee', 'Tea'],
+            'starts_at' => gmdate('Y-m-d\TH:i:s\Z', time() - 60),
+            'ends_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600),
+        ]);
+        self::assertSame(201, $pollResponse->statusCode(), $pollResponse->body());
+        $poll = $pollResponse->json()['data']['broadcast'];
+        self::assertSame(204, $this->sendAs($alice, 'POST', '/api/v1/broadcasts/' . $poll['id'] . '/vote', [
+            'option_ids' => [$poll['options'][0]['id']],
+        ])->statusCode());
         $auditRowsBefore = (int) $this->scalar('SELECT COUNT(*) FROM audit_log');
 
         $resetService = new DataResetService(TestDatabase::connection(), $this->attachmentStorage());
@@ -59,6 +73,9 @@ final class DataResetTest extends WorkspaceTestCase
         }
 
         self::assertSame(0, $this->attachmentStorage()->countFiles(), 'Attachment files are deleted too.');
+        self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM broadcast_votes'));
+        self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM broadcast_receipts'));
+        self::assertSame(1, (int) $this->scalar('SELECT COUNT(*) FROM broadcasts'), 'The administrator\'s broadcasts stay.');
 
         // The audit log is untouched by the reset itself.
         self::assertSame($auditRowsBefore, (int) $this->scalar('SELECT COUNT(*) FROM audit_log'));
