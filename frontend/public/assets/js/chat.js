@@ -43,8 +43,8 @@
 
     /* ---------- The list of chats ---------- */
 
-    /** One row of the chat list. */
-    function buildChannelRow(channelHref, iconName, channelName, detailText) {
+    /** One row of the chat list, with a count of unread messages when there are any (D063). */
+    function buildChannelRow(channelHref, iconName, channelName, detailText, unreadCount) {
         var channelLink = MuninnApi.createElement('a', 'list-group-item list-group-item-action d-flex align-items-center gap-3 py-3');
         channelLink.href = channelHref;
         var channelIcon = MuninnApi.createElement('i', 'bi ' + iconName + ' fs-5');
@@ -54,6 +54,11 @@
         textColumn.appendChild(MuninnApi.createElement('div', 'fw-semibold', channelName));
         textColumn.appendChild(MuninnApi.createElement('div', 'small text-muted-brand', detailText));
         channelLink.appendChild(textColumn);
+        if (unreadCount > 0) {
+            var unreadBadge = MuninnApi.createElement('span', 'badge rounded-pill muninn-unread-badge', unreadCount > 99 ? '99+' : String(unreadCount));
+            unreadBadge.appendChild(MuninnApi.createElement('span', 'visually-hidden', unreadCount === 1 ? ' unread message' : ' unread messages'));
+            channelLink.appendChild(unreadBadge);
+        }
         return channelLink;
     }
 
@@ -68,7 +73,8 @@
                     'chat.php?channel=global',
                     'bi-megaphone',
                     'Everyone',
-                    overview.global.can_write ? 'Shout out to all users' : 'Read what is shouted out to all users'
+                    overview.global.can_write ? 'Shout out to all users' : 'Read what is shouted out to all users',
+                    overview.global.unread_count
                 ));
             }
             overview.workspaces.forEach(function (workspaceChannel) {
@@ -76,7 +82,8 @@
                     'chat.php?workspace=' + encodeURIComponent(workspaceChannel.workspace_id),
                     'bi-people',
                     workspaceChannel.name,
-                    MuninnApi.roleLabel(workspaceChannel.your_role) + (workspaceChannel.can_write ? '' : ' · read only')
+                    MuninnApi.roleLabel(workspaceChannel.your_role) + (workspaceChannel.can_write ? '' : ' · read only'),
+                    workspaceChannel.unread_count
                 ));
             });
             document.getElementById('channel-list-empty').classList.toggle('d-none', overview.workspaces.length > 0);
@@ -173,6 +180,8 @@
         pollCursor = latestPage.cursor;
         updateEmptyNotice();
         scrollToBottom();
+        // The API has marked the channel as seen; the Chat badge in the top bar follows (D063).
+        document.dispatchEvent(new CustomEvent('muninn:chat-read'));
         return latestPage;
     }
 
@@ -236,6 +245,10 @@
             });
             pollCursor = changes.cursor;
             updateEmptyNotice();
+            // New messages shown here are seen, so the Chat badge must not count them (D063).
+            if (changes.messages.length > 0) {
+                document.dispatchEvent(new CustomEvent('muninn:chat-read'));
+            }
             if (wasNearBottom) {
                 scrollToBottom();
             }

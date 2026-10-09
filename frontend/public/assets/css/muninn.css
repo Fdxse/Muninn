@@ -777,3 +777,9 @@ a.btn {
     min-height: 1.75rem;
     line-height: 1;
 }
+
+/* Unread messages next to a chat in the chat list (D063): gold on navy, like the top-bar badges. */
+.muninn-unread-badge {
+    background: var(--muninn-navy-900);
+    color: var(--muninn-gold-500);
+}

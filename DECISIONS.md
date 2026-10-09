@@ -812,3 +812,26 @@ one-to-one messages in this version.
 Not in this version: private messages, unread counts or notifications (for example ntfy on
 mentions), editing messages, attachments or links, Markdown, and moderation of the global
 channel by the administrator.
+
+## D063 — Unread chat badge
+
+**Status:** Proposed (2026-10-09). The project owner asked for a badge on the Chat icon when there
+are messages the user has not seen; awaiting review in the PR.
+
+- **What counts.** A message is unread for a user when someone else wrote it, it is not deleted,
+  and it is newer than the user's read marker for that chat. Only chats the user may open right
+  now count (`ChatPolicy`, D062), so the number reveals nothing about other chats; administrators
+  and level `off` always get 0.
+- **Seen = shown.** Opening a chat, and every poll of an open chat, moves the user's marker to the
+  database time of that response (`chat_read_markers`, one row per user and chat; it never moves
+  backwards). Scrolling back to older messages does not change it. This happens on a GET, which
+  is safe here: the worst a forged request could do is mark a chat as read.
+- **Where it shows.** A gold count on the Chat link in the top bar (99+ above 99), refreshed once
+  a minute while the page is visible, when the tab becomes visible again, and as soon as the chat
+  page has shown new messages; and a count next to each chat in the chat list.
+- **First time.** A chat the user has never opened counts all its messages (at most 90 days of
+  them, D062) until they open it.
+- **Database.** Migration `0010_chat_read_markers`. No foreign key to workspaces: markers of
+  deleted or left workspaces are simply never counted. `bin/reset-data.php` deletes all markers.
+
+Not in this version: push or ntfy notifications for new chat messages, and per-message "seen by".

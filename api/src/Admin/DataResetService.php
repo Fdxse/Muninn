@@ -54,6 +54,7 @@ final class DataResetService
             'workspaces' => 'SELECT COUNT(*) FROM workspaces',
             'magic links (D059)' => 'SELECT COUNT(*) FROM magic_links',
             'chat messages (D062)' => 'SELECT COUNT(*) FROM chat_messages',
+            'chat read markers (D063)' => 'SELECT COUNT(*) FROM chat_read_markers',
             'magic link visits' => 'SELECT COUNT(*) FROM magic_link_sessions',
             'workspace memberships' => 'SELECT COUNT(*) FROM workspace_members',
             'notes (including Trash)' => 'SELECT COUNT(*) FROM notes',
@@ -104,6 +105,8 @@ final class DataResetService
             // Chat messages point at workspaces and at the accounts that wrote them (D062);
             // administrators never write any, so all of them go.
             'chat messages (D062)' => 'DELETE FROM chat_messages',
+            // How far everyone has read; administrators never chat, so all of them go (D063).
+            'chat read markers (D063)' => 'DELETE FROM chat_read_markers',
             // Broadcast answers point at the accounts being deleted (D061); the broadcasts
             // themselves belong to administrators and stay.
             'broadcast votes of those accounts' => 'DELETE broadcast_votes FROM broadcast_votes

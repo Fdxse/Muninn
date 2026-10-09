@@ -13,12 +13,14 @@ use Muninn\Api\Logging\AuditLog;
 use Muninn\Api\Users\User;
 use Muninn\Api\Validation\TextRules;
 use Muninn\Api\Workspaces\WorkspaceAuthorizer;
+use Muninn\Api\Workspaces\WorkspaceMembership;
 
 /**
  * Chat (decision D062): one channel per shared workspace, plus one global channel.
  *
  * Signed-in everyday users (who may use what: ChatPolicy):
- *   GET    /api/v1/chat                             the channels the caller may use
+ *   GET    /api/v1/chat                             the channels the caller may use, with unread counts
+ *   GET    /api/v1/chat/unread                      total unread messages, for the Chat badge (D063)
  *   GET    /api/v1/chat/global/messages             newest page; ?before=<message id> for older,
  *   GET    /api/v1/workspaces/{id}/chat/messages      ?since=<cursor> for changes since the last look
  *   POST   /api/v1/chat/global/messages             {"body": "..."}
@@ -42,25 +44,28 @@ final class ChatController
     public function overview(Request $request, RequestContext $context): Response
     {
         $currentUser = $context->requireSession()->user;
+        $readableMemberships = $this->readableWorkspaceMemberships($currentUser);
+        $canReadGlobal = $this->chatPolicy->canReadGlobal($currentUser);
+        $unreadCounts = $this->unreadCounts($currentUser, $readableMemberships, $canReadGlobal);
 
         $workspaceChannels = [];
-        foreach ($this->workspaceAuthorizer->listMemberships($currentUser) as $membership) {
-            if (!$this->chatPolicy->canReadWorkspace($currentUser, $membership)) {
-                continue;
-            }
+        foreach ($readableMemberships as $membership) {
             $workspaceChannels[] = [
                 'workspace_id' => $membership->workspaceId,
                 'name' => $membership->workspaceName,
                 'your_role' => $membership->role->value,
                 'can_write' => $this->chatPolicy->canWriteWorkspace($currentUser, $membership),
+                // Messages from others the user has not seen yet (D063).
+                'unread_count' => $unreadCounts[$membership->workspaceId] ?? 0,
             ];
         }
 
         return Response::data([
             'chat_access' => $currentUser->isSystemAdmin ? ChatAccessLevel::Off->value : $currentUser->chatAccess->value,
             'global' => [
-                'can_read' => $this->chatPolicy->canReadGlobal($currentUser),
+                'can_read' => $canReadGlobal,
                 'can_write' => $this->chatPolicy->canWriteGlobal($currentUser),
+                'unread_count' => $unreadCounts[ChatService::GLOBAL_CHANNEL_KEY] ?? 0,
             ],
             'workspaces' => $workspaceChannels,
             'limits' => [
@@ -69,6 +74,24 @@ final class ChatController
                 'retention_days' => $this->retentionDays,
             ],
         ]);
+    }
+
+    /**
+     * GET /api/v1/chat/unread
+     *
+     * How many messages from others the caller has not seen yet (D063), for the badge on the Chat
+     * link. Only chats the caller may open count, so the numbers reveal nothing else.
+     */
+    public function unread(Request $request, RequestContext $context): Response
+    {
+        $currentUser = $context->requireSession()->user;
+        $unreadCounts = $this->unreadCounts(
+            $currentUser,
+            $this->readableWorkspaceMemberships($currentUser),
+            $this->chatPolicy->canReadGlobal($currentUser),
+        );
+
+        return Response::data(['total_unread' => array_sum($unreadCounts)]);
     }
 
     /** GET /api/v1/chat/global/messages */
@@ -194,7 +217,41 @@ final class ChatController
             $messagePage = $this->chatService->listLatest($workspaceId, $currentUser->id, $viewerCanModerate);
         }
 
+        // Showing the newest messages, or the changes since the last look, means the user has now
+        // seen the channel up to this moment (D063). Scrolling back to older ones changes nothing.
+        if (isset($messagePage['cursor'])) {
+            $this->chatService->markRead($currentUser->id, $workspaceId, $messagePage['cursor']);
+        }
+
         return Response::data(['channel' => $channel] + $messagePage);
+    }
+
+    /**
+     * The memberships whose chat the user may read, in workspace-name order.
+     *
+     * @return list<WorkspaceMembership>
+     */
+    private function readableWorkspaceMemberships(User $currentUser): array
+    {
+        return array_values(array_filter(
+            $this->workspaceAuthorizer->listMemberships($currentUser),
+            fn (WorkspaceMembership $membership): bool => $this->chatPolicy->canReadWorkspace($currentUser, $membership),
+        ));
+    }
+
+    /**
+     * Unread counts for exactly the chats the user may read.
+     *
+     * @param list<WorkspaceMembership> $readableMemberships
+     * @return array<string, int> Channel key => unread count.
+     */
+    private function unreadCounts(User $currentUser, array $readableMemberships, bool $canReadGlobal): array
+    {
+        return $this->chatService->countUnread(
+            $currentUser->id,
+            array_map(static fn (WorkspaceMembership $membership): string => $membership->workspaceId, $readableMemberships),
+            $canReadGlobal,
+        );
     }
 
     /** Validates, rate limits and stores a message in an already authorized channel. */
