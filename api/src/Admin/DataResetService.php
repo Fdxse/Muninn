@@ -64,6 +64,12 @@ final class DataResetService
             'invitation requests' => 'SELECT COUNT(*) FROM invitation_requests',
             'password reset links' => 'SELECT COUNT(*) FROM password_resets',
             'sign-in attempt records' => 'SELECT COUNT(*) FROM auth_attempts',
+            'broadcast votes of those accounts' => 'SELECT COUNT(*) FROM broadcast_votes
+                                                   JOIN users ON users.id = broadcast_votes.user_id
+                                                   WHERE users.is_system_admin = 0',
+            'broadcast receipts of those accounts' => 'SELECT COUNT(*) FROM broadcast_receipts
+                                                      JOIN users ON users.id = broadcast_receipts.user_id
+                                                      WHERE users.is_system_admin = 0',
         ];
 
         $rowCounts = [];
@@ -94,6 +100,14 @@ final class DataResetService
             // Magic Links point at workspaces and at the accounts that created them (D059).
             'magic link visits' => 'DELETE FROM magic_link_sessions',
             'magic links (D059)' => 'DELETE FROM magic_links',
+            // Broadcast answers point at the accounts being deleted (D061); the broadcasts
+            // themselves belong to administrators and stay.
+            'broadcast votes of those accounts' => 'DELETE broadcast_votes FROM broadcast_votes
+                                                   JOIN users ON users.id = broadcast_votes.user_id
+                                                   WHERE users.is_system_admin = 0',
+            'broadcast receipts of those accounts' => 'DELETE broadcast_receipts FROM broadcast_receipts
+                                                      JOIN users ON users.id = broadcast_receipts.user_id
+                                                      WHERE users.is_system_admin = 0',
             'attachments' => 'DELETE FROM attachments',
             // note_tags rows go with their notes and tags (ON DELETE CASCADE).
             'tags' => 'DELETE FROM tags',

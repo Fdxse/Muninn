@@ -87,6 +87,19 @@ Summary:
    on the first archive. `sudo php84 bin/check-setup.php` reports the folder and the extension.
 5. Try it: sign in as the administrator and choose Overview in the top bar.
 
+## Upgrading to broadcast messages (D061)
+
+1. Deploy as usual, then on the NAS from `/volume1/Muninn`: `sudo php84 bin/migrate.php` (adds
+   migration `0008_broadcasts`; no existing data changes).
+2. FTP the frontend with overwrite on: it adds `admin/broadcasts.php` and
+   `assets/js/admin-broadcasts.js`, and changes `includes/page.php`, `assets/css/muninn.css` and
+   `assets/js/app-shell.js`.
+3. Votes are pushed to your phone through ntfy when ntfy is set up (see below). Nothing else to
+   configure.
+4. Try it: as the administrator choose Broadcasts in the top bar and create a one-time banner,
+   then sign in as an everyday user in a private window. The banner shows once; reload and it is
+   gone.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when
@@ -118,7 +131,8 @@ sudo php84 bin/reset-data.php             # asks you to type DELETE ALL USER DAT
 
 It deletes every non-admin account with its sessions, workspaces and notes (Trash and history
 included), folders, tags, note images (database rows and the files in `storage/attachments/`),
-Magic Links, all invitations and the sign-in attempt records. Admin accounts, the audit log and the schema stay.
+Magic Links, all invitations, the sign-in attempt records, and those accounts' broadcast answers and votes. Admin
+accounts, the broadcasts themselves, the audit log and the schema stay.
 There is no undo, so back up the database first if anything might be worth keeping (D046).
 
 ## Environment record

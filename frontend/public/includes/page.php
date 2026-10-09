@@ -202,6 +202,14 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <span class="visually-hidden d-sm-none">Workspaces</span>
                 </a>
             </li>
+            <li class="nav-item d-none" id="nav-admin-broadcasts-item">
+                <!-- Broadcast messages to all users (D061): banners and votes. -->
+                <a class="nav-link" href="<?= $assetPrefix ?>admin/broadcasts.php">
+                    <i class="bi bi-megaphone" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Broadcasts</span>
+                    <span class="visually-hidden d-sm-none">Broadcasts</span>
+                </a>
+            </li>
             <li class="nav-item d-none" id="nav-contact-admin-item">
                 <!-- "Contact admin" (D058): everyday users write a short message to the administrator. -->
                 <button type="button" class="nav-link" data-bs-toggle="modal" data-bs-target="#contact-admin-modal">
@@ -229,6 +237,8 @@ function renderAppNavbar(string $assetPrefix = ''): void
         </ul>
     </div>
 </nav>
+<!-- Messages from the administrator (D061): banners and votes, filled in by assets/js/app-shell.js. -->
+<div id="broadcast-area" class="container px-3 pt-3 d-none" role="region" aria-label="Messages from the administrator"></div>
 <!-- "Contact admin" dialog (D058). Filled in and sent by assets/js/app-shell.js. -->
 <div class="modal fade" id="contact-admin-modal" tabindex="-1" aria-labelledby="contact-admin-heading" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen-sm-down">

@@ -696,3 +696,39 @@ a.btn {
     height: 0.9rem;
     border-radius: 2px;
 }
+
+/*
+ * Broadcast messages from the administrator (D061), shown under the top bar on signed-in pages.
+ * The text is plain text from the administrator; pre-line keeps their line breaks.
+ */
+.muninn-broadcast-message {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+/* Vote answers get full-width rows, so they are easy to tap on a phone. */
+.muninn-broadcast-vote .form-check {
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 0;
+}
+
+.muninn-broadcast-vote .form-check-input {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+/* Result bars on the admin Broadcasts page: plain CSS, no chart library (like D060). */
+.muninn-result-bar {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: rgba(47, 75, 110, 0.12);
+    overflow: hidden;
+}
+
+.muninn-result-bar-fill {
+    height: 100%;
+    background: var(--muninn-slate-600);
+}

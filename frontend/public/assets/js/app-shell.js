@@ -121,6 +121,192 @@
         });
     }
 
+
+    /*
+     * Broadcast messages from the administrator (D061), shown under the top bar:
+     *   once   shown on one page, then the API is told it was seen and it never comes back;
+     *   sticky shown on every page until the user closes it with its X;
+     *   vote   shown until the user has voted.
+     * The text is the administrator's plain text and is always inserted as text, never as HTML.
+     */
+    var broadcastArea = document.getElementById('broadcast-area');
+
+    /** Hides the area again once its last message is gone. */
+    function removeBroadcastElement(broadcastElement) {
+        broadcastElement.remove();
+        broadcastArea.classList.toggle('d-none', broadcastArea.childElementCount === 0);
+    }
+
+    /** An X button that runs onClose. */
+    function createCloseButton(onClose) {
+        var closeButton = MuninnApi.createElement('button', 'btn-close flex-shrink-0');
+        closeButton.type = 'button';
+        closeButton.setAttribute('aria-label', 'Close this message');
+        closeButton.addEventListener('click', onClose);
+        return closeButton;
+    }
+
+    /** A one-time or sticky banner. */
+    function buildBroadcastBanner(broadcast) {
+        var isSticky = broadcast.kind === 'sticky';
+        var bannerElement = MuninnApi.createElement('div', 'alert ' + (isSticky ? 'alert-warning' : 'alert-info') + ' d-flex align-items-start gap-2 mb-2');
+        bannerElement.setAttribute('role', 'status');
+        bannerElement.appendChild(MuninnApi.createElement('i', 'bi ' + (isSticky ? 'bi-exclamation-triangle' : 'bi-megaphone') + ' flex-shrink-0 mt-1'));
+        bannerElement.lastChild.setAttribute('aria-hidden', 'true');
+
+        var textColumn = MuninnApi.createElement('div', 'flex-grow-1');
+        textColumn.appendChild(MuninnApi.createElement('p', 'muninn-broadcast-message mb-0', broadcast.message));
+        var closeErrorText = MuninnApi.createElement('p', 'small text-danger mb-0 d-none');
+        textColumn.appendChild(closeErrorText);
+        bannerElement.appendChild(textColumn);
+
+        bannerElement.appendChild(createCloseButton(async function (clickEvent) {
+            if (!isSticky) {
+                // Already marked as seen when shown; closing only tidies this page.
+                removeBroadcastElement(bannerElement);
+                return;
+            }
+            // Kept in a variable: currentTarget is cleared once the click has been handled.
+            var dismissButton = clickEvent.currentTarget;
+            dismissButton.disabled = true;
+            try {
+                await MuninnApi.request('POST', '/api/v1/broadcasts/' + encodeURIComponent(broadcast.id) + '/dismiss');
+                removeBroadcastElement(bannerElement);
+            } catch (dismissError) {
+                // A 404 means it ended meanwhile, so it would not come back anyway.
+                if (dismissError.status === 404) {
+                    removeBroadcastElement(bannerElement);
+                    return;
+                }
+                closeErrorText.textContent = 'Could not close the message: ' + dismissError.message;
+                closeErrorText.classList.remove('d-none');
+                dismissButton.disabled = false;
+            }
+        }));
+
+        return bannerElement;
+    }
+
+    /** A vote: the question, one radio button or checkbox per answer, and a Vote button. */
+    function buildBroadcastVote(broadcast) {
+        var voteCard = MuninnApi.createElement('div', 'card border-0 shadow-sm mb-2 muninn-broadcast-vote');
+        var voteForm = MuninnApi.createElement('form', 'card-body');
+        voteForm.noValidate = true;
+        var questionId = 'broadcast-question-' + broadcast.id;
+        var answerFieldset = MuninnApi.createElement('fieldset');
+        answerFieldset.setAttribute('aria-describedby', questionId + '-hint');
+
+        var questionLegend = MuninnApi.createElement('legend', 'fs-6 fw-semibold d-flex gap-2 mb-1');
+        var questionIcon = MuninnApi.createElement('i', 'bi bi-check2-square');
+        questionIcon.setAttribute('aria-hidden', 'true');
+        questionLegend.appendChild(questionIcon);
+        questionLegend.appendChild(MuninnApi.createElement('span', 'muninn-broadcast-message', broadcast.message));
+        answerFieldset.appendChild(questionLegend);
+        answerFieldset.appendChild(MuninnApi.createElement(
+            'p',
+            'small text-muted-brand mb-2',
+            broadcast.allows_multiple_choices ? 'Choose one or more answers.' : 'Choose one answer.'
+        ));
+        answerFieldset.lastChild.id = questionId + '-hint';
+
+        var answerInputs = [];
+        broadcast.options.forEach(function (option, optionIndex) {
+            var answerRow = MuninnApi.createElement('div', 'form-check');
+            var answerInput = MuninnApi.createElement('input', 'form-check-input');
+            answerInput.type = broadcast.allows_multiple_choices ? 'checkbox' : 'radio';
+            answerInput.name = questionId;
+            answerInput.value = option.id;
+            answerInput.id = questionId + '-answer-' + optionIndex;
+            var answerLabel = MuninnApi.createElement('label', 'form-check-label flex-grow-1', option.label);
+            answerLabel.htmlFor = answerInput.id;
+            answerRow.appendChild(answerInput);
+            answerRow.appendChild(answerLabel);
+            answerFieldset.appendChild(answerRow);
+            answerInputs.push(answerInput);
+        });
+        voteForm.appendChild(answerFieldset);
+
+        var voteErrorText = MuninnApi.createElement('p', 'small text-danger mb-2 d-none');
+        voteErrorText.setAttribute('role', 'alert');
+        voteForm.appendChild(voteErrorText);
+        var voteButton = MuninnApi.createElement('button', 'btn btn-primary', 'Vote');
+        voteButton.type = 'submit';
+        voteButton.disabled = true;
+        voteForm.appendChild(voteButton);
+
+        // The button only works once something is chosen.
+        answerFieldset.addEventListener('change', function () {
+            voteButton.disabled = !answerInputs.some(function (answerInput) { return answerInput.checked; });
+        });
+
+        voteForm.addEventListener('submit', async function (submitEvent) {
+            submitEvent.preventDefault();
+            var chosenOptionIds = answerInputs
+                .filter(function (answerInput) { return answerInput.checked; })
+                .map(function (answerInput) { return answerInput.value; });
+            if (chosenOptionIds.length === 0) {
+                return;
+            }
+            voteButton.disabled = true;
+            voteErrorText.classList.add('d-none');
+            try {
+                await MuninnApi.request('POST', '/api/v1/broadcasts/' + encodeURIComponent(broadcast.id) + '/vote', { option_ids: chosenOptionIds });
+                showVoteThanks(voteCard);
+            } catch (voteError) {
+                // Already voted (another tab) or the vote has ended: either way it is done here.
+                if (voteError.status === 409 || voteError.status === 404) {
+                    removeBroadcastElement(voteCard);
+                    return;
+                }
+                voteErrorText.textContent = voteError.message;
+                voteErrorText.classList.remove('d-none');
+                voteButton.disabled = false;
+            }
+        });
+
+        voteCard.appendChild(voteForm);
+        return voteCard;
+    }
+
+    /** Replaces a vote with a short thank-you the user can close. */
+    function showVoteThanks(voteCard) {
+        var thanksElement = MuninnApi.createElement('div', 'alert alert-success d-flex align-items-start gap-2 mb-2');
+        thanksElement.setAttribute('role', 'status');
+        thanksElement.appendChild(MuninnApi.createElement('span', 'flex-grow-1', 'Thank you for voting.'));
+        thanksElement.appendChild(createCloseButton(function () {
+            removeBroadcastElement(thanksElement);
+        }));
+        voteCard.replaceWith(thanksElement);
+    }
+
+    /**
+     * Loads and shows the broadcasts for this user. A failure shows nothing: the messages are
+     * extras, and the page itself must keep working.
+     */
+    async function showBroadcasts() {
+        if (!broadcastArea) {
+            return;
+        }
+        var broadcastData;
+        try {
+            broadcastData = await MuninnApi.request('GET', '/api/v1/broadcasts');
+        } catch (loadError) {
+            return;
+        }
+        broadcastData.broadcasts.forEach(function (broadcast) {
+            if (broadcast.kind === 'vote') {
+                broadcastArea.appendChild(buildBroadcastVote(broadcast));
+                return;
+            }
+            broadcastArea.appendChild(buildBroadcastBanner(broadcast));
+            if (broadcast.kind === 'once') {
+                // Shown now, so it will not be shown again; if this fails it simply shows once more.
+                MuninnApi.request('POST', '/api/v1/broadcasts/' + encodeURIComponent(broadcast.id) + '/seen').catch(function () {});
+            }
+        });
+        broadcastArea.classList.toggle('d-none', broadcastArea.childElementCount === 0);
+    }
+
     MuninnApi.loadCurrentUser()
         .then(function (currentUserData) {
             var currentUser = currentUserData.user;
@@ -134,6 +320,7 @@
             document.getElementById('nav-admin-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-users-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-workspaces-item').classList.toggle('d-none', !currentUser.is_system_admin);
+            document.getElementById('nav-admin-broadcasts-item').classList.toggle('d-none', !currentUser.is_system_admin);
             if (currentUser.is_system_admin) {
                 refreshInvitationRequestsBadge();
             }
@@ -147,6 +334,10 @@
             document.dispatchEvent(new CustomEvent('muninn:user-ready', { detail: currentUser }));
             if (!document.body.hasAttribute('data-shell-hold')) {
                 pageContent.classList.remove('d-none');
+            }
+            // The administrator writes the broadcasts; they are for everyday users.
+            if (!currentUser.is_system_admin) {
+                showBroadcasts();
             }
         })
         .catch(function (sessionError) {

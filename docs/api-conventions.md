@@ -128,6 +128,14 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | GET | `/api/v1/admin/sign-in-attempts[?reveal=true]` | system admin | the sign-in section alone; `reveal=true` shows typed usernames and is audited (`admin.sign_in_usernames_revealed`) |
 | POST | `/api/v1/admin/audit-log/archive` | system admin | zip audit entries older than `audit_log.archive_after_months`, verify, then delete them → 201 `{archive}`; nothing old enough → 409 `nothing_to_archive`; another run → 409 `archive_running`; no zip extension → 503 `zip_unavailable` |
 | GET | `/api/v1/admin/audit-log/archives/{archiveId}` | system admin | download one archive (`archiveId` is its file name without `.zip`) |
+| GET | `/api/v1/broadcasts` | signed in | broadcasts showing to the caller right now (D061): `id`, `kind` (`once`\|`sticky`\|`vote`), `message`, `allows_multiple_choices`, `starts_at`, `ends_at`, `options` (`id`, `label`); never results; always empty for administrator accounts |
+| POST | `/api/v1/broadcasts/{id}/seen` | signed in | a one-time banner was shown (204); 404 when it is not a showing one-time banner |
+| POST | `/api/v1/broadcasts/{id}/dismiss` | signed in | a sticky banner was closed with its X (204) |
+| POST | `/api/v1/broadcasts/{id}/vote` | signed in | `{option_ids: [...]}` (one, or several when allowed) → 204; queues an ntfy notification to the administrator; second vote → 409 `already_voted` |
+| GET | `/api/v1/admin/broadcasts` | system admin | every broadcast with `status` (`scheduled`\|`showing`\|`ended`), `done_count` and, for votes, each option's `vote_count` and `voters` |
+| POST | `/api/v1/admin/broadcasts` | system admin | `{kind, message, starts_at, ends_at, allows_multiple_choices?, options?: [2-5 labels]}` → 201 `{broadcast}`; times need an explicit offset |
+| PATCH | `/api/v1/admin/broadcasts/{id}` | system admin | `{message, starts_at, ends_at}` (all three); `kind` and `options` cannot change; an end in the past ends it |
+| DELETE | `/api/v1/admin/broadcasts/{id}` | system admin | delete with its answers and votes (204) |
 
 ### Magic Link visitors (D059)
 

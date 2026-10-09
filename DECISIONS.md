@@ -716,3 +716,45 @@ what an administrator needs to spot problems early. It is served by
 Not in this version: push notifications when a warning appears, per-workspace numbers, and
 deleting archives from the page.
 
+
+## D061 — Broadcast messages from the administrator
+
+**Status:** Proposed (2026-10-09). The project owner asked for three kinds of broadcast and for
+every vote to reach him on ntfy; awaiting review in the PR.
+
+The system administrator writes messages that every signed-in everyday user sees under the top
+bar, on a new admin page, Broadcasts (`admin/broadcasts.php`).
+
+- **Three kinds.** A *one-time banner* is shown once per user and then never again. A *sticky
+  banner* is shown on every page until the user closes it with its X. A *vote* is a question with
+  2-5 answers, single or multiple choice, shown until the user has voted. A vote cannot be changed
+  once given, and users never see the results.
+- **Schedule.** Every broadcast has a start and an end (both required, stored in UTC), so it can
+  be set up in advance; outside that period it is not shown and cannot be answered (404, like an
+  unknown one). The admin page enters times in the browser's own time zone and sends them as UTC;
+  the API refuses times without an explicit offset (as D059). "End now" moves the end to the
+  present.
+- **Per user, on every device.** Being done with a broadcast is one row in `broadcast_receipts`
+  (user + broadcast): a one-time banner gets it when the page has shown it, a sticky one when its
+  X is pressed, a vote when it is cast. So a closed banner stays closed on the phone and the
+  computer alike. A user signed in before the start sees it on the next page they open; "when
+  people log in" means "the first page they see while it runs".
+- **Audience.** Everyday users only. Administrator accounts write the broadcasts and are not shown
+  them (D025). Magic Link visitors (D059) are not signed in and see none.
+- **Plain text.** Messages and answers are plain text with line breaks, inserted as text in the
+  browser, never as HTML or Markdown. Message up to 1000 bytes, answers up to 100 characters.
+- **Fixed answers.** The kind and the answers of a vote cannot be edited, so every vote keeps
+  meaning what the voter saw; only the text and the schedule can change. Deleting a broadcast
+  deletes its receipts and votes.
+- **Results and privacy.** The admin page shows, per broadcast, how many users have seen, closed
+  or voted, and for votes the count per answer and who chose it. Each vote is also pushed to the
+  administrator through ntfy (D057) after the response, with the voter's name, the chosen answers
+  and the question; each user votes once, so this cannot flood. The ntfy message is audited as
+  `notification.admin_queued` like the others; creating, editing and deleting are audited as
+  `broadcast.created`, `broadcast.updated` and `broadcast.deleted`.
+- **Database.** Migration `0008_broadcasts`: `broadcasts`, `broadcast_options`,
+  `broadcast_receipts`, `broadcast_votes`. `bin/reset-data.php` removes the receipts and votes of
+  the accounts it deletes and keeps the broadcasts.
+
+Not in this version: colours or levels per banner, Markdown or links in messages, targeting
+some users only, and changing a vote.
