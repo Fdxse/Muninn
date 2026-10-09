@@ -450,7 +450,26 @@
             await loadOverview();
             pageContent.classList.remove('d-none');
         } catch (loadError) {
+            notAvailableAlert.textContent = notAvailableMessage(loadError);
             notAvailableAlert.classList.remove('d-none');
         }
     });
+
+    /**
+     * Says why the page could not be shown. Only administrators reach this page through the menu,
+     * so a 404 usually means the API on the NAS does not have the Overview update yet; any other
+     * error is shown as the API (or the browser) reported it, so it can be looked up in the log.
+     */
+    function notAvailableMessage(loadError) {
+        if (loadError instanceof MuninnApi.ApiError && loadError.status === 404) {
+            return 'This page is not available. If you are the administrator, the API on the NAS may not have '
+                + 'the Overview update yet: deploy the API (Deploy-Api.ps1) and reload.';
+        }
+        if (loadError instanceof MuninnApi.ApiError) {
+            return 'The overview could not be loaded (' + (loadError.status || 'no connection') + ', ' + loadError.code + '): '
+                + loadError.message + ' Details are in storage/api.log on the NAS.';
+        }
+        // A fault in this page's own script; the browser console has the details.
+        return 'The overview could not be shown: ' + (loadError && loadError.message ? loadError.message : String(loadError));
+    }
 })();
