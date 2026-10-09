@@ -134,6 +134,35 @@
         return responseJson ? responseJson.data : null;
     }
 
+    /**
+     * Downloads a file from the API (e.g. an audit log archive) with the session cookie and
+     * offers it to the browser under the given name. Rejects with an ApiError on failure.
+     */
+    async function downloadFile(path, fileName) {
+        var response;
+        try {
+            response = await fetch(apiBaseUrl + path, { method: 'GET', credentials: 'include' });
+        } catch (networkError) {
+            throw new ApiError(0, 'network_error', 'Cannot reach Muninn. Check your connection and try again.');
+        }
+        if (!response.ok) {
+            throw new ApiError(response.status, 'download_failed', 'The download failed. Please try again.');
+        }
+
+        var fileBlob = await response.blob();
+        var blobUrl = URL.createObjectURL(fileBlob);
+        var downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        // Give the browser a moment to start the download before the blob is released.
+        window.setTimeout(function () {
+            URL.revokeObjectURL(blobUrl);
+        }, 10000);
+    }
+
     /** Endpoints that work without a session, so no CSRF token is needed first. */
     function isPublicPath(path) {
         return path === '/api/v1/auth/login'
@@ -288,6 +317,7 @@
         ApiError: ApiError,
         request: request,
         uploadFile: uploadFile,
+        downloadFile: downloadFile,
         loadCurrentUser: loadCurrentUser,
         signOut: signOut,
         goTo: goTo,

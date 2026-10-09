@@ -73,6 +73,20 @@ Summary:
    a read-only link and open it in a private browser window. Revoke it and reload the window: it
    should say the link does not work.
 
+## Upgrading to the admin Overview page (D060)
+
+1. Deploy as usual. No migration is needed.
+2. FTP the frontend with overwrite on: it adds `admin/overview.php` and
+   `assets/js/admin-overview.js`, and changes `index.php`, `includes/page.php`,
+   `assets/css/muninn.css`, `assets/js/app-shell.js` and `assets/js/api-client.js`.
+3. Archiving old audit log entries needs PHP's zip extension: in Web Station, open the PHP 8.4
+   profile used by the `muninn` site and tick `zip` under extensions. The Overview page warns
+   while it is off; everything else works without it.
+4. Optional: the `audit_log` section in `config/config.php` (see `config/config.example.php`).
+   Archives go to `/volume1/Muninn/storage/audit-archives/` by default, which the API creates
+   on the first archive. `sudo php84 bin/check-setup.php` reports the folder and the extension.
+5. Try it: sign in as the administrator and choose Overview in the top bar.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when

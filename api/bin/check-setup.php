@@ -161,6 +161,15 @@ if ($database !== null) {
 // 4. Storage folders: outside the web root, so logs and images are never served directly.
 checkStorageFolder('Log folder', dirname($config->getString('logging.file_path')), $webRootFolder, false);
 checkStorageFolder('Image folder', Application::attachmentStorageFolder($config), $webRootFolder, true);
+checkStorageFolder('Audit log archive folder', Application::auditArchiveFolder($config), $webRootFolder, true);
+
+// The admin Overview page zips old audit log entries (D060); that needs PHP's zip extension.
+report(
+    class_exists(ZipArchive::class) ? 'OK' : 'WARN',
+    class_exists(ZipArchive::class)
+        ? 'PHP zip extension is on (audit log archives).'
+        : 'PHP zip extension is off: turn on "zip" in the Web Station PHP profile to archive the audit log. Note this check sees the command-line PHP.',
+);
 
 // 5. The private configuration file must not be readable by every account on the server.
 $configPermissions = fileperms($configFilePath) & 0o777;

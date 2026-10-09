@@ -24,6 +24,7 @@ renderAppNavbar();
     <div id="admin-account-notice" class="alert alert-secondary d-none" role="status">
         This is an administrator account. It manages users and invitations and has no notes.
         Sign in with your everyday account to write notes.
+        <a href="admin/overview.php" class="alert-link d-block mt-2">Open the admin overview</a>
     </div>
 
     <section id="shell-content" class="d-none" aria-labelledby="notes-heading">

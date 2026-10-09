@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Muninn\Api;
 
+use Muninn\Api\Admin\AuditLogArchiver;
+use Muninn\Api\Admin\SignInAttemptReport;
+use Muninn\Api\Admin\SystemOverviewController;
+use Muninn\Api\Admin\SystemOverviewService;
 use Muninn\Api\Admin\UserAdminController;
 use Muninn\Api\Admin\WorkspaceAdminController;
 use Muninn\Api\Attachments\AttachmentController;
@@ -133,6 +137,17 @@ final class Application
         $configuredPath = $config->getString('attachments.storage_path');
 
         return $configuredPath !== '' ? rtrim($configuredPath, '/') : dirname(__DIR__) . '/storage/attachments';
+    }
+
+    /**
+     * The audit log archive folder (D060): audit_log.archive_path, or storage/audit-archives inside
+     * the application folder (outside the web root on the NAS) when that is left empty.
+     */
+    public static function auditArchiveFolder(Config $config): string
+    {
+        $configuredPath = $config->getString('audit_log.archive_path');
+
+        return $configuredPath !== '' ? rtrim($configuredPath, '/') : dirname(__DIR__) . '/storage/audit-archives';
     }
 
     /** Exposed so tests can register extra routes (e.g. one that throws). */
@@ -394,6 +409,30 @@ final class Application
             $this->config->getInt('attachments.max_upload_bytes'),
         );
 
+        // The administrator's overview (D060): counts and sizes only, never note data.
+        $displayTimeZone = new DateTimeZone($this->config->getString('magic_links.timezone'));
+        $auditLogArchiver = new AuditLogArchiver(
+            $this->database,
+            self::auditArchiveFolder($this->config),
+            $this->config->getInt('audit_log.archive_after_months'),
+        );
+        $systemOverviewController = new SystemOverviewController(
+            new SystemOverviewService(
+                $this->database,
+                $displayTimeZone,
+                $auditLogArchiver,
+                self::attachmentStorageFolder($this->config),
+                $this->config->getString('logging.file_path'),
+                dirname(__DIR__) . '/migrations',
+                $this->config->getInt('trash.retention_days'),
+                $this->config->getInt('session.idle_timeout_hours'),
+                $this->config->isProduction(),
+            ),
+            new SignInAttemptReport($this->database),
+            $auditLogArchiver,
+            $auditLog,
+        );
+
         // Health check: reveals nothing about versions or the database.
         $this->router->add('GET', '/api/v1/health', fn (): Response => Response::data(['status' => 'ok']), Router::ACCESS_PUBLIC);
 
@@ -435,6 +474,12 @@ final class Application
         $this->router->add('POST', '/api/v1/admin/users/{id}/disable', $userAdminController->disable(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/users/{id}/enable', $userAdminController->enable(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/users/{id}/password-reset', $passwordResetController->create(...), Router::ACCESS_SYSTEM_ADMIN);
+
+        // The administrator's overview page (D060).
+        $this->router->add('GET', '/api/v1/admin/overview', $systemOverviewController->overview(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/admin/sign-in-attempts', $systemOverviewController->signInAttempts(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/audit-log/archive', $systemOverviewController->archive(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/admin/audit-log/archives/{archiveId}', $systemOverviewController->downloadArchive(...), Router::ACCESS_SYSTEM_ADMIN);
 
         // Shared workspace membership administration (D050): members only, never notes.
         $this->router->add('GET', '/api/v1/admin/workspaces', $workspaceAdminController->list(...), Router::ACCESS_SYSTEM_ADMIN);

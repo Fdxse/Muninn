@@ -57,6 +57,9 @@ final class AuditLog
     public const MAGIC_LINK_NOTE_CREATED = 'magic_link.note_created';
     public const MAGIC_LINK_NOTE_UPDATED = 'magic_link.note_updated';
     public const MAGIC_LINK_ATTACHMENT_UPLOADED = 'magic_link.attachment_uploaded';
+    public const SIGN_IN_USERNAMES_REVEALED = 'admin.sign_in_usernames_revealed';
+    public const AUDIT_LOG_ARCHIVED = 'audit_log.archived';
+    public const AUDIT_LOG_ARCHIVE_DOWNLOADED = 'audit_log.archive_downloaded';
 
     public function __construct(private readonly PDO $database)
     {
