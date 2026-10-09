@@ -63,6 +63,10 @@ final class AuditLog
     public const BROADCAST_CREATED = 'broadcast.created';
     public const BROADCAST_UPDATED = 'broadcast.updated';
     public const BROADCAST_DELETED = 'broadcast.deleted';
+    // Chat (D062). Message text is never written to the audit log.
+    public const USER_CHAT_ACCESS_CHANGED = 'user.chat_access_changed';
+    public const CHAT_MESSAGE_REMOVED_BY_MODERATOR = 'chat.message_removed_by_moderator';
+    public const CHAT_EXPIRED_DELETED = 'chat.expired_deleted';
 
     public function __construct(private readonly PDO $database)
     {

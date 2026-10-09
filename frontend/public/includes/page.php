@@ -164,6 +164,14 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <span class="visually-hidden d-sm-none">Search</span>
                 </a>
             </li>
+            <li class="nav-item d-none" id="nav-chat-item">
+                <!-- Chat (D062): shown when the account may use chat; the API checks every request. -->
+                <a class="nav-link" href="<?= $assetPrefix ?>chat.php">
+                    <i class="bi bi-chat-left-text" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Chat</span>
+                    <span class="visually-hidden d-sm-none">Chat</span>
+                </a>
+            </li>
             <li class="nav-item d-none" id="nav-workspaces-item">
                 <a class="nav-link" href="<?= $assetPrefix ?>workspaces.php">
                     <i class="bi bi-people" aria-hidden="true"></i>

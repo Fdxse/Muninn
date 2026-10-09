@@ -758,3 +758,57 @@ bar, on a new admin page, Broadcasts (`admin/broadcasts.php`).
 
 Not in this version: colours or levels per banner, Markdown or links in messages, targeting
 some users only, and changing a vote.
+
+## D062 — Chat
+
+**Status:** Proposed (2026-10-09). The project owner asked for chat with four levels per user and
+chose a 90-day retention, a separate global channel, and no chat access for administrators;
+awaiting review in the PR.
+
+Everyday users chat on a new page, Chat (`chat.php`, in the top bar). There is one channel per
+**shared** workspace and one **global** channel called "Everyone". There are no private
+one-to-one messages in this version.
+
+- **Chat level per account.** The system administrator sets it on the Users page
+  (`users.chat_access`):
+  1. `off`: no chat at all, not even reading the global channel;
+  2. `own_workspaces`: chat only in shared workspaces where the user is Owner;
+  3. `member_workspaces` (the default, also for existing accounts): chat in every shared
+     workspace they are a member of;
+  4. `global`: level 3, plus writing in the global channel ("shout out").
+  Every level except `off` may read the global channel. A change applies on the user's next
+  request.
+- **The workspace role still applies.** The level only ever takes access away. In a workspace
+  chat every member reads, Editors and up write, and Admins and Owners may delete anyone's
+  message. Access is checked through `WorkspaceAuthorizer` on every request, so a non-member gets
+  404 exactly as for notes, and a removed member loses the chat at once. Personal workspaces have
+  no chat (403). All rules live in one class, `Chat\ChatPolicy`.
+- **Administrators cannot read chat.** Administrator accounts get no chat at all, not even the
+  global channel (as D025 for notes). They set levels but see no messages, counts or excerpts.
+  As a consequence nobody moderates the global channel: authors delete their own messages there,
+  and the administrator controls who may write in it by giving out the `global` level.
+- **Polling, not websockets.** The NAS serves plain PHP requests, so an open chat asks
+  `?since=<cursor>` every 10 seconds while the tab is visible (hidden tabs skip their rounds and
+  catch up when shown). The cursor is the database clock with microseconds; each poll looks five
+  seconds behind it so a message committed a moment late is never skipped, and the browser
+  ignores messages it already shows. A poll returns new messages and deleted ones (ID only); if
+  more than 200 things changed, it tells the browser to reload the channel instead. Polling keeps
+  the session active while a chat is open.
+- **Messages.** Plain text with line breaks, 1-2000 characters, inserted as text in the browser
+  (never HTML or Markdown). No editing; deleting removes the text at once and keeps an empty
+  marker until the retention cleanup, so other screens learn about the deletion. At most 10
+  messages per user per minute (429 `chat_rate_limited`), counted from the messages themselves.
+- **Retention: 90 days.** `chat.retention_days` (default 90). The API deletes older messages by
+  itself after a signed-in request, at most once an hour, like the Trash cleanup (D039); each run
+  is audited as `chat.expired_deleted` with a count. Deleting a workspace deletes its chat.
+- **Audit and privacy.** Message text never goes to the audit log or the application log.
+  Audited: `user.chat_access_changed` (from, to), `chat.message_removed_by_moderator` (message,
+  workspace and author IDs) and `chat.expired_deleted`. A user deleting their own message is not
+  audited.
+- **Magic Link visitors** (D059) are not signed in and never see chat.
+- **Database.** Migration `0009_chat`: `users.chat_access` and `chat_messages`.
+  `bin/reset-data.php` deletes all chat messages (administrators never write any).
+
+Not in this version: private messages, unread counts or notifications (for example ntfy on
+mentions), editing messages, attachments or links, Markdown, and moderation of the global
+channel by the administrator.

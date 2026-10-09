@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Muninn\Api\Users;
 
+use Muninn\Api\Chat\ChatAccessLevel;
+
 /**
  * A user account as loaded from the database.
  */
@@ -16,6 +18,8 @@ final class User
         public readonly string $passwordHash,
         public readonly bool $isSystemAdmin,
         public readonly string $status,
+        /** How much chat the account may use (D062). Set by the system administrator. */
+        public readonly ChatAccessLevel $chatAccess = ChatAccessLevel::MemberWorkspaces,
     ) {
     }
 
@@ -29,6 +33,8 @@ final class User
             passwordHash: (string) $databaseRow['password_hash'],
             isSystemAdmin: (bool) $databaseRow['is_system_admin'],
             status: (string) $databaseRow['status'],
+            // An unknown or missing value (e.g. before migration 0009) means no chat at all.
+            chatAccess: ChatAccessLevel::tryFrom((string) ($databaseRow['chat_access'] ?? '')) ?? ChatAccessLevel::Off,
         );
     }
 
@@ -49,6 +55,8 @@ final class User
             'username' => $this->username,
             'display_name' => $this->displayName,
             'is_system_admin' => $this->isSystemAdmin,
+            // Lets the frontend show or hide the Chat link; the API checks every chat request itself.
+            'chat_access' => $this->isSystemAdmin ? ChatAccessLevel::Off->value : $this->chatAccess->value,
         ];
     }
 }

@@ -100,6 +100,20 @@ Summary:
    then sign in as an everyday user in a private window. The banner shows once; reload and it is
    gone.
 
+## Upgrading to chat (D062)
+
+1. Deploy as usual, then on the NAS from `/volume1/Muninn`: `sudo php84 bin/migrate.php` (adds
+   migration `0009_chat`: a `chat_access` column on `users`, where every existing account gets
+   "all their workspaces", and the new `chat_messages` table; no existing data changes).
+2. FTP the frontend with overwrite on: it adds `chat.php` and `assets/js/chat.js`, and changes
+   `includes/page.php`, `admin/users.php`, `assets/css/muninn.css`, `assets/js/app-shell.js` and
+   `assets/js/admin-users.js`.
+3. Optional: `chat.retention_days` in `config/config.php` (default 90; see
+   `config/config.example.php`). Old messages are deleted by the API itself, like Trash.
+4. Try it: as the administrator, open Users and set someone's Chat to "All + shout out". Then,
+   as two everyday users in different browsers, open Chat in the top bar and write in a shared
+   workspace you both belong to. New messages appear within about 10 seconds.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when
@@ -131,7 +145,7 @@ sudo php84 bin/reset-data.php             # asks you to type DELETE ALL USER DAT
 
 It deletes every non-admin account with its sessions, workspaces and notes (Trash and history
 included), folders, tags, note images (database rows and the files in `storage/attachments/`),
-Magic Links, all invitations, the sign-in attempt records, and those accounts' broadcast answers and votes. Admin
+Magic Links, all chat messages, all invitations, the sign-in attempt records, and those accounts' broadcast answers and votes. Admin
 accounts, the broadcasts themselves, the audit log and the schema stay.
 There is no undo, so back up the database first if anything might be worth keeping (D046).
 

@@ -14,7 +14,7 @@ use Throwable;
  *
  * Used by bin/reset-data.php to clear out test accounts and test content. It deletes every
  * non-admin account together with everything that belongs to users: notes, note history, folders, tags,
- * attachments (rows and image files), Magic Links, workspaces, workspace memberships, sessions and all
+ * attachments (rows and image files), Magic Links, chat messages, workspaces, workspace memberships, sessions and all
  * invitations. It keeps:
  *   - system administrator accounts and their sessions (so the admin stays signed in),
  *   - the audit log (audit history must survive changes to the rows it describes),
@@ -53,6 +53,7 @@ final class DataResetService
                                              WHERE users.is_system_admin = 0',
             'workspaces' => 'SELECT COUNT(*) FROM workspaces',
             'magic links (D059)' => 'SELECT COUNT(*) FROM magic_links',
+            'chat messages (D062)' => 'SELECT COUNT(*) FROM chat_messages',
             'magic link visits' => 'SELECT COUNT(*) FROM magic_link_sessions',
             'workspace memberships' => 'SELECT COUNT(*) FROM workspace_members',
             'notes (including Trash)' => 'SELECT COUNT(*) FROM notes',
@@ -100,6 +101,9 @@ final class DataResetService
             // Magic Links point at workspaces and at the accounts that created them (D059).
             'magic link visits' => 'DELETE FROM magic_link_sessions',
             'magic links (D059)' => 'DELETE FROM magic_links',
+            // Chat messages point at workspaces and at the accounts that wrote them (D062);
+            // administrators never write any, so all of them go.
+            'chat messages (D062)' => 'DELETE FROM chat_messages',
             // Broadcast answers point at the accounts being deleted (D061); the broadcasts
             // themselves belong to administrators and stay.
             'broadcast votes of those accounts' => 'DELETE broadcast_votes FROM broadcast_votes

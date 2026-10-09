@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Muninn\Api\Users;
 
+use Muninn\Api\Chat\ChatAccessLevel;
 use Muninn\Api\Security\UuidGenerator;
 use PDO;
 
@@ -85,11 +86,20 @@ final class UserRepository
     public function listForAdmin(): array
     {
         return $this->database->query(
-            'SELECT id, username, display_name, is_system_admin, status, created_at, last_login_at
+            'SELECT id, username, display_name, is_system_admin, status, chat_access, created_at, last_login_at
              FROM users
              ORDER BY created_at DESC, id
              LIMIT 500'
         )->fetchAll();
+    }
+
+    /** Sets how much chat an account may use (D062). The value is a validated ChatAccessLevel. */
+    public function setChatAccess(string $userId, ChatAccessLevel $chatAccess): void
+    {
+        $updateStatement = $this->database->prepare(
+            'UPDATE users SET chat_access = :chat_access, updated_at = UTC_TIMESTAMP() WHERE id = :id'
+        );
+        $updateStatement->execute(['chat_access' => $chatAccess->value, 'id' => $userId]);
     }
 
     /** Sets an account to 'active' or 'disabled' (decision D031: accounts are disabled, never deleted). */

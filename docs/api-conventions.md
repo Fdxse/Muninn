@@ -136,6 +136,13 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/admin/broadcasts` | system admin | `{kind, message, starts_at, ends_at, allows_multiple_choices?, options?: [2-5 labels]}` → 201 `{broadcast}`; times need an explicit offset |
 | PATCH | `/api/v1/admin/broadcasts/{id}` | system admin | `{message, starts_at, ends_at}` (all three); `kind` and `options` cannot change; an end in the past ends it |
 | DELETE | `/api/v1/admin/broadcasts/{id}` | system admin | delete with its answers and votes (204) |
+| GET | `/api/v1/chat` | user | the chats the caller may use (D062): `chat_access`, `global` (`can_read`, `can_write`), `workspaces` (`workspace_id`, `name`, `your_role`, `can_write`; shared workspaces only), `limits` (`message_max_length`, `messages_per_minute`, `retention_days`) |
+| GET | `/api/v1/chat/global/messages` | user, chat level not `off` | the global channel: `channel` (`kind`, `name`, `can_write`, `can_moderate`), `messages` oldest first (`id`, `body`, `created_at`, `author` {`username`, `display_name`}, `is_own`, `can_delete`), `has_older`, `cursor`. `?before=<message id>` → the 50 before it; `?since=<cursor>` → everything changed since (new messages, and deleted ones as `{id, is_deleted: true}`), a new `cursor`, and `reset: true` when too much changed to send |
+| POST | `/api/v1/chat/global/messages` | user, chat level `global` | `{body}` (plain text, 1-2000 characters) → 201 `{message}`; other levels → 403 `chat_read_only`; more than 10 messages a minute → 429 `chat_rate_limited` |
+| GET | `/api/v1/workspaces/{id}/chat/messages` | Reader+, shared workspace, chat level allows it | same shape and parameters as the global channel; non-member → 404; personal workspace, level `off`, or `own_workspaces` without being Owner → 403 `chat_not_allowed` |
+| POST | `/api/v1/workspaces/{id}/chat/messages` | Editor+ (same chat level rules) | `{body}` → 201 `{message}`; Reader → 403 `insufficient_role` |
+| DELETE | `/api/v1/chat/messages/{id}` | author, or workspace Admin+ | delete (204): the text is removed at once; a deletion by someone else is audited as `chat.message_removed_by_moderator` without the text. In the global channel only the author may delete |
+| PATCH | `/api/v1/admin/users/{id}/chat-access` | system admin | `{chat_access: off\|own_workspaces\|member_workspaces\|global}` → `{chat_access}`; administrator accounts → 422; audited as `user.chat_access_changed` |
 
 ### Magic Link visitors (D059)
 
