@@ -812,3 +812,33 @@ one-to-one messages in this version.
 Not in this version: private messages, unread counts or notifications (for example ntfy on
 mentions), editing messages, attachments or links, Markdown, and moderation of the global
 channel by the administrator.
+
+## D064 — Online help: quick start and manual in English and Swedish
+
+**Status:** Proposed (2026-10-09). The project owner asked for a quick start and a manual as
+static files on the frontend server, switchable between English and Swedish with JavaScript;
+awaiting review in the PR.
+
+- **Where.** `frontend/public/help/`: `index.html` (landing), `quick-start.html` and
+  `manual.html`, plus `help.css`, `help.js` and an `.htaccess`. They are plain HTML (no PHP, no
+  API calls), so they ship with the normal frontend FTP upload and work for visitors who are not
+  signed in. The help pages reuse the vendored Bootstrap, the brand CSS and the self-hosted fonts.
+- **Two languages in one file.** Every text block exists twice, marked `lang="en"` and
+  `lang="sv"`. `help.js` chooses the language and sets `data-help-language` on `<html>`;
+  `help.css` hides the other language. Choice order: `?lang=sv|en` in the address, then the
+  visitor's earlier choice (localStorage, ignored when blocked), then the browser's language list,
+  then English. Without JavaScript the pages show English. The script runs in `<head>` so the
+  wrong language never flashes. No translation library and no fetch of language files.
+- **Headers.** The app pages get their Content-Security-Policy from PHP; the help pages get a
+  similar strict policy from `help/.htaccess` (scripts, styles and fonts from this site only, no
+  network calls, no framing).
+- **Links from the app.** A "Help and quick start" link under the sign-in card and a Help card on
+  the Account page (opening in a new tab). The top bar is unchanged: on phones it is already full
+  of icons.
+- **Audience and content.** Written for everyday users, with a short chapter for administrators.
+  The app's interface is English only, so the Swedish text names buttons as they appear in the app.
+  No screenshots yet (they go stale and could show real data). The pages never mention server
+  names, folders on the NAS, configuration or other operational details, because the repository
+  and the pages are public.
+- **Keeping it current.** The top bar and footer are repeated in the three HTML files; a change to
+  a feature that the manual describes should update both languages in `manual.html`.

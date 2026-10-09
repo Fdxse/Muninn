@@ -1,0 +1,141 @@
+/*
+ * Styles for the static help pages (quick start and manual).
+ *
+ * The pages also load Bootstrap and the app's own muninn.css, so the brand palette (D043),
+ * fonts and navigation bar look the same as in the app. This file only adds what the help
+ * pages need on top: the language switch, reading width, and the table of contents.
+ */
+
+/*
+ * Language switch: every text block exists twice, marked lang="en" and lang="sv".
+ * help.js sets data-help-language on <html>; the other language's blocks are hidden here.
+ * Only elements inside <body> are hidden, never <html> itself (which also carries lang).
+ */
+html[data-help-language="en"] body [lang="sv"],
+html[data-help-language="sv"] body [lang="en"] {
+    display: none !important;
+}
+
+/* The switch only works with JavaScript, so it stays hidden until help.js has run. */
+.help-language-switch {
+    visibility: hidden;
+}
+
+html[data-help-script="on"] .help-language-switch {
+    visibility: visible;
+}
+
+/* The pressed language button is gold on navy, like the active link in the app's top bar. */
+.help-language-switch .btn[aria-pressed="true"] {
+    background-color: var(--muninn-gold-500);
+    border-color: var(--muninn-gold-500);
+    color: var(--muninn-navy-900);
+}
+
+/* No fade: the pressed state is set as the page opens and should not animate in. */
+.help-language-switch .btn {
+    transition: none;
+}
+
+/* A comfortable reading width; text lines longer than about 75 characters are hard to follow. */
+.help-page {
+    max-width: 52rem;
+}
+
+.help-page h2 {
+    margin-top: 2.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(47, 75, 110, 0.18);
+}
+
+.help-page h3 {
+    margin-top: 1.5rem;
+}
+
+/* Jumping to a chapter from the table of contents leaves some space above its heading. */
+.help-page [id] {
+    scroll-margin-top: 1rem;
+}
+
+/* Button and menu names from the app, written the way they appear on screen. */
+.help-ui-label {
+    font-weight: 600;
+    color: var(--muninn-navy-900);
+    white-space: nowrap;
+}
+
+/* Numbered steps in the quick start: a gold number in a navy circle. */
+.help-steps {
+    list-style: none;
+    counter-reset: help-step;
+    padding-left: 0;
+}
+
+.help-steps > li {
+    counter-increment: help-step;
+    position: relative;
+    padding-left: 3rem;
+    margin-bottom: 1.5rem;
+}
+
+.help-steps > li::before {
+    content: counter(help-step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    background: var(--muninn-navy-900);
+    color: var(--muninn-gold-500);
+    font-family: var(--muninn-font-heading);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Table of contents in the manual: two columns where there is room, one on phones. */
+.help-toc ol {
+    margin-bottom: 0;
+    padding-left: 1.25rem;
+}
+
+@media (min-width: 768px) {
+    .help-toc ol {
+        columns: 2;
+        column-gap: 2rem;
+    }
+}
+
+.help-toc li {
+    break-inside: avoid;
+    margin-bottom: 0.35rem;
+}
+
+/* Tips and warnings: a coloured bar on the left of a white card. */
+.help-tip {
+    background: var(--muninn-surface-raised);
+    border-left: 4px solid var(--muninn-gold-500);
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+}
+
+/* Markdown examples keep their spacing and scroll sideways on narrow screens. */
+.help-page pre {
+    background: var(--muninn-surface-raised);
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+}
+
+/* Tables scroll sideways on phones instead of widening the page. */
+.help-table-wrapper {
+    overflow-x: auto;
+}
+
+/* The page footer: a thin line and muted text. */
+.help-footer {
+    border-top: 1px solid rgba(47, 75, 110, 0.18);
+}
