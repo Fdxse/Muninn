@@ -835,10 +835,13 @@ awaiting review in the PR.
 - **Links from the app.** A "Help and quick start" link under the sign-in card and a Help card on
   the Account page (opening in a new tab). The top bar is unchanged: on phones it is already full
   of icons.
-- **Audience and content.** Written for everyday users, with a short chapter for administrators.
-  The app's interface is English only, so the Swedish text names buttons as they appear in the app.
-  No screenshots yet (they go stale and could show real data). The pages never mention server
-  names, folders on the NAS, configuration or other operational details, because the repository
-  and the pages are public.
+- **Audience and content.** Written for everyday users only; the project owner chose no
+  administrator documentation for now. The app's interface is English only, so the Swedish text
+  names buttons as they appear in the app. The pages never mention server names, folders on the
+  NAS, configuration or other operational details, because the repository and the pages are public.
+- **Screenshots.** Phone screenshots (`help/images/*.jpg`, 390×780 shown at half size) taken from
+  a local test installation filled by `bin/seed-demo.php`, never from the live site, so no real
+  notes or names appear. Both languages share the same pictures, since the app is in English.
+  When the interface changes, retake them the same way.
 - **Keeping it current.** The top bar and footer are repeated in the three HTML files; a change to
   a feature that the manual describes should update both languages in `manual.html`.

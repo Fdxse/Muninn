@@ -139,3 +139,48 @@ html[data-help-script="on"] .help-language-switch {
 .help-footer {
     border-top: 1px solid rgba(47, 75, 110, 0.18);
 }
+
+/*
+ * Screenshots: phone-sized pictures, side by side where there is room. The images are taken at
+ * twice the shown size so they stay sharp on high-resolution screens.
+ */
+.help-figure-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin: 1.25rem 0;
+}
+
+.help-figure {
+    width: 100%;
+    max-width: 16rem;
+    margin: 0;
+}
+
+/* Two pictures fit next to each other even on most phones once they are a little smaller. */
+@media (min-width: 400px) {
+    .help-figure-row .help-figure {
+        max-width: calc(50% - 0.625rem);
+    }
+}
+
+@media (min-width: 768px) {
+    .help-figure-row .help-figure {
+        max-width: 16rem;
+    }
+}
+
+.help-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(47, 75, 110, 0.25);
+    box-shadow: 0 0.25rem 0.75rem rgba(11, 26, 43, 0.12);
+}
+
+.help-figure figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muninn-text-muted);
+}
