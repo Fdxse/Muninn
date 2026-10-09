@@ -149,7 +149,9 @@ invitation request / sign-in block ─ handler queues a message (AdminNotifier),
 
 ```
 "Contact admin" (D058) ─ AdminMessageController validates and checks the hourly limit
-   → AdminNotifier sends at once (the user hears whether it arrived), audit row without the text
+   → AdminConversationService stores a new conversation (D065)
+   → AdminNotifier sends at once (the user hears whether the phone was told), audit row without the text
+reply from the user (D065) ─ AdminConversationController stores it, queues an ntfy alert like above
 ```
 
 `AdminNotifier` is the only code that talks to ntfy; the transport is an interface so tests

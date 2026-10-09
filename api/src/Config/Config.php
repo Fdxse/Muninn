@@ -58,6 +58,10 @@ final class Config
             // Days a chat message is kept before the API deletes it for good (D062).
             'retention_days' => 90,
         ],
+        'admin_messages' => [
+            // Days a conversation with the administrator is kept after its newest message (D065).
+            'retention_days' => 365,
+        ],
         'magic_links' => [
             // Magic Links (D059). The cookie a browser gets after opening a link; separate from
             // the sign-in cookie. Needs a name without the __Host- prefix on plain-http development.
@@ -203,6 +207,11 @@ final class Config
         $chatRetentionDays = $this->get('chat.retention_days');
         if (!is_int($chatRetentionDays) || $chatRetentionDays < 1 || $chatRetentionDays > 3650) {
             throw new ConfigException('chat.retention_days must be a whole number of days from 1 to 3650.');
+        }
+
+        $adminMessageRetentionDays = $this->get('admin_messages.retention_days');
+        if (!is_int($adminMessageRetentionDays) || $adminMessageRetentionDays < 1 || $adminMessageRetentionDays > 3650) {
+            throw new ConfigException('admin_messages.retention_days must be a whole number of days from 1 to 3650.');
         }
 
         // A retention of 0 days would let the daily cleanup destroy notes the moment they are trashed.

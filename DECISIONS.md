@@ -613,6 +613,9 @@ with the sender's display name and username in the title.
 Not in this version: answering inside Muninn (an inbox for the administrator and replies the
 user sees on their next visit). That would need a table and pages of its own.
 
+**Changed by D065:** messages are now stored as conversations in the administrator's inbox, ntfy
+is no longer required, and a failed ntfy alert no longer fails the message.
+
 ## D059 — Magic Links: first version
 
 **Status:** Accepted (2026-10-08, confirmed by the project owner, who chose whole-workspace
@@ -867,3 +870,43 @@ awaiting review in the PR.
   When the interface changes, retake them the same way.
 - **Keeping it current.** The top bar and footer are repeated in the three HTML files; a change to
   a feature that the manual describes should update both languages in `manual.html`.
+
+## D065 — Messages inbox: answering "Contact admin" inside Muninn
+
+**Status:** Proposed (2026-10-09). The project owner asked for a way to keep track of "Contact
+admin" messages in the admin view and answer the user, and chose a separate inbox (not chat),
+two-way replies, one year of retention, no push to users, and keeping the "How can the admin
+reach you?" field; awaiting review in the PR.
+
+- **Why not chat (D062).** Chat has no private messages, administrators cannot read any chat by
+  the owner's choice, a user with chat level "off" could never see an answer, and chat keeps 90
+  days. The inbox is a separate, small feature instead.
+- **Conversations.** Every Contact admin message starts a conversation (`admin_conversations`,
+  `admin_conversation_messages`, migration `0011_admin_conversations`). The user and the system
+  administrators can both reply. Plain text, at most 1000 characters per message and 200 messages
+  per conversation (then the user starts a new one).
+- **Who sees what.** A user sees only their own conversations; anyone else's answer 404 like an
+  unknown one. Every system administrator sees the whole inbox (Messages in the admin top bar,
+  `admin/messages.php`). Users see answers as from "Administrator"; administrators see which
+  administrator answered. Administrator accounts have no "My messages" (they are the recipient).
+- **States.** Open or closed. An administrator closes a conversation when it is done; the user
+  can still read it but not reply. An administrator may reopen it, and answering a closed one
+  reopens it.
+- **Unread.** Two flags per conversation: unread for the user (set by an administrator's answer)
+  and unread for the administrators (set by the user's message, shared by all administrators).
+  Opening the conversation clears the viewer's flag. Counts show as gold badges on the Contact
+  admin button and the Messages link, refreshed once a minute while the page is visible.
+  Pages do not poll for new messages.
+- **ntfy (D057).** A new message is still pushed straight away, now with a link to the
+  conversation; when ntfy is off or fails the message is stored anyway and the user is told it
+  was sent. A user's reply is pushed after the response, like the other alerts. Users get no push
+  for answers (they have no ntfy setup).
+- **Limits.** 5 new conversations per user per hour (as in D058) and 20 replies per user per hour.
+- **Retention.** Conversations are deleted one year (`admin_messages.retention_days`, default
+  365) after their newest message, by the same hourly in-API housekeeping as chat and Trash (no NAS
+  task). The audit log records sends, replies, closing and reopening, and cleanups, never the text.
+- **Data reset.** `bin/reset-data.php` deletes all conversations (they all belong to everyday
+  accounts).
+
+Not in this version: attachments, live updates of an open conversation, deleting a single
+conversation by hand, search in the inbox, and push notifications to users.

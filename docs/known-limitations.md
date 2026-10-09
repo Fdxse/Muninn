@@ -47,8 +47,11 @@ real-time collaboration) are not built.
 - **Notifications go to the administrator only** (D057, D058): new invitation requests, blocked
   sign-ins and "Contact admin" messages, through the NAS's ntfy, configured in `config.php`. Everyday users cannot choose
   notifications yet, and the settings cannot be edited on the admin pages.
-- **Contact admin is one-way** (D058): messages are not stored and there is no reply inside
-  Muninn. The administrator answers through the contact details the user added, if any.
+- **Contact admin conversations are simple** (D065): plain text only, no attachments, at most
+  200 messages per conversation, and deleted a year after the newest message. Open pages do not
+  update live: a new answer shows up as a number on the badge (checked once a minute) and when
+  the page is opened again. Users get no push notification for answers. All system
+  administrators share one inbox and one read/unread state.
 - **No email.** Administrators copy invitation and reset links and send them themselves; users
   whose invitation request was approved do the same with their link (D049).
 - **Approved invitation requests do not expire.** The user can create a link until an

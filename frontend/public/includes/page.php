@@ -212,6 +212,16 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <span class="visually-hidden d-sm-none">Workspaces</span>
                 </a>
             </li>
+            <li class="nav-item d-none" id="nav-admin-messages-item">
+                <!-- The administrator's inbox (D065): "Contact admin" conversations. -->
+                <a class="nav-link" href="<?= $assetPrefix ?>admin/messages.php">
+                    <i class="bi bi-inbox" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Messages</span>
+                    <span class="visually-hidden d-sm-none">Messages</span>
+                    <!-- Conversations with something new from the user; filled in by app-shell.js. -->
+                    <span class="badge rounded-pill muninn-nav-badge d-none" id="nav-admin-messages-badge"></span>
+                </a>
+            </li>
             <li class="nav-item d-none" id="nav-admin-broadcasts-item">
                 <!-- Broadcast messages to all users (D061): banners and votes. -->
                 <a class="nav-link" href="<?= $assetPrefix ?>admin/broadcasts.php">
@@ -226,6 +236,8 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <i class="bi bi-chat-dots" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Contact admin</span>
                     <span class="visually-hidden d-sm-none">Contact admin</span>
+                    <!-- Answers from the administrator the user has not opened yet (D065); filled in by app-shell.js. -->
+                    <span class="badge rounded-pill muninn-nav-badge d-none" id="nav-contact-admin-badge"></span>
                 </button>
             </li>
             <li class="nav-item">
@@ -259,9 +271,15 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <!-- Answers come back here (D065); shown with a count when there is something new. -->
+                    <a href="<?= $assetPrefix ?>messages.php" class="btn btn-outline-primary w-100 mb-3 d-flex align-items-center justify-content-center gap-2" id="contact-admin-my-messages-link">
+                        <i class="bi bi-envelope-open" aria-hidden="true"></i>
+                        <span>My messages</span>
+                        <span class="badge rounded-pill muninn-unread-badge d-none" id="contact-admin-unread-badge"></span>
+                    </a>
                     <p class="small text-muted-brand">
-                        Your message goes straight to the administrator's phone. Muninn does not keep it,
-                        so add how the administrator can reach you if you want an answer.
+                        Your message goes to the administrator, who answers here in Muninn under My messages.
+                        You can also add another way to reach you.
                     </p>
                     <div id="contact-admin-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
                     <div id="contact-admin-success" class="alert alert-success d-none" role="status" tabindex="-1"></div>

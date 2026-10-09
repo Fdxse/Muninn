@@ -14,7 +14,7 @@ use Throwable;
  *
  * Used by bin/reset-data.php to clear out test accounts and test content. It deletes every
  * non-admin account together with everything that belongs to users: notes, note history, folders, tags,
- * attachments (rows and image files), Magic Links, chat messages, workspaces, workspace memberships, sessions and all
+ * attachments (rows and image files), Magic Links, chat messages, conversations with the administrator, workspaces, workspace memberships, sessions and all
  * invitations. It keeps:
  *   - system administrator accounts and their sessions (so the admin stays signed in),
  *   - the audit log (audit history must survive changes to the rows it describes),
@@ -55,6 +55,7 @@ final class DataResetService
             'magic links (D059)' => 'SELECT COUNT(*) FROM magic_links',
             'chat messages (D062)' => 'SELECT COUNT(*) FROM chat_messages',
             'chat read markers (D063)' => 'SELECT COUNT(*) FROM chat_read_markers',
+            'conversations with the administrator (D065)' => 'SELECT COUNT(*) FROM admin_conversations',
             'magic link visits' => 'SELECT COUNT(*) FROM magic_link_sessions',
             'workspace memberships' => 'SELECT COUNT(*) FROM workspace_members',
             'notes (including Trash)' => 'SELECT COUNT(*) FROM notes',
@@ -107,6 +108,9 @@ final class DataResetService
             'chat messages (D062)' => 'DELETE FROM chat_messages',
             // How far everyone has read; administrators never chat, so all of them go (D063).
             'chat read markers (D063)' => 'DELETE FROM chat_read_markers',
+            // Every conversation belongs to an everyday account being deleted (D065); their
+            // messages, including the administrators' answers, go with them (ON DELETE CASCADE).
+            'conversations with the administrator (D065)' => 'DELETE FROM admin_conversations',
             // Broadcast answers point at the accounts being deleted (D061); the broadcasts
             // themselves belong to administrators and stay.
             'broadcast votes of those accounts' => 'DELETE broadcast_votes FROM broadcast_votes

@@ -165,7 +165,11 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Nothing is sent or recorded when ntfy is off | `AdminNotificationTest::testNothingIsSentWhenNtfyIsOff` |
 | Contact admin (D058): signed-in everyday users only; administrators get 403, visitors 401 | `AdminMessageTest::testAdministratorsAndSignedOutVisitorsCannotUseIt` |
 | Contact admin: at most 5 messages per user per hour, separate per user | `AdminMessageTest::testEachUserHasAnHourlyLimit` |
-| Contact admin: the text and contact details are never stored or logged; failures are logged without the token | `AdminMessageTest::testMessageIsSentToTheAdministratorStraightAway`, `testUndeliveredMessageIsReportedAndLoggedWithoutTheToken` |
+| Contact admin: the text is stored only in the inbox (D065), never in the audit log or the application log; ntfy failures are logged without the token | `AdminMessageTest::testMessageIsSentToTheAdministratorStraightAway`, `testUndeliveredNotificationStillKeepsTheMessageAndLogsNoToken` |
+| Inbox (D065): a user sees and answers only their own conversations; anyone else's answers 404 like an unknown one | `AdminConversationTest::testUsersNeverSeeEachOthersConversations` |
+| Inbox: only system administrators reach `/api/v1/admin/conversations*`; users never learn which administrator answered | `AdminConversationTest::testUsersNeverSeeEachOthersConversations`, `testAdministratorSeesTheMessageInTheInboxAndAnswers` |
+| Inbox: replies validated and limited (20 an hour per user, 200 per conversation); closed conversations refuse user replies | `AdminConversationTest::testRepliesAreValidatedAndLimited`, `testFullConversationAsksForANewOne`, `testClosedConversationIsReadOnlyForTheUserUntilReopenedOrAnswered` |
+| Inbox: conversations deleted a year after the newest message, without text in the audit log | `AdminConversationTest::testOldConversationsAreDeletedAfterTheRetention` |
 | Contact admin: input validated (length, single-line contact) and control characters removed | `AdminMessageTest::testInvalidInputIsRefused`, `testControlCharactersAreRemovedButLineBreaksKept` |
 
 ## After the MVP — Magic Links (D059)

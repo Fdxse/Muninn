@@ -290,6 +290,16 @@ a.btn {
         display: none;
     }
 
+    /* Administrators have one more icon again (Messages, D065). Their links get slightly narrower
+       (still 44px tall, 38px wide) and the raven sits closer, so Sign out stays on a 360px screen. */
+    .muninn-navbar:has(#nav-admin-messages-item:not(.d-none)) .nav-link {
+        min-width: 2.375rem;
+    }
+
+    .muninn-navbar:has(#nav-admin-messages-item:not(.d-none)) .navbar-brand {
+        margin-right: 0.5rem;
+    }
+
     .muninn-navbar .nav-link:has(.muninn-nav-badge) {
         position: relative;
     }
@@ -792,4 +802,13 @@ a.btn {
 .muninn-unread-badge {
     background: var(--muninn-navy-900);
     color: var(--muninn-gold-500);
+}
+
+/*
+ * Conversations with the administrator (D065): the same bubbles as chat, but the page itself
+ * scrolls (conversations are short), so the thread has no fixed height.
+ */
+.muninn-message-thread {
+    background-color: var(--muninn-surface-raised);
+    min-height: 8rem;
 }
