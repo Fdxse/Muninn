@@ -29,6 +29,7 @@ final class AdminNotifier
     public const KIND_USER_MESSAGE = 'user_message';
     public const KIND_USER_REPLY = 'user_reply';
     public const KIND_BROADCAST_VOTE = 'broadcast_vote';
+    public const KIND_WORKSPACE_JOIN_REQUEST = 'workspace_join_request';
 
     /**
      * At most this many sign-in alerts per hour, so someone guessing passwords from many
@@ -69,6 +70,25 @@ final class AdminNotifier
             $this->frontendBaseUrl . '/admin/invitations.php',
             $requestId,
             'invitation_request',
+        );
+    }
+
+    /**
+     * Someone asked to join a Shared Workspace (D067); the administrator should approve or decline.
+     * Workspace names of Shared Workspaces are chosen by the administrator, so they are safe to show.
+     * The user's note is not sent, like invitation request notes.
+     */
+    public function workspaceJoinRequested(string $requesterDisplayName, string $workspaceName, string $requestId): void
+    {
+        $this->queue(
+            self::KIND_WORKSPACE_JOIN_REQUEST,
+            'Muninn: request to join ' . self::plainText($workspaceName, 100),
+            self::plainText($requesterDisplayName, 100) . ' asked to join "' . self::plainText($workspaceName, 100) . '". Review it under Admin > Workspaces.',
+            self::PRIORITY_DEFAULT,
+            ['busts_in_silhouette'],
+            $this->frontendBaseUrl . '/admin/workspaces.php',
+            $requestId,
+            'workspace_join_request',
         );
     }
 

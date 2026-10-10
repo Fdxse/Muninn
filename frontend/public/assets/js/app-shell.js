@@ -43,6 +43,20 @@
         }
     }
 
+    /**
+     * Shows how many requests to join a Shared Workspace wait for a decision (D067) on the admin
+     * "Workspaces" link, or hides the badge at zero. Like the Invitations badge it is only a hint.
+     */
+    async function refreshJoinRequestsBadge() {
+        var workspacesBadge = document.getElementById('nav-admin-workspaces-badge');
+        try {
+            var countData = await MuninnApi.request('GET', '/api/v1/admin/workspace-join-requests/pending-count');
+            showCount(workspacesBadge, countData.pending_count, ' waiting to join');
+        } catch (countError) {
+            workspacesBadge.classList.add('d-none');
+        }
+    }
+
     /*
      * Unread chat messages (D063): a count on the Chat link, refreshed every minute while the page
      * is visible, when it becomes visible again, and whenever the chat page has shown messages.
@@ -193,6 +207,8 @@
 
     // The Invitations page announces approvals and declines, so the badge follows along.
     document.addEventListener('muninn:invitation-requests-changed', refreshInvitationRequestsBadge);
+    // The admin Workspaces page announces join request decisions (D067).
+    document.addEventListener('muninn:workspace-join-requests-changed', refreshJoinRequestsBadge);
 
     /*
      * "Contact admin" (D058): everyday users write a short message to the administrator. It starts
@@ -487,6 +503,7 @@
             document.getElementById('nav-admin-messages-item').classList.toggle('d-none', !currentUser.is_system_admin);
             if (currentUser.is_system_admin) {
                 refreshInvitationRequestsBadge();
+                refreshJoinRequestsBadge();
             }
             // Unread conversations with the administrator (D065): the inbox for administrators,
             // the user's own answers for everyone else.

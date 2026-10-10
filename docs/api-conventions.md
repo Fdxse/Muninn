@@ -96,6 +96,12 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | GET | `/api/v1/admin/workspaces` | system admin | shared workspaces with `owners`, `member_count`, `active_owner_count`; no note data (D050) |
 | GET/POST | `/api/v1/admin/workspaces/{id}/members` | system admin | only workspaces with no active Owner (else 404): list, or `{username, role}` add, with Owner rules |
 | PATCH/DELETE | `/api/v1/admin/workspaces/{id}/members/{userId}` | system admin | same restriction; `{role}` change, or remove; last Owner → 409 |
+| GET/POST | `/api/v1/admin/open-workspaces` | system admin | Shared Workspaces (D067): list `{id, name, description, member_count, pending_request_count}`, or `{name, description}` create; no note data. Their members use the `/admin/workspaces/{id}/members` routes above (always allowed, Editor or Reader only, else 422) |
+| PATCH/DELETE | `/api/v1/admin/open-workspaces/{id}` | system admin | `{name, description}` change, or delete; 409 `workspace_not_empty` while it holds notes |
+| GET | `/api/v1/admin/workspace-join-requests` (`/pending-count`) | system admin | pending join requests with user, workspace and note (or just the count) |
+| POST | `/api/v1/admin/workspace-join-requests/{id}/approve` / `/decline` | system admin | approve `{role: editor\|reader}` (default editor) or decline; 204; already decided → 404 `request_not_pending` |
+| GET | `/api/v1/open-workspaces` | user | every Shared Workspace: `{id, name, description, is_member, your_role, join_request}` (D067); administrators 403 |
+| POST/DELETE | `/api/v1/open-workspaces/{id}/join-request` | user | ask to join `{note}` (201; 409 `already_member` / `request_pending`; 429 over 10 a day), or cancel a pending request (204) |
 | GET | `/api/v1/workspaces` | user | the caller's workspaces with `your_role` and `permissions` |
 | POST | `/api/v1/workspaces` | user | `{name}` → 201, new shared workspace, caller is Owner |
 | GET | `/api/v1/workspaces/{id}` | Reader+ | one workspace |
@@ -154,7 +160,7 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/workspaces/{id}/chat/messages` | Editor+ (same chat level rules) | `{body}` → 201 `{message}`; Reader → 403 `insufficient_role` |
 | DELETE | `/api/v1/chat/messages/{id}` | author, or workspace Admin+ | delete (204): the text is removed at once; a deletion by someone else is audited as `chat.message_removed_by_moderator` without the text. In the global channel only the author may delete |
 | PATCH | `/api/v1/admin/users/{id}/chat-access` | system admin | `{chat_access: off\|own_workspaces\|member_workspaces\|global}` → `{chat_access}`; administrator accounts → 422; audited as `user.chat_access_changed` |
-| GET | `/api/v1/admin-attention` | user | `{is_recipient, needs_attention}` (D066): `needs_attention` is true only for the account the administrator picked, while invitation requests or unread inbox conversations wait; never says what. Everyone else, administrators included, gets `false` for both |
+| GET | `/api/v1/admin-attention` | user | `{is_recipient, needs_attention}` (D066): `needs_attention` is true only for the account the administrator picked, while invitation requests, workspace join requests (D067) or unread inbox conversations wait; never says what. Everyone else, administrators included, gets `false` for both |
 | GET | `/api/v1/admin/attention-recipient` | system admin | `{recipient: {id, username, display_name, status} \| null}` (D066) |
 | PATCH | `/api/v1/admin/attention-recipient` | system admin | `{user_id: "<uuid>" \| null}` → `{recipient}`; administrator, disabled or unknown accounts → 422; audited as `admin.attention_recipient_changed` |
 

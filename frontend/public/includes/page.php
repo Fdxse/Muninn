@@ -219,6 +219,8 @@ function renderAppNavbar(string $assetPrefix = ''): void
                     <i class="bi bi-diagram-3" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Workspaces</span>
                     <span class="visually-hidden d-sm-none">Workspaces</span>
+                    <!-- Requests to join a Shared Workspace (D067); filled in by app-shell.js. -->
+                    <span class="badge rounded-pill muninn-nav-badge d-none" id="nav-admin-workspaces-badge"></span>
                 </a>
             </li>
             <li class="nav-item d-none" id="nav-admin-messages-item">

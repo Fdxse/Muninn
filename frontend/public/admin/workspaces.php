@@ -1,9 +1,12 @@
 <?php
 
 /**
- * Shared workspace administration for system administrators (D050): see every shared workspace
- * with its Owners, and manage the members of those without an active Owner (e.g. when the only
- * Owner was disabled). Administrators never see notes. Non-admins get 404 from the API and this page then shows "not available".
+ * Workspace administration for system administrators:
+ * - Shared Workspaces (D067): create, rename, describe and delete them, decide join requests and
+ *   manage their members (Editors and Readers only).
+ * - Workspaces created by users (D050): see every one with its Owners, and manage the members of
+ *   those without an active Owner (e.g. when the only Owner was disabled).
+ * Administrators never see notes. Non-admins get 404 from the API and this page then shows "not available".
  */
 
 declare(strict_types=1);
@@ -21,8 +24,71 @@ renderAppNavbar('../');
         This page is not available.
     </div>
 
-    <section id="shell-content" class="d-none" aria-labelledby="workspaces-heading">
-        <h1 id="workspaces-heading" class="h3 mb-1">Shared workspaces</h1>
+    <section id="shell-content" class="d-none" aria-labelledby="open-workspaces-heading">
+        <!-- Shared Workspaces (D067): run by the administrator; users ask to join. -->
+        <h1 id="open-workspaces-heading" class="h3 mb-1">Shared Workspaces</h1>
+        <p class="small text-muted-brand mb-3">
+            Workspaces for everyone, such as General. Every user sees their names and descriptions and can
+            ask to join. You decide the requests and manage the members, who are Editors or Readers. You
+            cannot see the notes.
+        </p>
+        <div id="open-workspaces-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+        <div id="open-workspaces-status" class="visually-hidden" role="status" aria-live="polite"></div>
+
+        <h2 class="h5 mb-2">Join requests</h2>
+        <p id="join-requests-empty" class="text-muted-brand small d-none">No requests are waiting.</p>
+        <ul id="join-requests-list" class="list-group mb-4"></ul>
+
+        <h2 class="h5 mb-2">Your Shared Workspaces</h2>
+        <p id="open-workspaces-empty" class="text-muted-brand small d-none">None yet. Create the first one below.</p>
+        <ul id="open-workspaces-list" class="list-group mb-3"></ul>
+
+        <div id="edit-open-workspace-card" class="card border-0 shadow-sm mb-3 d-none" tabindex="-1" aria-labelledby="edit-open-workspace-heading">
+            <div class="card-body">
+                <h3 id="edit-open-workspace-heading" class="h6 mb-3">Edit Shared Workspace</h3>
+                <form id="edit-open-workspace-form" class="row g-2" novalidate>
+                    <div class="col-12">
+                        <label for="edit-open-workspace-name" class="form-label small mb-1">Name</label>
+                        <input type="text" class="form-control" id="edit-open-workspace-name" maxlength="100" aria-describedby="edit-open-workspace-name-feedback">
+                        <div id="edit-open-workspace-name-feedback" class="invalid-feedback"></div>
+                    </div>
+                    <div class="col-12">
+                        <label for="edit-open-workspace-description" class="form-label small mb-1">Description (optional)</label>
+                        <input type="text" class="form-control" id="edit-open-workspace-description" maxlength="300" aria-describedby="edit-open-workspace-description-feedback">
+                        <div id="edit-open-workspace-description-feedback" class="invalid-feedback"></div>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="edit-open-workspace-submit">Save</button>
+                        <button type="button" class="btn btn-outline-secondary" id="edit-open-workspace-cancel">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h3 class="h6 mb-3">New Shared Workspace</h3>
+                <form id="create-open-workspace-form" class="row g-2" novalidate>
+                    <div class="col-12 col-sm-5">
+                        <label for="open-workspace-name" class="visually-hidden">Name</label>
+                        <input type="text" class="form-control" id="open-workspace-name" maxlength="100" placeholder="Name, e.g. General"
+                               aria-describedby="open-workspace-name-feedback">
+                        <div id="open-workspace-name-feedback" class="invalid-feedback"></div>
+                    </div>
+                    <div class="col-12 col-sm">
+                        <label for="open-workspace-description" class="visually-hidden">Description (optional)</label>
+                        <input type="text" class="form-control" id="open-workspace-description" maxlength="300" placeholder="Description (optional)"
+                               aria-describedby="open-workspace-description-feedback">
+                        <div id="open-workspace-description-feedback" class="invalid-feedback"></div>
+                    </div>
+                    <div class="col-12 col-sm-auto">
+                        <button type="submit" class="btn btn-primary w-100" id="create-open-workspace-submit">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <h2 id="workspaces-heading" class="h5 mb-1">Workspaces created by users</h2>
         <p class="small text-muted-brand mb-3">
             Every shared workspace and its Owners. You can manage the members only of a workspace that has
             no active Owner, for example because its only Owner was disabled: give it a new Owner, who then

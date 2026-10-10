@@ -6,6 +6,7 @@ namespace Muninn\Api\AdminAttention;
 
 use Muninn\Api\AdminInbox\AdminConversationService;
 use Muninn\Api\Invitations\InvitationRequestService;
+use Muninn\Api\Workspaces\OpenWorkspaceService;
 use PDO;
 
 /**
@@ -16,8 +17,9 @@ use PDO;
  * account just to look. The answer is a plain yes or no: never what is waiting, nor how much.
  *
  * Waiting means something an administrator has to act on:
- *   - invitation requests waiting for a decision (D049), and
- *   - inbox conversations with something the administrators have not read (D065).
+ *   - invitation requests waiting for a decision (D049),
+ *   - inbox conversations with something the administrators have not read (D065), and
+ *   - requests to join a Shared Workspace waiting for a decision (D067).
  */
 final class AdminAttentionService
 {
@@ -28,6 +30,7 @@ final class AdminAttentionService
         private readonly PDO $database,
         private readonly InvitationRequestService $invitationRequestService,
         private readonly AdminConversationService $conversationService,
+        private readonly OpenWorkspaceService $openWorkspaceService,
     ) {
     }
 
@@ -58,6 +61,7 @@ final class AdminAttentionService
     public function isAdminWorkWaiting(): bool
     {
         return $this->invitationRequestService->countPending() > 0
-            || $this->conversationService->countUnreadForAdmin() > 0;
+            || $this->conversationService->countUnreadForAdmin() > 0
+            || $this->openWorkspaceService->countPending() > 0;
     }
 }

@@ -142,16 +142,19 @@ final class WorkspaceAuthorizer
     }
 
     /**
-     * Lets a system administrator manage the MEMBERS of an orphaned shared workspace, one with no
-     * active Owner left (D050), e.g. after its only Owner was disabled. Workspaces that still have
-     * an active Owner are managed by their Owners only, so an administrator cannot add an
-     * account of their own to them. It returns a membership-shaped value with Owner rights over members, for use with the
+     * Lets a system administrator manage the MEMBERS of:
+     * - an orphaned shared workspace, one with no active Owner left (D050), e.g. after its only
+     *   Owner was disabled. Workspaces that still have an active Owner are managed by their Owners
+     *   only, so an administrator cannot add an account of their own to them;
+     * - an open Shared Workspace (D067), which never has an Owner: the administrator always
+     *   manages its members.
+     * It returns a membership-shaped value with Owner rights over members, for use with the
      * WorkspaceService member methods only. It grants no note access: note, search and
      * attachment endpoints go through findMembership(), which never returns anything for an
      * administrator (decision D025). Personal workspaces are never manageable this way.
      *
      * @throws HttpException 404 when the caller is not an active administrator, or the
-     *                       workspace does not exist, is personal, or has an active Owner.
+     *                       workspace does not exist, is personal, or is shared with an active Owner.
      */
     public function requireAdministratorMemberManagement(User $administrator, string $workspaceId): WorkspaceMembership
     {
@@ -161,15 +164,25 @@ final class WorkspaceAuthorizer
 
         $selectStatement = $this->database->prepare(
             'SELECT workspaces.id, workspaces.name, workspaces.kind FROM workspaces
-             WHERE workspaces.id = :id AND workspaces.kind = :kind
-               AND NOT EXISTS (
-                   SELECT 1 FROM workspace_members
-                   JOIN users ON users.id = workspace_members.user_id
-                   WHERE workspace_members.workspace_id = workspaces.id
-                     AND workspace_members.role = \'owner\' AND users.status = \'active\'
+             WHERE workspaces.id = :id
+               AND (
+                   workspaces.kind = :open_kind
+                   OR (
+                       workspaces.kind = :shared_kind
+                       AND NOT EXISTS (
+                           SELECT 1 FROM workspace_members
+                           JOIN users ON users.id = workspace_members.user_id
+                           WHERE workspace_members.workspace_id = workspaces.id
+                             AND workspace_members.role = \'owner\' AND users.status = \'active\'
+                       )
+                   )
                )'
         );
-        $selectStatement->execute(['id' => $workspaceId, 'kind' => WorkspaceMembership::KIND_SHARED]);
+        $selectStatement->execute([
+            'id' => $workspaceId,
+            'open_kind' => WorkspaceMembership::KIND_OPEN,
+            'shared_kind' => WorkspaceMembership::KIND_SHARED,
+        ]);
         $workspaceRow = $selectStatement->fetch();
         if ($workspaceRow === false) {
             throw HttpException::notFound();

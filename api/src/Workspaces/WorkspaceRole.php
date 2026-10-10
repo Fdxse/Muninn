@@ -71,6 +71,12 @@ enum WorkspaceRole: string
         return $this->canAssign($memberRole);
     }
 
+    /** True for the roles an open Shared Workspace's members may have (D067): Editor and Reader. */
+    public static function isOpenWorkspaceRole(self $role): bool
+    {
+        return $role === self::Editor || $role === self::Reader;
+    }
+
     /** Parses a role sent by a client, or null when it is not a known role. */
     public static function tryFromInput(mixed $roleInput): ?self
     {

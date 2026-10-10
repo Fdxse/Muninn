@@ -1,8 +1,9 @@
 <?php
 
 /**
- * The user's workspaces: their personal one and the shared ones they belong to, plus a form to
- * create a new shared workspace (any user may, and becomes its Owner; decision D030).
+ * The user's workspaces: their personal one and the shared ones they belong to, a form to create
+ * a new shared workspace (any user may, and becomes its Owner; decision D030), and the Shared
+ * Workspaces the administrator runs, which users ask to join (D067).
  */
 
 declare(strict_types=1);
@@ -25,6 +26,17 @@ renderAppNavbar();
 
         <div id="workspaces-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
         <div id="workspaces-list" class="list-group shadow-sm mb-4"></div>
+
+        <!-- Shared Workspaces (D067): run by the administrator; anyone may ask to join. -->
+        <section id="open-workspaces-section" class="mb-4 d-none" aria-labelledby="open-workspaces-heading">
+            <h2 id="open-workspaces-heading" class="h5 mb-1">Shared Workspaces</h2>
+            <p class="small text-muted-brand mb-2">
+                Workspaces for everyone, run by the administrator. Ask to join, and the administrator decides.
+            </p>
+            <div id="open-workspaces-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+            <div id="open-workspaces-status" class="visually-hidden" role="status" aria-live="polite"></div>
+            <ul id="open-workspaces-list" class="list-group shadow-sm"></ul>
+        </section>
 
         <div class="card border-0 shadow-sm">
             <div class="card-body">
