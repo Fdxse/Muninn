@@ -154,6 +154,9 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/workspaces/{id}/chat/messages` | Editor+ (same chat level rules) | `{body}` → 201 `{message}`; Reader → 403 `insufficient_role` |
 | DELETE | `/api/v1/chat/messages/{id}` | author, or workspace Admin+ | delete (204): the text is removed at once; a deletion by someone else is audited as `chat.message_removed_by_moderator` without the text. In the global channel only the author may delete |
 | PATCH | `/api/v1/admin/users/{id}/chat-access` | system admin | `{chat_access: off\|own_workspaces\|member_workspaces\|global}` → `{chat_access}`; administrator accounts → 422; audited as `user.chat_access_changed` |
+| GET | `/api/v1/admin-attention` | user | `{is_recipient, needs_attention}` (D066): `needs_attention` is true only for the account the administrator picked, while invitation requests or unread inbox conversations wait; never says what. Everyone else, administrators included, gets `false` for both |
+| GET | `/api/v1/admin/attention-recipient` | system admin | `{recipient: {id, username, display_name, status} \| null}` (D066) |
+| PATCH | `/api/v1/admin/attention-recipient` | system admin | `{user_id: "<uuid>" \| null}` → `{recipient}`; administrator, disabled or unknown accounts → 422; audited as `admin.attention_recipient_changed` |
 
 ### Magic Link visitors (D059)
 

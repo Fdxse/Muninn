@@ -73,6 +73,8 @@ final class AuditLog
     public const ADMIN_CONVERSATION_CLOSED = 'admin_conversation.closed';
     public const ADMIN_CONVERSATION_REOPENED = 'admin_conversation.reopened';
     public const ADMIN_CONVERSATION_EXPIRED_DELETED = 'admin_conversation.expired_deleted';
+    // The everyday account told when admin work is waiting (D066).
+    public const ADMIN_ATTENTION_RECIPIENT_CHANGED = 'admin.attention_recipient_changed';
 
     public function __construct(private readonly PDO $database)
     {

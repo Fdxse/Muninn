@@ -1,6 +1,7 @@
 /*
  * Account administration: list accounts, disable and re-enable them, create one-time
- * password reset links (D040), and choose how much chat each account may use (D062).
+ * password reset links (D040), choose how much chat each account may use (D062), and pick the
+ * everyday account that is told when admin work is waiting (D066).
  */
 (function () {
     'use strict';
@@ -15,6 +16,10 @@
     var resetResultPanel = document.getElementById('reset-link-result');
     var resetLinkText = document.getElementById('reset-link');
     var copyResetStatus = document.getElementById('copy-reset-link-status');
+    var attentionRecipientSelect = document.getElementById('attention-recipient-select');
+    var attentionRecipientStatus = document.getElementById('attention-recipient-status');
+    /** The recipient's user ID as saved on the server ('' for nobody). */
+    var savedAttentionRecipientId = '';
 
     /** The chat levels (D062), in the order the drop-down shows them. */
     var chatAccessLabels = [
@@ -112,7 +117,54 @@
         userData.users.forEach(function (user) {
             usersTableBody.appendChild(buildUserRow(user));
         });
+        await loadAttentionRecipient(userData.users);
     }
+
+    /**
+     * Fills the "Tell this account when admin work is waiting" drop-down (D066): Nobody plus every
+     * active everyday account, with the saved recipient selected. A recipient disabled later is
+     * still listed, marked as disabled, so the page shows the truth.
+     */
+    async function loadAttentionRecipient(allUsers) {
+        var recipientData = await MuninnApi.request('GET', '/api/v1/admin/attention-recipient');
+        var savedRecipient = recipientData.recipient;
+        savedAttentionRecipientId = savedRecipient ? savedRecipient.id : '';
+
+        var nobodyOption = MuninnApi.createElement('option', null, 'Nobody');
+        nobodyOption.value = '';
+        attentionRecipientSelect.replaceChildren(nobodyOption);
+        allUsers.forEach(function (user) {
+            var isSavedRecipient = user.id === savedAttentionRecipientId;
+            if (user.is_system_admin || (user.status !== 'active' && !isSavedRecipient)) {
+                return;
+            }
+            var userLabel = user.display_name + ' (' + user.username + ')' + (user.status === 'active' ? '' : ' · disabled');
+            var userOption = MuninnApi.createElement('option', null, userLabel);
+            userOption.value = user.id;
+            attentionRecipientSelect.appendChild(userOption);
+        });
+        attentionRecipientSelect.value = savedAttentionRecipientId;
+    }
+
+    // Saves on change, and goes back to the saved choice when saving fails.
+    attentionRecipientSelect.addEventListener('change', async function () {
+        attentionRecipientSelect.disabled = true;
+        attentionRecipientStatus.textContent = 'Saving…';
+        MuninnApi.showAlert(errorAlert, '');
+        try {
+            var changeResult = await MuninnApi.request('PATCH', '/api/v1/admin/attention-recipient', {
+                user_id: attentionRecipientSelect.value === '' ? null : attentionRecipientSelect.value,
+            });
+            savedAttentionRecipientId = changeResult.recipient ? changeResult.recipient.id : '';
+            attentionRecipientStatus.textContent = 'Saved.';
+        } catch (changeError) {
+            attentionRecipientSelect.value = savedAttentionRecipientId;
+            attentionRecipientStatus.textContent = '';
+            MuninnApi.showAlert(errorAlert, (changeError.fields && changeError.fields.user_id) || changeError.message);
+        } finally {
+            attentionRecipientSelect.disabled = false;
+        }
+    });
 
     async function setUserEnabled(user, shouldEnable, actionButton) {
         if (!shouldEnable && !window.confirm('Disable ' + user.username + '? They are signed out at once.')) {

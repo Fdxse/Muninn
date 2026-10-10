@@ -910,3 +910,31 @@ reach you?" field; awaiting review in the PR.
 
 Not in this version: attachments, live updates of an open conversation, deleting a single
 conversation by hand, search in the inbox, and push notifications to users.
+
+## D066 — "Switch to admin": telling one everyday account that admin work is waiting
+
+**Status:** Proposed (2026-10-10). The project owner keeps a separate administrator account that
+never sees notes (D044), and asked for a hint on his everyday account when something waits on the
+admin side. He chose: one picked account, a shield icon in the top bar (also on phones), and not
+counting pending database migrations; awaiting review in the PR.
+
+- **The setting.** On the Users page the administrator picks one active everyday account, or
+  Nobody (`admin_attention_settings`, a one-row table, migration `0012_admin_attention_recipient`).
+  Administrator and disabled accounts cannot be picked. Changes are audited as
+  `admin.attention_recipient_changed`. `bin/reset-data.php` deletes everyday accounts, which also
+  clears the setting (foreign key `ON DELETE SET NULL`).
+- **What counts as waiting.** Invitation requests waiting for a decision (D049) and inbox
+  conversations the administrators have not read (D065). Not counted: blocked sign-ins, Overview
+  warnings and pending migrations, since they need no answer from the administrator.
+- **What the account learns.** `GET /api/v1/admin-attention` answers only yes or no: never what
+  waits, nor how much. Every other account, administrators included, always gets "no" and is told
+  it is not the recipient, so nobody else learns anything about the admin side.
+- **Where it shows.** A gold shield (with the word "Admin" on wider screens) first in the top bar
+  while work waits. Tapping it opens a short dialog: "Something is waiting on the admin side.
+  Sign in with your administrator account to see it", with a "Sign out to switch" button. On
+  phones the bar drops the "Muninn" word and narrows its icons slightly, as for administrators, so
+  everything still fits on a 360px screen. Checked once a minute while the page is visible, and
+  when the tab becomes visible again, like the other badges.
+
+Not in this version: more than one recipient, an ntfy push to the recipient (the administrator's
+own ntfy alerts, D057, already cover the phone), and choosing which kinds of work count.

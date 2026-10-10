@@ -145,6 +145,52 @@
         document.addEventListener('muninn:messages-read', refreshMessagesBadge);
     }
 
+    /*
+     * "Something is waiting on the admin side" (D066). The administrator picks one everyday
+     * account; while admin work waits, that account sees a gold shield in the top bar. Checked once
+     * a minute while the page is visible and when the tab becomes visible again. Every other
+     * account is told it is not the recipient, and stops asking until the next page load.
+     */
+    var ADMIN_ATTENTION_INTERVAL_MILLISECONDS = 60000;
+    var adminAttentionTimer = null;
+
+    /** Shows or hides the shield; a failure hides it, since the icon is only a hint. */
+    async function refreshAdminAttention() {
+        var attentionItem = document.getElementById('nav-admin-attention-item');
+        try {
+            var attentionData = await MuninnApi.request('GET', '/api/v1/admin-attention');
+            attentionItem.classList.toggle('d-none', !attentionData.needs_attention);
+            if (!attentionData.is_recipient && adminAttentionTimer !== null) {
+                window.clearInterval(adminAttentionTimer);
+                adminAttentionTimer = null;
+                document.removeEventListener('visibilitychange', refreshAdminAttentionWhenShown);
+            }
+        } catch (attentionError) {
+            attentionItem.classList.add('d-none');
+        }
+    }
+
+    function refreshAdminAttentionWhenShown() {
+        if (!document.hidden) {
+            refreshAdminAttention();
+        }
+    }
+
+    /** Starts the once-a-minute check; a hidden tab skips it and checks when shown again. */
+    function startAdminAttention() {
+        adminAttentionTimer = window.setInterval(refreshAdminAttentionWhenShown, ADMIN_ATTENTION_INTERVAL_MILLISECONDS);
+        document.addEventListener('visibilitychange', refreshAdminAttentionWhenShown);
+        refreshAdminAttention();
+    }
+
+    // "Sign out to switch" in the shield's dialog: the administrator account signs in separately.
+    var adminAttentionSignOutButton = document.getElementById('admin-attention-sign-out-button');
+    if (adminAttentionSignOutButton) {
+        adminAttentionSignOutButton.addEventListener('click', function () {
+            MuninnApi.signOut();
+        });
+    }
+
     // The Invitations page announces approvals and declines, so the badge follows along.
     document.addEventListener('muninn:invitation-requests-changed', refreshInvitationRequestsBadge);
 
@@ -446,6 +492,10 @@
             // the user's own answers for everyone else.
             if (messagesBadgeTimer === null) {
                 startMessagesBadge(currentUser.is_system_admin ? '/api/v1/admin/conversations/unread' : '/api/v1/admin-messages/unread');
+            }
+            // Administrators see the admin pages themselves, so only everyday accounts ask (D066).
+            if (!currentUser.is_system_admin && adminAttentionTimer === null) {
+                startAdminAttention();
             }
             // The administrator is the one being contacted, so only everyday users see this.
             document.getElementById('nav-contact-admin-item').classList.toggle('d-none', currentUser.is_system_admin);

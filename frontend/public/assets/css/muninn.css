@@ -273,6 +273,16 @@ a.btn {
     font-size: 0.7rem;
 }
 
+/* "Something is waiting on the admin side" (D066): a gold shield that stands out in the bar. */
+.muninn-navbar .muninn-attention-link,
+.muninn-attention-icon {
+    color: var(--muninn-gold-500);
+}
+
+.muninn-navbar .muninn-attention-link .bi {
+    font-size: 1.15rem;
+}
+
 /* On phones the links are icons only and the bar is full, so the badge sits on the icon's corner
    instead of taking extra width. */
 @media (max-width: 575.98px) {
@@ -297,6 +307,20 @@ a.btn {
     }
 
     .muninn-navbar:has(#nav-admin-messages-item:not(.d-none)) .navbar-brand {
+        margin-right: 0.5rem;
+    }
+
+    /* The shield (D066) is one more icon for an everyday account: same narrowing as for the
+       administrators, and no "Muninn" word, so Sign out still fits on a 360px screen. */
+    .muninn-navbar:has(#nav-admin-attention-item:not(.d-none)) .muninn-wordmark {
+        display: none;
+    }
+
+    .muninn-navbar:has(#nav-admin-attention-item:not(.d-none)) .nav-link {
+        min-width: 2.375rem;
+    }
+
+    .muninn-navbar:has(#nav-admin-attention-item:not(.d-none)) .navbar-brand {
         margin-right: 0.5rem;
     }
 
