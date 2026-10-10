@@ -8,8 +8,9 @@ use Muninn\Api\Notifications\AdminMessageController;
 use Muninn\Api\Tests\Support\WorkspaceTestCase;
 
 /**
- * "Contact admin" (D058): everyday users write to the administrator through ntfy. Covers what
- * the notification contains, the hourly limit, validation, and who may use it.
+ * "Contact admin" (D058): everyday users write to the administrator. Covers what the ntfy
+ * notification contains, that the message is stored in the administrator's inbox (D065), the
+ * hourly limit, validation, and who may use it. Replies: AdminConversationTest.
  */
 final class AdminMessageTest extends WorkspaceTestCase
 {
@@ -45,6 +46,14 @@ final class AdminMessageTest extends WorkspaceTestCase
         self::assertSame('muninn-admin', $published['topic']);
         self::assertSame('Muninn: message from Alice (alice)', $published['title']);
         self::assertSame("Hi!\nI cannot open the shared workspace.\n\nReply to: alice@example.com", $published['message']);
+        // Tapping the notification opens the conversation in the inbox (D065).
+        $conversationId = $sendResponse->json()['data']['conversation_id'];
+        self::assertSame('https://www.dx.se/admin/messages.php?id=' . $conversationId, $published['click']);
+        self::assertTrue($sendResponse->json()['data']['notified']);
+
+        // Stored in the inbox with Windows line endings made plain, and the contact details kept.
+        self::assertSame("Hi!\nI cannot open the shared workspace.", $this->scalar('SELECT body FROM admin_conversation_messages'));
+        self::assertSame('alice@example.com', $this->scalar('SELECT contact_details FROM admin_conversations WHERE id = :id', ['id' => $conversationId]));
 
         // The audit log records that a message was sent, never what it said.
         $auditDetails = (string) $this->scalar("SELECT details FROM audit_log WHERE event_type = 'admin_message.sent'");
@@ -94,14 +103,19 @@ final class AdminMessageTest extends WorkspaceTestCase
         $this->assertError($this->sendAs($alice, 'POST', '/api/v1/admin-messages', ['message' => str_repeat('a', 1001)]), 422, 'validation_failed');
         $this->assertError($this->sendAs($alice, 'POST', '/api/v1/admin-messages', ['message' => 'Hi', 'contact' => "two\nlines"]), 422, 'validation_failed');
         self::assertSame([], $this->ntfyTransport->publishedMessages);
+        self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM admin_conversations'));
     }
 
-    public function testUndeliveredMessageIsReportedAndLoggedWithoutTheToken(): void
+    public function testUndeliveredNotificationStillKeepsTheMessageAndLogsNoToken(): void
     {
         $this->ntfyTransport->answerStatusCode = 0;
         $alice = $this->signedInUser('alice');
 
-        $this->assertError($this->sendAs($alice, 'POST', '/api/v1/admin-messages', ['message' => 'Private words']), 503, 'delivery_failed');
+        // The inbox has it (D065), so the user is told it was sent, only without the phone alert.
+        $sendResponse = $this->sendAs($alice, 'POST', '/api/v1/admin-messages', ['message' => 'Private words']);
+        self::assertSame(201, $sendResponse->statusCode(), $sendResponse->body());
+        self::assertFalse($sendResponse->json()['data']['notified']);
+        self::assertSame(1, (int) $this->scalar('SELECT COUNT(*) FROM admin_conversations'));
 
         $logText = (string) file_get_contents($this->logFilePath);
         self::assertStringContainsString('ntfy user message was not delivered', $logText);
@@ -109,14 +123,16 @@ final class AdminMessageTest extends WorkspaceTestCase
         self::assertStringNotContainsString('Private words', $logText);
     }
 
-    public function testUnavailableWhenNtfyIsOff(): void
+    public function testWorksWithoutNtfy(): void
     {
         $this->application = $this->buildApplication();
         $alice = $this->signedInUser('alice');
 
-        self::assertFalse($this->sendAs($alice, 'GET', '/api/v1/admin-messages')->json()['data']['enabled']);
-        $this->assertError($this->sendAs($alice, 'POST', '/api/v1/admin-messages', ['message' => 'Hello']), 503, 'messages_unavailable');
+        $sendResponse = $this->sendAs($alice, 'POST', '/api/v1/admin-messages', ['message' => 'Hello']);
+        self::assertSame(201, $sendResponse->statusCode(), $sendResponse->body());
+        self::assertFalse($sendResponse->json()['data']['notified']);
         self::assertSame([], $this->ntfyTransport->publishedMessages);
+        self::assertSame(1, (int) $this->scalar('SELECT COUNT(*) FROM admin_conversations'));
     }
 
     public function testAdministratorsAndSignedOutVisitorsCannotUseIt(): void
@@ -127,5 +143,6 @@ final class AdminMessageTest extends WorkspaceTestCase
         $this->assertError($this->sendAs($administrator, 'POST', '/api/v1/admin-messages', ['message' => 'Hello']), 403, 'admin_account');
         $this->assertError($this->send('POST', '/api/v1/admin-messages', ['message' => 'Hello']), 401, 'unauthenticated');
         self::assertSame([], $this->ntfyTransport->publishedMessages);
+        self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM admin_conversations'));
     }
 }

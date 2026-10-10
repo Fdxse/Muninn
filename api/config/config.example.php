@@ -105,6 +105,13 @@ return [
         'retention_days' => 90,
     ],
 
+    'admin_messages' => [
+        // OPTIONAL. Days a "Contact admin" conversation is kept after its newest message before
+        // the API deletes it for good (D065; checked at most once an hour, after a signed-in
+        // request). 1 to 3650.
+        'retention_days' => 365,
+    ],
+
     'magic_links' => [
         // OPTIONAL. Magic Links (D059): links that open a workspace, folder or note without signing in.
         // Cookie a browser gets after opening a link (separate from the sign-in cookie). Like

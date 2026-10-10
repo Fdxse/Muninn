@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Muninn\Api;
 
+use Muninn\Api\AdminInbox\AdminConversationController;
+use Muninn\Api\AdminInbox\AdminConversationService;
+use Muninn\Api\AdminInbox\ExpiredAdminConversationCleanup;
 use Muninn\Api\Admin\AuditLogArchiver;
 use Muninn\Api\Admin\SignInAttemptReport;
 use Muninn\Api\Admin\SystemOverviewController;
@@ -90,6 +93,7 @@ final class Application
     private SessionCookie $sessionCookie;
     private ExpiredTrashCleanup $expiredTrashCleanup;
     private ExpiredChatCleanup $expiredChatCleanup;
+    private ExpiredAdminConversationCleanup $expiredAdminConversationCleanup;
     private AdminNotifier $adminNotifier;
     private NtfyTransport $ntfyTransport;
     private MagicLinkService $magicLinkService;
@@ -194,8 +198,9 @@ final class Application
 
     /**
      * Housekeeping that runs after the response to a signed-in request has been sent: deletes
-     * notes whose time in Trash has run out (D039) and chat messages older than the chat
-     * retention (D062), each at most once per hour. Anonymous requests never trigger it, so
+     * notes whose time in Trash has run out (D039), chat messages older than the chat
+     * retention (D062) and conversations with the administrator older than their retention
+     * (D065), each at most once per hour. Anonymous requests never trigger it, so
      * nobody can make the server do this work without an account. Never throws.
      *
      * @return int|null Notes deleted, or null when nothing ran.
@@ -209,6 +214,7 @@ final class Application
 
         // Runs on its own hourly schedule; its count is audited, not returned.
         $this->expiredChatCleanup->runIfDue();
+        $this->expiredAdminConversationCleanup->runIfDue();
 
         return $this->expiredTrashCleanup->runIfDue();
     }
@@ -352,7 +358,22 @@ final class Application
             $this->config->getInt('invitations.default_expiry_hours'),
             $this->adminNotifier,
         );
-        $adminMessageController = new AdminMessageController($this->database, $auditLog, $this->adminNotifier);
+        // "Contact admin" (D058) and the administrator's inbox it fills (D065).
+        $adminConversationService = new AdminConversationService($this->database);
+        $adminMessageController = new AdminMessageController($this->database, $auditLog, $this->adminNotifier, $adminConversationService);
+        $adminConversationController = new AdminConversationController(
+            $adminConversationService,
+            $auditLog,
+            $this->adminNotifier,
+            $this->config->getInt('admin_messages.retention_days'),
+        );
+        $this->expiredAdminConversationCleanup = new ExpiredAdminConversationCleanup(
+            $this->database,
+            $adminConversationService,
+            $auditLog,
+            $this->logger,
+            $this->config->getInt('admin_messages.retention_days'),
+        );
         $passwordResetService = new PasswordResetService($this->database);
         $passwordResetController = new PasswordResetController(
             $passwordResetService,
@@ -495,9 +516,20 @@ final class Application
         $this->router->add('POST', '/api/v1/admin/invitation-requests/{id}/approve', $invitationRequestController->approve(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/invitation-requests/{id}/decline', $invitationRequestController->decline(...), Router::ACCESS_SYSTEM_ADMIN);
 
-        // "Contact admin" (D058): everyday users write to the administrator through ntfy.
+        // "Contact admin" (D058): everyday users write to the administrator, which starts a
+        // conversation in the administrator's inbox (D065). Literal paths before {id} paths.
         $this->router->add('GET', '/api/v1/admin-messages', $adminMessageController->status(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/admin-messages', $adminMessageController->send(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/admin-messages/unread', $adminConversationController->userUnread(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/admin-messages/conversations', $adminConversationController->userList(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/admin-messages/conversations/{id}', $adminConversationController->userShow(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/admin-messages/conversations/{id}/messages', $adminConversationController->userReply(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/admin/conversations', $adminConversationController->adminList(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/admin/conversations/unread', $adminConversationController->adminUnread(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/admin/conversations/{id}', $adminConversationController->adminShow(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/conversations/{id}/messages', $adminConversationController->adminReply(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/conversations/{id}/close', $adminConversationController->close(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/conversations/{id}/reopen', $adminConversationController->reopen(...), Router::ACCESS_SYSTEM_ADMIN);
 
         // Broadcast messages (D061): the administrator schedules them, everyday users see and answer them.
         $this->router->add('GET', '/api/v1/broadcasts', $broadcastController->listShowing(...), Router::ACCESS_USER);

@@ -83,12 +83,75 @@
         document.addEventListener('muninn:chat-read', refreshChatBadge);
     }
 
+    /*
+     * Messages between users and the administrator (D065). Everyday users see a count of unread
+     * answers on the "Contact admin" button and in its dialog; administrators see a count of
+     * conversations with something new on the Messages link. Refreshed once a minute while the
+     * page is visible, like the chat badge, and whenever a messages page has opened a conversation.
+     */
+    var MESSAGES_BADGE_INTERVAL_MILLISECONDS = 60000;
+    var messagesBadgeTimer = null;
+    /** The API path that counts unread conversations for this account; set once the user is known. */
+    var messagesUnreadPath = null;
+
+    /** Fills a badge with a count (99+ above 99) and a screen-reader text, or hides it at 0. */
+    function showCount(badgeElement, unreadCount, screenReaderText) {
+        if (!badgeElement) {
+            return;
+        }
+        badgeElement.replaceChildren(
+            document.createTextNode(unreadCount > 99 ? '99+' : String(unreadCount)),
+            MuninnApi.createElement('span', 'visually-hidden', screenReaderText)
+        );
+        badgeElement.classList.toggle('d-none', unreadCount === 0);
+    }
+
+    /** Asks the API how many conversations have something unread and updates the badges. */
+    async function refreshMessagesBadge() {
+        var badgeIds = ['nav-contact-admin-badge', 'contact-admin-unread-badge', 'nav-admin-messages-badge'];
+        try {
+            var unreadData = await MuninnApi.request('GET', messagesUnreadPath);
+            var unreadCount = unreadData.unread_count;
+            var screenReaderText = unreadCount === 1 ? ' unread conversation' : ' unread conversations';
+            badgeIds.forEach(function (badgeId) {
+                showCount(document.getElementById(badgeId), unreadCount, screenReaderText);
+            });
+        } catch (unreadError) {
+            // A hint only: the messages pages always show everything.
+            badgeIds.forEach(function (badgeId) {
+                var badgeElement = document.getElementById(badgeId);
+                if (badgeElement) {
+                    badgeElement.classList.add('d-none');
+                }
+            });
+        }
+    }
+
+    /** Starts the once-a-minute refresh for the given count endpoint. */
+    function startMessagesBadge(unreadPath) {
+        messagesUnreadPath = unreadPath;
+        refreshMessagesBadge();
+        messagesBadgeTimer = window.setInterval(function () {
+            if (!document.hidden) {
+                refreshMessagesBadge();
+            }
+        }, MESSAGES_BADGE_INTERVAL_MILLISECONDS);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) {
+                refreshMessagesBadge();
+            }
+        });
+        // The messages pages mark a conversation as read when they open it.
+        document.addEventListener('muninn:messages-read', refreshMessagesBadge);
+    }
+
     // The Invitations page announces approvals and declines, so the badge follows along.
     document.addEventListener('muninn:invitation-requests-changed', refreshInvitationRequestsBadge);
 
     /*
-     * "Contact admin" (D058): everyday users write a short message that the API pushes to the
-     * administrator's phone through ntfy. The dialog's markup comes from includes/page.php.
+     * "Contact admin" (D058): everyday users write a short message to the administrator. It starts
+     * a conversation the user follows under My messages (D065), and ntfy pushes it to the
+     * administrator's phone. The dialog's markup comes from includes/page.php.
      */
     var contactAdminModal = document.getElementById('contact-admin-modal');
     var contactAdminForm = document.getElementById('contact-admin-form');
@@ -99,7 +162,9 @@
     var contactAdminSuccessAlert = document.getElementById('contact-admin-success');
     var contactAdminFieldIds = { message: 'contact-admin-message', contact: 'contact-admin-contact' };
 
-    /** Explains, before anything is typed, when messages cannot be sent right now. */
+    /**
+     * Shows new answers, and explains before anything is typed when the hourly limit is reached.
+     */
     async function prepareContactAdminDialog() {
         MuninnApi.showAlert(contactAdminErrorAlert, '');
         contactAdminSuccessAlert.classList.add('d-none');
@@ -107,10 +172,12 @@
         contactAdminSendButton.disabled = false;
         try {
             var messageStatus = await MuninnApi.request('GET', '/api/v1/admin-messages');
-            if (!messageStatus.enabled) {
-                MuninnApi.showAlert(contactAdminErrorAlert, 'Messages to the administrator are not set up on this server yet.');
-                contactAdminSendButton.disabled = true;
-            } else if (messageStatus.remaining_this_hour === 0) {
+            showCount(
+                document.getElementById('contact-admin-unread-badge'),
+                messageStatus.unread_count,
+                messageStatus.unread_count === 1 ? ' new answer' : ' new answers'
+            );
+            if (messageStatus.remaining_this_hour === 0) {
                 MuninnApi.showAlert(contactAdminErrorAlert, 'You have sent ' + messageStatus.max_per_hour + ' messages this hour. Please wait before sending another.');
                 contactAdminSendButton.disabled = true;
             }
@@ -142,8 +209,18 @@
                 });
                 // Keep the contact details: the same person usually wants the same answer route.
                 contactAdminMessageInput.value = '';
-                contactAdminSuccessAlert.textContent = 'Sent. The administrator has been notified.';
+                // "Sent." plus a link to the new conversation, where the answer will appear.
+                var conversationLink = MuninnApi.createElement('a', 'alert-link', 'My messages');
+                conversationLink.href = document.getElementById('contact-admin-my-messages-link').getAttribute('href')
+                    + '?id=' + encodeURIComponent(sendResult.conversation_id);
+                contactAdminSuccessAlert.replaceChildren(
+                    document.createTextNode('Sent. The administrator will answer under '),
+                    conversationLink,
+                    document.createTextNode('.')
+                );
                 contactAdminSuccessAlert.classList.remove('d-none');
+                // The My messages page lists the new conversation straight away.
+                document.dispatchEvent(new CustomEvent('muninn:admin-message-sent', { detail: sendResult }));
                 contactAdminSuccessAlert.focus();
                 keepButtonDisabled = sendResult.remaining_this_hour === 0;
             } catch (sendError) {
@@ -154,7 +231,7 @@
                         : sendError.status === 429 ? 'You have sent the most messages allowed this hour. Please wait before sending another.'
                         : sendError.message
                 );
-                keepButtonDisabled = sendError.status === 429 || sendError.code === 'messages_unavailable';
+                keepButtonDisabled = sendError.status === 429;
             } finally {
                 contactAdminSendButton.disabled = keepButtonDisabled;
             }
@@ -361,8 +438,14 @@
             document.getElementById('nav-admin-users-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-workspaces-item').classList.toggle('d-none', !currentUser.is_system_admin);
             document.getElementById('nav-admin-broadcasts-item').classList.toggle('d-none', !currentUser.is_system_admin);
+            document.getElementById('nav-admin-messages-item').classList.toggle('d-none', !currentUser.is_system_admin);
             if (currentUser.is_system_admin) {
                 refreshInvitationRequestsBadge();
+            }
+            // Unread conversations with the administrator (D065): the inbox for administrators,
+            // the user's own answers for everyone else.
+            if (messagesBadgeTimer === null) {
+                startMessagesBadge(currentUser.is_system_admin ? '/api/v1/admin/conversations/unread' : '/api/v1/admin-messages/unread');
             }
             // The administrator is the one being contacted, so only everyday users see this.
             document.getElementById('nav-contact-admin-item').classList.toggle('d-none', currentUser.is_system_admin);

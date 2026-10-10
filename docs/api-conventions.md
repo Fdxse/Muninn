@@ -77,8 +77,18 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/invitation-requests` | user | `{note}` → 201; at most 5 open → 409 `too_many_open_requests` |
 | DELETE | `/api/v1/invitation-requests/{id}` | user (own) | cancel; revokes its link (204) |
 | POST | `/api/v1/invitation-requests/{id}/link` | user (own, approved) | → 201 with one-time `invitation_url`; replaces an earlier link |
-| GET | `/api/v1/admin-messages` | user (not admin) | `{enabled, max_per_hour, remaining_this_hour}` for the Contact admin dialog (D058) |
-| POST | `/api/v1/admin-messages` | user (not admin) | `{message, contact?}` → 201 when ntfy accepted it; 429 after 5 an hour; 503 `messages_unavailable` / `delivery_failed` |
+| GET | `/api/v1/admin-messages` | user (not admin) | `{max_per_hour, remaining_this_hour, unread_count}` for the Contact admin dialog (D058, D065) |
+| POST | `/api/v1/admin-messages` | user (not admin) | `{message, contact?}` → 201 `{sent, conversation_id, notified, remaining_this_hour}`: the message starts a conversation in the administrator's inbox (D065); `notified` says whether ntfy accepted the phone alert (ntfy off or down still stores it); 429 after 5 an hour |
+| GET | `/api/v1/admin-messages/unread` | user (not admin) | `{unread_count}`: own conversations with an administrator answer not opened yet (D065) |
+| GET | `/api/v1/admin-messages/conversations` | user (not admin) | own conversations, newest first: `id`, `status` (`open`\|`closed`), `excerpt`, `contact_details`, `message_count`, `last_message_by` (`user`\|`admin`), `unread`, `created_at`, `last_message_at`; plus `retention_days` |
+| GET | `/api/v1/admin-messages/conversations/{id}` | owner only | `{conversation (+ can_reply), messages, limits}`; each message `id`, `body`, `created_at`, `from` (`user`\|`admin`), `author_name` (administrators always "Administrator"), `is_own`. Marks it read. Anyone else's → 404 |
+| POST | `/api/v1/admin-messages/conversations/{id}/messages` | owner only | `{message}` (1-1000 characters) → 201 with the conversation; closed → 409 `conversation_closed`; 200 messages → 409 `conversation_full`; more than 20 replies an hour → 429. ntfy alert after the response |
+| GET | `/api/v1/admin/conversations` | system admin | the inbox, `?status=open` (default) \| `closed` \| `all`: like the user's list plus `user` {`id`, `username`, `display_name`, `status`} and `closed_at`; plus `unread_count`, `retention_days`; other values → 400 `invalid_status` |
+| GET | `/api/v1/admin/conversations/unread` | system admin | `{unread_count}`: conversations with a user message no administrator has opened |
+| GET | `/api/v1/admin/conversations/{id}` | system admin | same shape as the user's view; `author_name` shows which administrator answered. Marks it read for all administrators |
+| POST | `/api/v1/admin/conversations/{id}/messages` | system admin | `{message}` → 201; reopens a closed conversation; audited as `admin_conversation.admin_replied` (no text) |
+| POST | `/api/v1/admin/conversations/{id}/close` | system admin | the user can read but not reply; audited as `admin_conversation.closed` |
+| POST | `/api/v1/admin/conversations/{id}/reopen` | system admin | audited as `admin_conversation.reopened` |
 | GET | `/api/v1/admin/invitation-requests` | system admin | every request, pending first |
 | GET | `/api/v1/admin/invitation-requests/pending-count` | system admin | `{pending_count}`: requests awaiting a decision (nav badge) |
 | POST | `/api/v1/admin/invitation-requests/{id}/approve` | system admin | pending → approved |

@@ -27,6 +27,7 @@ final class AdminNotifier
     public const KIND_INVITATION_REQUEST = 'invitation_request';
     public const KIND_SIGN_IN_BLOCKED = 'sign_in_blocked';
     public const KIND_USER_MESSAGE = 'user_message';
+    public const KIND_USER_REPLY = 'user_reply';
     public const KIND_BROADCAST_VOTE = 'broadcast_vote';
 
     /**
@@ -54,11 +55,6 @@ final class AdminNotifier
         private readonly int $timeoutSeconds,
         private readonly string $frontendBaseUrl,
     ) {
-    }
-
-    public function isEnabled(): bool
-    {
-        return $this->isEnabled;
     }
 
     /** Someone asked for an invitation (D049); the administrator should review it. */
@@ -144,9 +140,11 @@ final class AdminNotifier
      *
      * @param string $messageText What the user wrote; line breaks are kept.
      * @param string $contactDetails How the administrator can answer (optional, may be '').
-     * @return bool True when ntfy accepted the message.
+     * @param string $conversationId The conversation in the administrator's inbox (D065); tapping
+     *                               the notification opens it.
+     * @return bool True when ntfy accepted the message; false when it did not or ntfy is off.
      */
-    public function sendUserMessage(string $displayName, string $username, string $messageText, string $contactDetails): bool
+    public function sendUserMessage(string $displayName, string $username, string $messageText, string $contactDetails, string $conversationId): bool
     {
         if (!$this->isEnabled) {
             return false;
@@ -161,7 +159,7 @@ final class AdminNotifier
             $notificationText,
             self::PRIORITY_DEFAULT,
             ['speech_balloon'],
-            null,
+            $this->conversationUrl($conversationId),
         );
 
         try {
@@ -176,6 +174,31 @@ final class AdminNotifier
         $this->logger->warning('ntfy user message was not delivered.', ['http_status' => $statusCode]);
 
         return false;
+    }
+
+    /**
+     * A user answered in a conversation with the administrator (D065). Queued like the other
+     * alerts: the reply is already stored in the inbox, so the user need not wait for ntfy. The
+     * user's hourly reply limit keeps this from flooding the administrator's phone.
+     */
+    public function userReplied(string $displayName, string $username, string $messageText, string $conversationId): void
+    {
+        $this->queue(
+            self::KIND_USER_REPLY,
+            'Muninn: reply from ' . self::plainText($displayName, 100) . ' (' . self::plainText($username, 64) . ')',
+            self::plainMultiLineText($messageText, 2000),
+            self::PRIORITY_DEFAULT,
+            ['speech_balloon'],
+            $this->conversationUrl($conversationId),
+            $conversationId,
+            'admin_conversation',
+        );
+    }
+
+    /** The administrator's page for one conversation (D065). */
+    private function conversationUrl(string $conversationId): string
+    {
+        return $this->frontendBaseUrl . '/admin/messages.php?id=' . rawurlencode($conversationId);
     }
 
     /**

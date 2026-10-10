@@ -51,6 +51,11 @@ final class DataResetTest extends WorkspaceTestCase
         self::assertSame(204, $this->sendAs($alice, 'POST', '/api/v1/broadcasts/' . $poll['id'] . '/vote', [
             'option_ids' => [$poll['options'][0]['id']],
         ])->statusCode());
+        // Alice wrote to the administrator, who answered (D065): the whole conversation goes.
+        $contactResponse = $this->sendAs($alice, 'POST', '/api/v1/admin-messages', ['message' => 'Help']);
+        self::assertSame(201, $contactResponse->statusCode(), $contactResponse->body());
+        $conversationId = $contactResponse->json()['data']['conversation_id'];
+        self::assertSame(201, $this->sendAs($admin, 'POST', '/api/v1/admin/conversations/' . $conversationId . '/messages', ['message' => 'Sure'])->statusCode());
         $auditRowsBefore = (int) $this->scalar('SELECT COUNT(*) FROM audit_log');
 
         $resetService = new DataResetService(TestDatabase::connection(), $this->attachmentStorage());
@@ -59,6 +64,7 @@ final class DataResetTest extends WorkspaceTestCase
         self::assertSame(1, $countsBefore['invitations (all states)']);
         self::assertSame(1, $countsBefore['attachments']);
         self::assertSame(1, $countsBefore[DataResetService::ATTACHMENT_FILES_LABEL]);
+        self::assertSame(1, $countsBefore['conversations with the administrator (D065)']);
 
         $deletedRowCounts = $resetService->resetToAdministratorsOnly();
         // The preview must match what is actually deleted (the two lists are in different orders).
@@ -68,7 +74,7 @@ final class DataResetTest extends WorkspaceTestCase
 
         // Only the admin remains, and nothing else is left over.
         self::assertSame(['sysadmin'], array_column(TestDatabase::connection()->query('SELECT username FROM users')->fetchAll(), 'username'));
-        foreach (['notes', 'folders', 'tags', 'note_tags', 'attachments', 'workspace_members', 'workspaces', 'invitations', 'invitation_requests', 'password_resets', 'auth_attempts'] as $emptiedTable) {
+        foreach (['notes', 'folders', 'tags', 'note_tags', 'attachments', 'workspace_members', 'workspaces', 'invitations', 'invitation_requests', 'password_resets', 'auth_attempts', 'admin_conversations', 'admin_conversation_messages'] as $emptiedTable) {
             self::assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM ' . $emptiedTable), $emptiedTable . ' should be empty');
         }
 

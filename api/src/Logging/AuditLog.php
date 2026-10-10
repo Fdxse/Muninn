@@ -67,6 +67,12 @@ final class AuditLog
     public const USER_CHAT_ACCESS_CHANGED = 'user.chat_access_changed';
     public const CHAT_MESSAGE_REMOVED_BY_MODERATOR = 'chat.message_removed_by_moderator';
     public const CHAT_EXPIRED_DELETED = 'chat.expired_deleted';
+    // The administrator's inbox (D065). Message text is never written to the audit log.
+    public const ADMIN_CONVERSATION_USER_REPLIED = 'admin_conversation.user_replied';
+    public const ADMIN_CONVERSATION_ADMIN_REPLIED = 'admin_conversation.admin_replied';
+    public const ADMIN_CONVERSATION_CLOSED = 'admin_conversation.closed';
+    public const ADMIN_CONVERSATION_REOPENED = 'admin_conversation.reopened';
+    public const ADMIN_CONVERSATION_EXPIRED_DELETED = 'admin_conversation.expired_deleted';
 
     public function __construct(private readonly PDO $database)
     {

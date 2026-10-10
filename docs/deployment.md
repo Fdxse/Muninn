@@ -122,12 +122,27 @@ Summary:
    `assets/js/app-shell.js` and `assets/js/chat.js`.
 3. Everything already in a chat counts as unread once, until each user opens that chat.
 
+## Upgrading to the Messages inbox (D065)
+
+1. Deploy the API and run `sudo php84 bin/migrate.php` from `/volume1/Muninn` (it applies
+   migration `0011_admin_conversations`: two new tables; no existing data changes).
+2. FTP the frontend with overwrite on: it adds `messages.php`, `admin/messages.php`,
+   `assets/js/messages.js`, `assets/js/admin-messages.js` and `assets/js/message-thread.js`, and
+   changes `includes/page.php`, `assets/js/app-shell.js`, `assets/css/muninn.css` and
+   `help/manual.html`.
+3. Optional: `admin_messages.retention_days` in `config/config.php` (default 365; see
+   `config/config.example.php`).
+4. Try it: as an everyday user, send a message with Contact admin. As the administrator, open
+   Messages in the top bar (a number shows new messages), answer, and close it. The user sees a
+   number on the Contact admin button and reads the answer under My messages. Messages sent
+   before this upgrade were never stored, so the inbox starts empty.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when
 sign-ins are blocked after repeated wrong passwords (D057), and when a user writes to you with
-"Contact admin" (D058). It uses the ntfy server on the NAS. Until ntfy is set up, the Contact
-admin dialog tells users that messages are not set up yet.
+"Contact admin" (D058, D065). It uses the ntfy server on the NAS. Contact admin messages also
+land in the Messages inbox (D065), so they work without ntfy; ntfy only adds the phone alert.
 
 1. Pick a topic name, e.g. `muninn-admin`, and subscribe to it in the ntfy app.
 2. If your ntfy requires sign-in to publish, create a token for Muninn on the NAS
