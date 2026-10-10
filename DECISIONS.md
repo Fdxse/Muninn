@@ -938,3 +938,39 @@ counting pending database migrations; awaiting review in the PR.
 
 Not in this version: more than one recipient, an ntfy push to the recipient (the administrator's
 own ntfy alerts, D057, already cover the phone), and choosing which kinds of work count.
+
+## D067 — Shared Workspaces that users ask to join
+
+**Status:** Proposed (2026-10-10). The project owner asked for workspaces such as "General" that
+users ask to join, with the administrator adding and removing members, and approved every
+recommendation in the proposal: only the administrator creates them, an approved member becomes an
+Editor (the administrator can pick Reader), members are only Editors and Readers, and existing
+workspaces cannot be converted. Awaiting review in the PR.
+
+- **A third kind of workspace.** `workspaces.kind` gains `open` (migration `0013_open_workspaces`),
+  plus an optional `description` (300 characters). In the interface they are called "Shared
+  Workspaces"; ordinary user-created ones stay "shared". The administrator creates, renames,
+  describes and deletes them under Admin → Workspaces. Delete works only while the workspace holds
+  no notes, Trash included (as D045); the administrator only learns "not empty", never a count.
+- **No Owner, ever.** The administrator is recorded as creator but is never a member (D044, D025).
+  Members are Editors or Readers only, so nobody inside the workspace can manage members, rename
+  or delete it, delete notes from Trash for good (Trash retention, D039, still does) or create
+  Magic Links (D059). This widens D050: the administrator's member endpoints
+  (`/api/v1/admin/workspaces/{id}/members`) always accept open workspaces, whatever their Owners.
+- **Asking to join.** Every everyday user sees every open workspace's name and description (not
+  members or counts) under Workspaces → Shared Workspaces, and asks to join with an optional note
+  (200 characters). One pending request per user and workspace, at most 10 requests per user per
+  24 hours. The user can cancel a pending request; after a decline they may ask again.
+- **Deciding.** Admin → Workspaces lists waiting requests with the user, the workspace and the
+  note. Approve (Editor by default, or Reader) adds the member; Decline does not. Each new request
+  pushes an ntfy alert to the administrator (D057, without the note), counts towards the "Switch
+  to admin" shield (D066) and shows as a badge on the admin Workspaces link.
+- **Members.** Members leave on their own from the workspace's page; the administrator adds
+  members by username, changes their role and removes them. The workspace gets a chat like any
+  shared workspace (D062).
+- **Audit.** `workspace_join_request.created`, `.cancelled`, `.approved`, `.declined`,
+  `workspace.updated`, and the existing workspace and member events with `by_system_admin`.
+  `bin/reset-data.php` deletes join requests with everything else.
+
+Not in this version: users being told on their phone when they are approved, converting an
+existing workspace, and member-run moderation inside open workspaces.

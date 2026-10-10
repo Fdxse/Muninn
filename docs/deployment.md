@@ -150,6 +150,19 @@ Summary:
    a minute your everyday account shows a gold shield in the top bar; it goes away once you have
    decided the request and opened the message as the administrator.
 
+## Upgrading to Shared Workspaces (D067)
+
+1. Deploy the API and run `sudo php84 bin/migrate.php` from `/volume1/Muninn` (it applies
+   migration `0013_open_workspaces`: one new table, a new column and a new value in
+   `workspaces.kind`; existing workspaces and notes do not change).
+2. FTP the frontend with overwrite on: it changes `includes/page.php`, `workspaces.php`,
+   `admin/workspaces.php`, `assets/js/app-shell.js`, `assets/js/workspaces.js`,
+   `assets/js/workspace-settings.js`, `assets/js/admin-workspaces.js` and `help/manual.html`.
+3. As the administrator, open Workspaces and create a Shared Workspace, e.g. "General".
+4. Try it: as an everyday user, open Workspaces and press Ask to join under Shared Workspaces. The
+   administrator gets an ntfy alert, a number on the Workspaces link and (if picked) the gold
+   shield. Approve it; the workspace then shows among the user's own.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when

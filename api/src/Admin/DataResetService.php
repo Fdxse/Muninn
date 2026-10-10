@@ -58,6 +58,7 @@ final class DataResetService
             'conversations with the administrator (D065)' => 'SELECT COUNT(*) FROM admin_conversations',
             'magic link visits' => 'SELECT COUNT(*) FROM magic_link_sessions',
             'workspace memberships' => 'SELECT COUNT(*) FROM workspace_members',
+            'workspace join requests (D067)' => 'SELECT COUNT(*) FROM workspace_join_requests',
             'notes (including Trash)' => 'SELECT COUNT(*) FROM notes',
             'note history versions' => 'SELECT COUNT(*) FROM note_versions',
             'folders' => 'SELECT COUNT(*) FROM folders',
@@ -126,6 +127,8 @@ final class DataResetService
             'notes (including Trash)' => 'DELETE FROM notes',
             'folders' => 'DELETE FROM folders',
             'workspace memberships' => 'DELETE FROM workspace_members',
+            // Requests to join Shared Workspaces point at the accounts being deleted (D067).
+            'workspace join requests (D067)' => 'DELETE FROM workspace_join_requests',
             'workspaces' => 'DELETE FROM workspaces',
             // Requests point at invitations and at the accounts being deleted.
             'invitation requests' => 'DELETE FROM invitation_requests',

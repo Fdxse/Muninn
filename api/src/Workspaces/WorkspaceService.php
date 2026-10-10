@@ -76,7 +76,7 @@ final class WorkspaceService
         $this->ensurePersonalWorkspace($user);
 
         $selectStatement = $this->database->prepare(
-            'SELECT workspaces.id, workspaces.name, workspaces.kind, workspaces.created_at, workspace_members.role
+            'SELECT workspaces.id, workspaces.name, workspaces.description, workspaces.kind, workspaces.created_at, workspace_members.role
              FROM workspace_members
              JOIN workspaces ON workspaces.id = workspace_members.workspace_id
              WHERE workspace_members.user_id = :user_id
@@ -95,7 +95,7 @@ final class WorkspaceService
     public function findForMember(WorkspaceMembership $membership): array
     {
         $selectStatement = $this->database->prepare(
-            'SELECT workspaces.id, workspaces.name, workspaces.kind, workspaces.created_at, workspace_members.role
+            'SELECT workspaces.id, workspaces.name, workspaces.description, workspaces.kind, workspaces.created_at, workspace_members.role
              FROM workspace_members
              JOIN workspaces ON workspaces.id = workspace_members.workspace_id
              WHERE workspace_members.workspace_id = :workspace_id AND workspace_members.user_id = :user_id'
@@ -221,6 +221,7 @@ final class WorkspaceService
         if (!$actorMembership->role->canAssign($newRole)) {
             throw WorkspaceAuthorizer::insufficientRole();
         }
+        self::assertRoleFitsWorkspaceKind($actorMembership, $newRole);
 
         // Unknown, disabled and administrator accounts get the same answer.
         $newMemberUser = $this->userRepository->findByUsername($username);
@@ -251,6 +252,7 @@ final class WorkspaceService
         if (!UuidGenerator::isValid($memberUserId)) {
             throw HttpException::notFound();
         }
+        self::assertRoleFitsWorkspaceKind($actorMembership, $newRole);
 
         $this->inTransaction(function () use ($actorMembership, $memberUserId, $newRole): void {
             $this->lockWorkspace($actorMembership->workspaceId);
@@ -379,6 +381,19 @@ final class WorkspaceService
         return self::memberToPublicArray($memberRow);
     }
 
+    /**
+     * Open Shared Workspaces (D067) have only Editors and Readers: the system administrator manages
+     * their members, so nobody inside them holds member, workspace or Magic Link rights.
+     *
+     * @throws HttpException 422 for Owner or Admin in an open workspace.
+     */
+    public static function assertRoleFitsWorkspaceKind(WorkspaceMembership $actorMembership, WorkspaceRole $newRole): void
+    {
+        if ($actorMembership->isOpen() && !WorkspaceRole::isOpenWorkspaceRole($newRole)) {
+            throw HttpException::validation(['role' => 'Members of a Shared Workspace are Editors or Readers.']);
+        }
+    }
+
     /** @throws HttpException 409 when the workspace has only one Owner left. */
     private function assertAnotherOwnerRemains(string $workspaceId): void
     {
@@ -434,6 +449,8 @@ final class WorkspaceService
             'id' => $workspaceRow['id'],
             'name' => $workspaceRow['name'],
             'kind' => $workspaceRow['kind'],
+            // Only open Shared Workspaces (D067) have a description; null for the others.
+            'description' => $workspaceRow['description'],
             'your_role' => $callerRole->value,
             // Convenience flags for the UI. The API enforces the same rules on every request.
             'permissions' => [

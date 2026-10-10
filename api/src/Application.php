@@ -14,6 +14,7 @@ use Muninn\Api\Admin\SignInAttemptReport;
 use Muninn\Api\Admin\SystemOverviewController;
 use Muninn\Api\Admin\SystemOverviewService;
 use Muninn\Api\Admin\UserAdminController;
+use Muninn\Api\Admin\OpenWorkspaceAdminController;
 use Muninn\Api\Admin\WorkspaceAdminController;
 use Muninn\Api\Attachments\AttachmentController;
 use Muninn\Api\Attachments\AttachmentService;
@@ -69,6 +70,8 @@ use Muninn\Api\Search\SearchService;
 use Muninn\Api\Tags\TagController;
 use Muninn\Api\Tags\TagService;
 use Muninn\Api\Users\UserRepository;
+use Muninn\Api\Workspaces\OpenWorkspaceController;
+use Muninn\Api\Workspaces\OpenWorkspaceService;
 use Muninn\Api\Workspaces\WorkspaceAuthorizer;
 use Muninn\Api\Workspaces\WorkspaceController;
 use Muninn\Api\Workspaces\WorkspaceService;
@@ -329,6 +332,8 @@ final class Application
         // Every workspace and note endpoint goes through this one authorizer (SECURITY.md).
         $workspaceAuthorizer = new WorkspaceAuthorizer($this->database);
         $workspaceService = new WorkspaceService($this->database, $userRepository);
+        // Shared Workspaces that users ask to join and the administrator manages (D067).
+        $openWorkspaceService = new OpenWorkspaceService($this->database);
 
         $authController = new AuthController(
             $userRepository,
@@ -377,10 +382,10 @@ final class Application
             $this->logger,
             $this->config->getInt('admin_messages.retention_days'),
         );
-        // The everyday account told when admin work is waiting (D066): invitation requests and
-        // unread inbox conversations, as a plain yes or no.
+        // The everyday account told when admin work is waiting (D066): invitation requests,
+        // unread inbox conversations and workspace join requests (D067), as a plain yes or no.
         $adminAttentionController = new AdminAttentionController(
-            new AdminAttentionService($this->database, $invitationRequestService, $adminConversationService),
+            new AdminAttentionService($this->database, $invitationRequestService, $adminConversationService, $openWorkspaceService),
             $userRepository,
             $auditLog,
         );
@@ -397,6 +402,8 @@ final class Application
         $userAdminController = new UserAdminController($userRepository, $this->sessionService, $passwordResetService, $auditLog);
         $workspaceController = new WorkspaceController($workspaceService, $workspaceAuthorizer, $auditLog);
         $workspaceAdminController = new WorkspaceAdminController($workspaceService, $workspaceAuthorizer, $auditLog);
+        $openWorkspaceController = new OpenWorkspaceController($openWorkspaceService, $auditLog, $this->adminNotifier);
+        $openWorkspaceAdminController = new OpenWorkspaceAdminController($openWorkspaceService, $auditLog);
         $tagService = new TagService($this->database);
         $noteHistory = new NoteHistory($this->database);
         $noteService = new NoteService($this->database, $tagService, $noteHistory);
@@ -575,6 +582,18 @@ final class Application
         $this->router->add('POST', '/api/v1/admin/workspaces/{id}/members', $workspaceAdminController->addMember(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('PATCH', '/api/v1/admin/workspaces/{id}/members/{userId}', $workspaceAdminController->changeMemberRole(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('DELETE', '/api/v1/admin/workspaces/{id}/members/{userId}', $workspaceAdminController->removeMember(...), Router::ACCESS_SYSTEM_ADMIN);
+        // Shared Workspaces users ask to join (D067). Members: the /admin/workspaces/{id}/members routes above.
+        $this->router->add('GET', '/api/v1/admin/open-workspaces', $openWorkspaceAdminController->list(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/open-workspaces', $openWorkspaceAdminController->create(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('PATCH', '/api/v1/admin/open-workspaces/{id}', $openWorkspaceAdminController->update(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('DELETE', '/api/v1/admin/open-workspaces/{id}', $openWorkspaceAdminController->delete(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/admin/workspace-join-requests', $openWorkspaceAdminController->listRequests(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/admin/workspace-join-requests/pending-count', $openWorkspaceAdminController->pendingCount(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/workspace-join-requests/{id}/approve', $openWorkspaceAdminController->approve(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('POST', '/api/v1/admin/workspace-join-requests/{id}/decline', $openWorkspaceAdminController->decline(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('GET', '/api/v1/open-workspaces', $openWorkspaceController->list(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/open-workspaces/{id}/join-request', $openWorkspaceController->requestToJoin(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/open-workspaces/{id}/join-request', $openWorkspaceController->cancelRequest(...), Router::ACCESS_USER);
 
         // Workspaces and members. Signed-in users only; WorkspaceAuthorizer checks membership and role.
         $this->router->add('GET', '/api/v1/workspaces', $workspaceController->list(...), Router::ACCESS_USER);

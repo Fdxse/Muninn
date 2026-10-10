@@ -39,6 +39,12 @@ final class AuditLog
     public const WORKSPACE_MEMBER_ADDED = 'workspace.member_added';
     public const WORKSPACE_MEMBER_ROLE_CHANGED = 'workspace.member_role_changed';
     public const WORKSPACE_MEMBER_REMOVED = 'workspace.member_removed';
+    // Shared Workspaces users ask to join (D067).
+    public const WORKSPACE_UPDATED = 'workspace.updated';
+    public const WORKSPACE_JOIN_REQUESTED = 'workspace_join_request.created';
+    public const WORKSPACE_JOIN_REQUEST_CANCELLED = 'workspace_join_request.cancelled';
+    public const WORKSPACE_JOIN_REQUEST_APPROVED = 'workspace_join_request.approved';
+    public const WORKSPACE_JOIN_REQUEST_DECLINED = 'workspace_join_request.declined';
     public const NOTE_TRASHED = 'note.trashed';
     public const NOTE_RESTORED_FROM_TRASH = 'note.restored_from_trash';
     public const NOTE_PURGED = 'note.purged';

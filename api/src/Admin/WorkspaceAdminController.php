@@ -18,7 +18,8 @@ use Muninn\Api\Workspaces\WorkspaceService;
 /**
  * Shared workspace overview and membership administration for system administrators (D050).
  * The list shows every shared workspace; members can only be managed in a workspace with no
- * active Owner left, for example because its only Owner was disabled:
+ * active Owner left, for example because its only Owner was disabled. The member endpoints also
+ * always accept open Shared Workspaces (D067), whose members are Editors and Readers only:
  *   GET    /api/v1/admin/workspaces
  *   GET    /api/v1/admin/workspaces/{id}/members
  *   POST   /api/v1/admin/workspaces/{id}/members            {"username": "...", "role": "owner"}

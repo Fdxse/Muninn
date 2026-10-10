@@ -30,6 +30,24 @@ final class AdminNotificationTest extends WorkspaceTestCase
         $this->application = $this->buildApplication(self::NTFY_SETTINGS);
     }
 
+    public function testWorkspaceJoinRequestNotifiesTheAdministrator(): void
+    {
+        $administrator = $this->signedInUser('root', true);
+        $alice = $this->signedInUser('alice');
+        $generalWorkspaceId = $this->sendAs($administrator, 'POST', '/api/v1/admin/open-workspaces', ['name' => 'General'])->json()['data']['open_workspace']['id'];
+
+        $askResponse = $this->sendAs($alice, 'POST', '/api/v1/open-workspaces/' . $generalWorkspaceId . '/join-request', ['note' => 'Private reason']);
+        self::assertSame(201, $askResponse->statusCode(), $askResponse->body());
+
+        self::assertSame(1, $this->application->sendQueuedNotifications());
+        $message = $this->ntfyTransport->publishedMessages[0]['message'];
+        self::assertSame('Muninn: request to join General', $message['title']);
+        self::assertStringContainsString('Alice asked to join "General"', $message['message']);
+        // The user's note stays inside Muninn, like invitation request notes.
+        self::assertStringNotContainsString('Private reason', json_encode($message));
+        self::assertSame('https://www.dx.se/admin/workspaces.php', $message['click']);
+    }
+
     public function testInvitationRequestNotifiesTheAdministratorAfterTheResponse(): void
     {
         $alice = $this->signedInUser('alice');

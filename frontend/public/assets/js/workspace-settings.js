@@ -76,7 +76,8 @@
             memberRow.appendChild(MuninnApi.createElement('span', 'badge text-bg-light', MuninnApi.roleLabel(member.role)));
         }
 
-        if (workspace.kind === 'shared' && (mayManage || isSelf)) {
+        // Members may leave shared and Shared (open, D067) workspaces; never their personal one.
+        if (workspace.kind !== 'personal' && (mayManage || isSelf)) {
             var removeButton = MuninnApi.createElement('button', 'btn btn-outline-danger btn-sm', isSelf ? 'Leave' : 'Remove');
             removeButton.type = 'button';
             removeButton.setAttribute('aria-label', (isSelf ? 'Leave workspace' : 'Remove ' + member.display_name));
@@ -88,14 +89,26 @@
         return memberRow;
     }
 
+    /** One sentence saying what kind of workspace this is. */
+    function workspaceSummary(shownWorkspace) {
+        if (shownWorkspace.kind === 'personal') {
+            return 'Your personal workspace. Only you can see it.';
+        }
+        if (shownWorkspace.kind === 'open') {
+            // Shared Workspaces (D067): the administrator manages members; anyone may ask to join.
+            var descriptionText = shownWorkspace.description ? shownWorkspace.description + ' ' : '';
+            return descriptionText + 'Shared Workspace: users ask to join and the administrator manages its members.';
+        }
+        return 'Shared workspace.';
+    }
+
     async function loadWorkspace() {
         var workspaceData = await MuninnApi.request('GET', workspacePath);
         workspace = workspaceData.workspace;
         var displayName = workspace.kind === 'personal' ? 'Personal' : workspace.name;
 
         heading.textContent = displayName;
-        summary.textContent = (workspace.kind === 'personal' ? 'Your personal workspace. Only you can see it.' : 'Shared workspace.')
-            + ' Your role: ' + MuninnApi.roleLabel(workspace.your_role) + '.';
+        summary.textContent = workspaceSummary(workspace) + ' Your role: ' + MuninnApi.roleLabel(workspace.your_role) + '.';
         openNotesLink.href = 'index.php?workspace=' + encodeURIComponent(workspace.id);
         renameInput.value = workspace.name;
 
@@ -153,6 +166,7 @@
     async function removeMember(member, isSelf) {
         var question = isSelf
             ? 'Leave this workspace? You lose access to its notes.'
+                + (workspace.kind === 'open' ? ' You can ask to join again later.' : '')
             : 'Remove ' + member.display_name + ' from this workspace?';
         if (!window.confirm(question)) {
             return;
