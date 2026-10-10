@@ -137,6 +137,19 @@ Summary:
    number on the Contact admin button and reads the answer under My messages. Messages sent
    before this upgrade were never stored, so the inbox starts empty.
 
+## Upgrading to the "Switch to admin" icon (D066)
+
+1. Deploy the API and run `sudo php84 bin/migrate.php` from `/volume1/Muninn` (it applies
+   migration `0012_admin_attention_recipient`: one new table; no existing data changes).
+2. FTP the frontend with overwrite on: it changes `includes/page.php`, `admin/users.php`,
+   `assets/js/app-shell.js`, `assets/js/admin-users.js`, `assets/css/muninn.css` and
+   `help/manual.html`.
+3. As the administrator, open Users and pick your everyday account under "Tell this account when
+   admin work is waiting". Nobody is picked until you do.
+4. Try it: ask for an invitation or write with Contact admin from another everyday account. Within
+   a minute your everyday account shows a gold shield in the top bar; it goes away once you have
+   decided the request and opened the message as the administrator.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when

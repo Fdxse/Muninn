@@ -3,7 +3,8 @@
 /**
  * Account administration for system administrators: list accounts, disable and re-enable them
  * (decision D031: accounts are disabled, never deleted), create one-time password reset
- * links (D040) and set each account's chat level (D062). Non-admins get 404 from the API and
+ * links (D040), set each account's chat level (D062) and pick the account that is told when
+ * admin work is waiting (D066). Non-admins get 404 from the API and
  * this page then shows "not available".
  */
 
@@ -43,6 +44,21 @@ renderAppNavbar('../');
                 <i class="bi bi-clipboard" aria-hidden="true"></i> Copy link
             </button>
             <span class="small ms-2" id="copy-reset-link-status" role="status"></span>
+        </div>
+        <!-- "Something is waiting on the admin side" (D066): one everyday account sees a shield icon
+             while invitation requests or unread messages wait here. Filled in by admin-users.js. -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <label for="attention-recipient-select" class="form-label fw-semibold mb-1">Tell this account when admin work is waiting</label>
+                <p class="small text-muted-brand mb-2" id="attention-recipient-hint">
+                    The account sees a gold shield icon while invitation requests or unread messages wait for you.
+                    It never says what is waiting, and the account still cannot see any admin page.
+                </p>
+                <select class="form-select w-auto mw-100" id="attention-recipient-select" aria-describedby="attention-recipient-hint attention-recipient-status">
+                    <option value="">Nobody</option>
+                </select>
+                <span class="small ms-sm-2 d-block d-sm-inline mt-1 mt-sm-0" id="attention-recipient-status" role="status"></span>
+            </div>
         </div>
         <div class="table-responsive">
             <table class="table align-middle bg-white rounded-3 overflow-hidden" id="users-table">

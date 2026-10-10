@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Muninn\Api;
 
+use Muninn\Api\AdminAttention\AdminAttentionController;
+use Muninn\Api\AdminAttention\AdminAttentionService;
 use Muninn\Api\AdminInbox\AdminConversationController;
 use Muninn\Api\AdminInbox\AdminConversationService;
 use Muninn\Api\AdminInbox\ExpiredAdminConversationCleanup;
@@ -351,8 +353,9 @@ final class Application
             $workspaceService,
             $userRepository,
         );
+        $invitationRequestService = new InvitationRequestService($this->database, $invitationService);
         $invitationRequestController = new InvitationRequestController(
-            new InvitationRequestService($this->database, $invitationService),
+            $invitationRequestService,
             $auditLog,
             $this->config->getString('frontend.base_url'),
             $this->config->getInt('invitations.default_expiry_hours'),
@@ -373,6 +376,13 @@ final class Application
             $auditLog,
             $this->logger,
             $this->config->getInt('admin_messages.retention_days'),
+        );
+        // The everyday account told when admin work is waiting (D066): invitation requests and
+        // unread inbox conversations, as a plain yes or no.
+        $adminAttentionController = new AdminAttentionController(
+            new AdminAttentionService($this->database, $invitationRequestService, $adminConversationService),
+            $userRepository,
+            $auditLog,
         );
         $passwordResetService = new PasswordResetService($this->database);
         $passwordResetController = new PasswordResetController(
@@ -530,6 +540,11 @@ final class Application
         $this->router->add('POST', '/api/v1/admin/conversations/{id}/messages', $adminConversationController->adminReply(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/conversations/{id}/close', $adminConversationController->close(...), Router::ACCESS_SYSTEM_ADMIN);
         $this->router->add('POST', '/api/v1/admin/conversations/{id}/reopen', $adminConversationController->reopen(...), Router::ACCESS_SYSTEM_ADMIN);
+
+        // "Something is waiting on the admin side" (D066): the picked everyday account asks, the administrator picks.
+        $this->router->add('GET', '/api/v1/admin-attention', $adminAttentionController->status(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/admin/attention-recipient', $adminAttentionController->showRecipient(...), Router::ACCESS_SYSTEM_ADMIN);
+        $this->router->add('PATCH', '/api/v1/admin/attention-recipient', $adminAttentionController->changeRecipient(...), Router::ACCESS_SYSTEM_ADMIN);
 
         // Broadcast messages (D061): the administrator schedules them, everyday users see and answer them.
         $this->router->add('GET', '/api/v1/broadcasts', $broadcastController->listShowing(...), Router::ACCESS_USER);

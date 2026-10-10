@@ -157,6 +157,15 @@ function renderAppNavbar(string $assetPrefix = ''): void
             <span class="muninn-wordmark">Muninn</span>
         </a>
         <ul class="navbar-nav ms-auto align-items-center gap-1">
+            <li class="nav-item d-none" id="nav-admin-attention-item">
+                <!-- "Something is waiting on the admin side" (D066): only the everyday account the
+                     administrator picked sees this, and only while admin work waits. Never says what. -->
+                <button type="button" class="nav-link muninn-attention-link" data-bs-toggle="modal" data-bs-target="#admin-attention-modal">
+                    <i class="bi bi-shield-fill-exclamation" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Admin</span>
+                    <span class="visually-hidden">: something is waiting on the admin side</span>
+                </button>
+            </li>
             <li class="nav-item d-none" id="nav-search-item">
                 <a class="nav-link" href="<?= $assetPrefix ?>search.php">
                     <i class="bi bi-search" aria-hidden="true"></i>
@@ -261,6 +270,31 @@ function renderAppNavbar(string $assetPrefix = ''): void
 </nav>
 <!-- Messages from the administrator (D061): banners and votes, filled in by assets/js/app-shell.js. -->
 <div id="broadcast-area" class="container px-3 pt-3 d-none" role="region" aria-label="Messages from the administrator"></div>
+<!-- What the shield icon means (D066). Opened from the top bar; "Sign out" is wired in app-shell.js. -->
+<div class="modal fade" id="admin-attention-modal" tabindex="-1" aria-labelledby="admin-attention-heading" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5 d-flex align-items-center gap-2" id="admin-attention-heading">
+                    <i class="bi bi-shield-fill-exclamation muninn-attention-icon" aria-hidden="true"></i>
+                    Switch to admin
+                </h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">
+                    Something is waiting on the admin side. Sign in with your administrator account to see it.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Later</button>
+                <button type="button" class="btn btn-primary" id="admin-attention-sign-out-button">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sign out to switch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- "Contact admin" dialog (D058). Filled in and sent by assets/js/app-shell.js. -->
 <div class="modal fade" id="contact-admin-modal" tabindex="-1" aria-labelledby="contact-admin-heading" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen-sm-down">
