@@ -836,3 +836,26 @@ a.btn {
     background-color: var(--muninn-surface-raised);
     min-height: 8rem;
 }
+
+/*
+ * Fold-away sections (Shared Workspaces list, a note's folder and tags): a chevron that points
+ * right while folded and down while open. Bootstrap adds .collapsed to the toggle while folded.
+ */
+.muninn-collapse-toggle {
+    min-height: 2.75rem; /* comfortable touch target */
+}
+
+.muninn-collapse-chevron {
+    transition: transform 0.15s ease-in-out;
+    transform: rotate(90deg);
+}
+
+.muninn-collapse-toggle.collapsed .muninn-collapse-chevron {
+    transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .muninn-collapse-chevron {
+        transition: none;
+    }
+}

@@ -66,26 +66,42 @@ renderAppNavbar();
 
         <!-- Edit view (also used for new notes) -->
         <form id="note-form" class="d-none" novalidate>
-            <h1 class="h3 mb-3" id="note-form-heading">Edit note</h1>
+            <!-- Kept for screen readers only: on a phone the title and text come first (the user knows where they are). -->
+            <h1 class="visually-hidden" id="note-form-heading">Edit note</h1>
             <div class="mb-3">
                 <label for="note-title" class="form-label">Title</label>
                 <input type="text" class="form-control" id="note-title" maxlength="200" aria-describedby="note-title-feedback">
                 <div id="note-title-feedback" class="invalid-feedback"></div>
             </div>
-            <div class="row g-2 mb-3">
-                <div class="col-12 col-sm-5">
-                    <label for="note-folder" class="form-label">Folder</label>
-                    <select class="form-select" id="note-folder" aria-describedby="note-folder-feedback">
-                        <option value="">No folder</option>
-                    </select>
-                    <div id="note-folder-feedback" class="invalid-feedback"></div>
-                </div>
-                <div class="col-12 col-sm-7">
-                    <label for="note-tags" class="form-label">Tags <span class="text-muted-brand small">(separate with commas)</span></label>
-                    <input type="text" class="form-control" id="note-tags" list="note-tag-suggestions" autocomplete="off"
-                           autocapitalize="none" aria-describedby="note-tags-feedback">
-                    <datalist id="note-tag-suggestions"></datalist>
-                    <div id="note-tags-feedback" class="invalid-feedback"></div>
+            <!--
+                Folder and tags start folded away so the title and text come first; the toggle shows
+                what is chosen. note-page.js opens it when one of these fields has an error.
+            -->
+            <div class="mb-3">
+                <button type="button" class="btn btn-link btn-sm p-0 text-reset text-decoration-none d-flex align-items-center gap-2 text-start muninn-collapse-toggle collapsed"
+                        id="note-organisation-toggle" data-bs-toggle="collapse" data-bs-target="#note-organisation-fields"
+                        aria-expanded="false" aria-controls="note-organisation-fields">
+                    <i class="bi bi-chevron-right muninn-collapse-chevron" aria-hidden="true"></i>
+                    <span>Folder and tags</span>
+                    <span id="note-organisation-summary" class="text-muted-brand small text-break"></span>
+                </button>
+                <div id="note-organisation-fields" class="collapse">
+                    <div class="row g-2 pt-2">
+                        <div class="col-12 col-sm-5">
+                            <label for="note-folder" class="form-label">Folder</label>
+                            <select class="form-select" id="note-folder" aria-describedby="note-folder-feedback">
+                                <option value="">No folder</option>
+                            </select>
+                            <div id="note-folder-feedback" class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-12 col-sm-7">
+                            <label for="note-tags" class="form-label">Tags <span class="text-muted-brand small">(separate with commas)</span></label>
+                            <input type="text" class="form-control" id="note-tags" list="note-tag-suggestions" autocomplete="off"
+                                   autocapitalize="none" aria-describedby="note-tags-feedback">
+                            <datalist id="note-tag-suggestions"></datalist>
+                            <div id="note-tags-feedback" class="invalid-feedback"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="mb-3">

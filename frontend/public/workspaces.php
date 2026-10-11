@@ -27,15 +27,26 @@ renderAppNavbar();
         <div id="workspaces-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
         <div id="workspaces-list" class="list-group shadow-sm mb-4"></div>
 
-        <!-- Shared Workspaces (D067): run by the administrator; anyone may ask to join. -->
+        <!--
+            Shared Workspaces (D067): run by the administrator; anyone may ask to join. They are listed
+            only here, not also in the list above, and the list starts folded away (tap the heading).
+        -->
         <section id="open-workspaces-section" class="mb-4 d-none" aria-labelledby="open-workspaces-heading">
-            <h2 id="open-workspaces-heading" class="h5 mb-1">Shared Workspaces</h2>
-            <p class="small text-muted-brand mb-2">
-                Workspaces for everyone, run by the administrator. Ask to join, and the administrator decides.
-            </p>
-            <div id="open-workspaces-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+            <h2 id="open-workspaces-heading" class="h5 mb-1">
+                <button type="button" class="btn btn-link p-0 text-reset text-decoration-none fw-semibold d-flex align-items-center gap-2 muninn-collapse-toggle collapsed"
+                        data-bs-toggle="collapse" data-bs-target="#open-workspaces-body" aria-expanded="false" aria-controls="open-workspaces-body">
+                    <i class="bi bi-chevron-right muninn-collapse-chevron" aria-hidden="true"></i>
+                    Shared Workspaces <span id="open-workspaces-count" class="badge text-bg-light"></span>
+                </button>
+            </h2>
+            <div id="open-workspaces-error" class="alert alert-danger d-none mt-2" role="alert" tabindex="-1"></div>
             <div id="open-workspaces-status" class="visually-hidden" role="status" aria-live="polite"></div>
-            <ul id="open-workspaces-list" class="list-group shadow-sm"></ul>
+            <div id="open-workspaces-body" class="collapse">
+                <p class="small text-muted-brand mb-2">
+                    Workspaces for everyone, run by the administrator. Ask to join, and the administrator decides.
+                </p>
+                <ul id="open-workspaces-list" class="list-group shadow-sm"></ul>
+            </div>
         </section>
 
         <div class="card border-0 shadow-sm">
