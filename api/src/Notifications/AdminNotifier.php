@@ -30,6 +30,8 @@ final class AdminNotifier
     public const KIND_USER_REPLY = 'user_reply';
     public const KIND_BROADCAST_VOTE = 'broadcast_vote';
     public const KIND_WORKSPACE_JOIN_REQUEST = 'workspace_join_request';
+    public const KIND_DEVICE_CODE_USED = 'device_code_used';
+    public const KIND_DEVICE_CODE_PAUSED = 'device_code_paused';
 
     /**
      * At most this many sign-in alerts per hour, so someone guessing passwords from many
@@ -111,6 +113,46 @@ final class AdminNotifier
             $this->frontendBaseUrl . '/admin/broadcasts.php',
             $broadcastId,
             'broadcast',
+        );
+    }
+
+    /**
+     * Someone signed in on a new device with a code from their signed-in device (D068). The
+     * project owner asked to hear about each one, so an unexpected sign-in stands out. Each
+     * code works once and needs a signed-in device, so this cannot flood.
+     */
+    public function deviceCodeUsed(string $displayName, string $username, string $ipAddress): void
+    {
+        $this->queue(
+            self::KIND_DEVICE_CODE_USED,
+            'Muninn: sign-in with a device code',
+            self::plainText($displayName, 100) . ' (' . self::plainText($username, 64) . ') signed in on another device from ' . $ipAddress . ' with a code from their signed-in device.',
+            self::PRIORITY_DEFAULT,
+            ['iphone'],
+            null,
+            null,
+            null,
+            $ipAddress,
+        );
+    }
+
+    /**
+     * Too many wrong device codes from everywhere together: code sign-in has just paused for
+     * everyone for a few minutes (D068). Someone may be guessing codes. Told once per pause.
+     */
+    public function deviceCodeSignInPaused(string $ipAddress, int $failureCount, int $windowMinutes): void
+    {
+        $this->queue(
+            self::KIND_DEVICE_CODE_PAUSED,
+            'Muninn: code sign-in paused',
+            'Sign-in with a device code is paused for ' . $windowMinutes . ' minutes after ' . $failureCount
+                . ' wrong codes. The last one came from ' . $ipAddress . '. Password sign-in still works.',
+            self::PRIORITY_HIGH,
+            ['warning'],
+            null,
+            null,
+            null,
+            $ipAddress,
         );
     }
 

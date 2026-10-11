@@ -389,6 +389,20 @@ a.btn {
     font-family: var(--bs-font-monospace);
 }
 
+/* The 6-digit device sign-in code (D068): large and spaced so it is easy to read across a desk. */
+.muninn-device-code {
+    font-family: var(--bs-font-monospace);
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--muninn-text);
+}
+
+.muninn-device-code.muninn-device-code-done {
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
 .text-muted-brand {
     color: var(--muninn-text-muted);
 }

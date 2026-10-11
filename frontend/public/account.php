@@ -2,6 +2,7 @@
 
 /**
  * The signed-in user's account page:
+ * - show a 6-digit code that signs another device in as this account (D068),
  * - change their own password (D040),
  * - ask for someone to be invited, and once an administrator approves, create the invitation
  *   link and send it themselves (D049). Administrator accounts invite directly under Admin.
@@ -21,6 +22,32 @@ renderAppNavbar();
     <div id="shell-content" class="d-none">
         <h1 class="h3 mb-1">Your account</h1>
         <p class="text-muted-brand mb-4">Signed in as <span id="account-username" class="fw-semibold"></span>.</p>
+
+        <!-- Sign in on another device with a short code (D068). Hidden for administrator accounts. -->
+        <section id="device-code-card" class="card border-0 shadow-sm mb-4 d-none" aria-labelledby="device-code-heading">
+            <div class="card-body">
+                <h2 id="device-code-heading" class="h5 mb-1">Sign in on another device</h2>
+                <p class="small text-muted-brand mb-3">
+                    On the other device, choose "Sign in with a code" on the sign-in page and type the code shown
+                    here. The code works once, for 5 minutes. Only type it on a device you trust.
+                </p>
+                <div id="device-code-error" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+
+                <button type="button" class="btn btn-primary" id="device-code-show">
+                    <i class="bi bi-phone" aria-hidden="true"></i> Show a code
+                </button>
+
+                <div id="device-code-panel" class="d-none">
+                    <!-- device-code.js gives this an aria-label with spaced digits, so screen readers read them one by one. -->
+                    <p class="muninn-device-code mb-1" id="device-code-digits" aria-describedby="device-code-status"></p>
+                    <p class="small mb-3" id="device-code-status" role="status" aria-live="polite"></p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-outline-danger" id="device-code-cancel">Cancel code</button>
+                        <button type="button" class="btn btn-primary d-none" id="device-code-new">Show a new code</button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <section class="card border-0 shadow-sm mb-4" aria-labelledby="password-heading">
             <div class="card-body">
@@ -110,4 +137,4 @@ renderAppNavbar();
     </div>
 </main>
 <?php
-renderPageEnd(['app-shell.js', 'account.js']);
+renderPageEnd(['app-shell.js', 'account.js', 'device-code.js']);
