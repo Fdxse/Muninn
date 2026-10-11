@@ -20,6 +20,8 @@
     var noteOrganisation = document.getElementById('note-organisation');
     var folderSelect = document.getElementById('note-folder');
     var tagsInput = document.getElementById('note-tags');
+    var organisationFields = document.getElementById('note-organisation-fields');
+    var organisationSummary = document.getElementById('note-organisation-summary');
     var tagSuggestions = document.getElementById('note-tag-suggestions');
     var viewActions = document.getElementById('note-view-actions');
     var editButton = document.getElementById('edit-note-button');
@@ -125,6 +127,39 @@
         hasUnsavedChanges = false;
     }
 
+    /**
+     * Writes the chosen folder and tags next to the folded "Folder and tags" toggle, so the user
+     * sees them without opening it, e.g. "· Work · recipe, quick". Empty when nothing is chosen.
+     */
+    function updateOrganisationSummary() {
+        var summaryParts = [];
+        if (folderSelect.value !== '' && folderSelect.selectedIndex > 0) {
+            // The option label carries indentation and an arrow for sub-folders; show the name only.
+            var folderLabel = folderSelect.options[folderSelect.selectedIndex].textContent;
+            summaryParts.push(folderLabel.trim().replace(/^\u21B3\s*/, ''));
+        }
+        var chosenTags = editorFields().tags;
+        if (chosenTags.length > 0) {
+            summaryParts.push(chosenTags.join(', '));
+        }
+        organisationSummary.textContent = summaryParts.length > 0 ? '· ' + summaryParts.join(' · ') : '';
+    }
+
+    /** Folds the folder and tag fields away, or opens them (e.g. to show a field error). */
+    function setOrganisationOpen(shouldBeOpen) {
+        bootstrap.Collapse.getOrCreateInstance(organisationFields, { toggle: false })[shouldBeOpen ? 'show' : 'hide']();
+    }
+
+    /** Opens the folder and tag fields when the API reported an error on one of them. */
+    function revealOrganisationErrors(fieldErrors) {
+        if (fieldErrors && (fieldErrors.folder_id || fieldErrors.tags)) {
+            setOrganisationOpen(true);
+        }
+    }
+
+    folderSelect.addEventListener('change', updateOrganisationSummary);
+    tagsInput.addEventListener('input', updateOrganisationSummary);
+
     /** Shows the editor, filled with currentNote or empty for a new note. */
     function showEditor() {
         formHeading.textContent = currentNote ? 'Edit note' : 'New note';
@@ -135,6 +170,8 @@
             folderSelect.value = '';
         }
         tagsInput.value = currentNote ? currentNote.tags.join(', ') : '';
+        updateOrganisationSummary();
+        setOrganisationOpen(false);
         MuninnApi.showFieldErrors(fieldInputIds, {});
         noteEditor.showWrite();
         noteEditor.showStatus('', false);
@@ -382,6 +419,7 @@
                 MuninnApi.showAlert(errorAlert, saveError.message + ' Your text is still in the editor: copy it before reloading.');
             } else {
                 MuninnApi.showFieldErrors(fieldInputIds, saveError.fields);
+                revealOrganisationErrors(saveError.fields);
                 MuninnApi.showAlert(errorAlert, saveError.message);
             }
         } finally {

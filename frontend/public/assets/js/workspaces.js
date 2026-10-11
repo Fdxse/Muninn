@@ -19,13 +19,11 @@
     var openWorkspacesList = document.getElementById('open-workspaces-list');
     var openWorkspacesError = document.getElementById('open-workspaces-error');
     var openWorkspacesStatus = document.getElementById('open-workspaces-status');
+    var openWorkspacesCount = document.getElementById('open-workspaces-count');
 
     /** The small grey line under a workspace's name in the user's own list. */
     function kindLabel(workspace) {
-        if (workspace.kind === 'personal') {
-            return 'Only you';
-        }
-        return workspace.kind === 'open' ? 'Shared Workspace' : 'Shared';
+        return workspace.kind === 'personal' ? 'Only you' : 'Shared';
     }
 
     /** Builds one list entry: name, kind and the user's role, linking to its settings page. */
@@ -46,6 +44,10 @@
         var workspaceData = await MuninnApi.request('GET', '/api/v1/workspaces');
         workspacesList.replaceChildren();
         workspaceData.workspaces.forEach(function (workspace) {
+            // Shared Workspaces the user belongs to are listed once, in their own section below.
+            if (workspace.kind === 'open') {
+                return;
+            }
             workspacesList.appendChild(buildWorkspaceEntry(workspace));
         });
     }
@@ -134,7 +136,17 @@
             var openLink = MuninnApi.createElement('a', 'btn btn-outline-primary btn-sm', 'Open');
             openLink.href = 'index.php?workspace=' + encodeURIComponent(openWorkspace.id);
             openLink.setAttribute('aria-label', 'Open ' + openWorkspace.name);
-            listItem.appendChild(openLink);
+            // The workspace's own page (members, Leave) is no longer reached from the list above.
+            var settingsLink = MuninnApi.createElement('a', 'btn btn-outline-secondary btn-sm');
+            settingsLink.href = 'workspace.php?id=' + encodeURIComponent(openWorkspace.id);
+            settingsLink.title = 'Workspace details';
+            settingsLink.setAttribute('aria-label', 'Details for ' + openWorkspace.name);
+            settingsLink.appendChild(MuninnApi.createElement('i', 'bi bi-gear'));
+            settingsLink.firstChild.setAttribute('aria-hidden', 'true');
+            var memberActions = MuninnApi.createElement('div', 'd-flex gap-2');
+            memberActions.appendChild(openLink);
+            memberActions.appendChild(settingsLink);
+            listItem.appendChild(memberActions);
         } else if (isPending) {
             var cancelRequestButton = MuninnApi.createElement('button', 'btn btn-outline-secondary btn-sm', 'Cancel request');
             cancelRequestButton.type = 'button';
@@ -179,6 +191,7 @@
         openWorkspaceData.open_workspaces.forEach(function (openWorkspace) {
             openWorkspacesList.appendChild(buildOpenWorkspaceItem(openWorkspace));
         });
+        openWorkspacesCount.textContent = String(openWorkspaceData.open_workspaces.length);
         openWorkspacesSection.classList.toggle('d-none', openWorkspaceData.open_workspaces.length === 0);
     }
 
