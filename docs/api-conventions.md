@@ -62,6 +62,10 @@ expired, revoked and unknown invitation tokens all give the same 404 body.
 | POST | `/api/v1/auth/logout` | user | revoke the session (204) |
 | GET | `/api/v1/auth/me` | user | user + `csrf_token` |
 | POST | `/api/v1/auth/password` | user | `{current_password, new_password}` → 204; other sessions signed out (D040) |
+| POST | `/api/v1/auth/device-codes` | user (not system admin) | → 201 `{id, code, expires_at, lifetime_seconds}`; replaces the user's open code (D068) |
+| GET | `/api/v1/auth/device-codes/{id}` | user (own codes) | `{id, status: open/used/expired/revoked, expires_at, used_at}` (D068) |
+| DELETE | `/api/v1/auth/device-codes/{id}` | user (own codes) | cancel the code (204) (D068) |
+| POST | `/api/v1/auth/device-code-login` | public | `{code}` → user + `csrf_token`, like login; 401 `invalid_code`; tightly rate limited (D068) |
 | POST | `/api/v1/password-resets/inspect` | public | `{token}` → `{valid, username, expires_at}` or 404 `password_reset_invalid` |
 | POST | `/api/v1/password-resets/complete` | public | `{token, password}` → 204; signed out everywhere (D040) |
 | POST | `/api/v1/invitations/inspect` | public | `{token}` → `{valid, expires_at}` or 404 |

@@ -39,6 +39,7 @@ final class PasswordResetController
         private readonly RateLimiter $rateLimiter,
         private readonly AuditLog $auditLog,
         private readonly string $frontendBaseUrl,
+        private readonly DeviceSignInCodeService $deviceSignInCodeService,
     ) {
     }
 
@@ -175,6 +176,8 @@ final class PasswordResetController
         $this->sessionService->revokeAllForUserExcept($currentUser->id, $currentSession->sessionId);
         // A reset link the administrator created earlier is no longer needed.
         $this->passwordResetService->revokeUnusedForUser($currentUser->id);
+        // So does an open device sign-in code (D068): its session survives, the code should not.
+        $this->deviceSignInCodeService->revokeOpenForUser($currentUser->id);
         $this->auditLog->record(AuditLog::PASSWORD_CHANGED, $currentUser->id, 'user', $currentUser->id, $context->clientIp);
 
         return Response::noContent();

@@ -14,6 +14,9 @@ use PDO;
  * and per IP across all usernames (slows password spraying). Invitation token guesses are
  * limited per IP, and so are password reset and Magic Link token guesses (with the same limit,
  * counted separately).
+ * Device sign-in codes (D068) are only 6 digits, so they get much tighter limits: a few wrong
+ * codes per IP, plus a brake on wrong codes from everywhere together, because one guess is tried
+ * against every account's open code at once.
  * Successful attempts are recorded too, for auditing, but are not counted.
  */
 final class RateLimiter
@@ -22,6 +25,14 @@ final class RateLimiter
     public const TYPE_INVITATION = 'invitation';
     public const TYPE_PASSWORD_RESET = 'password_reset';
     public const TYPE_MAGIC_LINK = 'magic_link';
+    public const TYPE_DEVICE_CODE = 'device_code';
+
+    /** Wrong device sign-in codes allowed per IP inside the normal window before 429 (D068). */
+    public const DEVICE_CODE_MAX_FAILURES_PER_IP = 5;
+    /** Wrong device sign-in codes allowed from all IPs together before code sign-in pauses (D068). */
+    public const DEVICE_CODE_MAX_FAILURES_EVERYWHERE = 30;
+    /** The window for the all-IPs brake, in minutes: one code's lifetime. */
+    public const DEVICE_CODE_EVERYWHERE_WINDOW_MINUTES = 5;
 
     /** Rows older than this are deleted opportunistically. */
     private const RETENTION_HOURS = 24;
@@ -110,6 +121,47 @@ final class RateLimiter
     }
 
     /**
+     * Throws 429 when device-code sign-in must be refused (D068): this IP has typed too many
+     * wrong codes, or wrong codes from everywhere together say someone is guessing. The brake
+     * only pauses code sign-in; username and password sign-in are unaffected.
+     *
+     * @throws HttpException
+     */
+    public function assertDeviceCodeAllowed(string $ipAddress): void
+    {
+        $failuresForIp = $this->countFailures(
+            'attempt_type = :attempt_type AND ip_address = :ip_address',
+            ['attempt_type' => self::TYPE_DEVICE_CODE, 'ip_address' => $ipAddress],
+        );
+        if ($failuresForIp >= self::DEVICE_CODE_MAX_FAILURES_PER_IP) {
+            throw HttpException::tooManyRequests($this->windowMinutes * 60);
+        }
+
+        if ($this->deviceCodeFailuresEverywhere() >= self::DEVICE_CODE_MAX_FAILURES_EVERYWHERE) {
+            throw HttpException::tooManyRequests(self::DEVICE_CODE_EVERYWHERE_WINDOW_MINUTES * 60);
+        }
+    }
+
+    /**
+     * Called right after a wrong device code was recorded: true when that failure is the one
+     * that paused code sign-in for everyone, so the administrator is told once per pause.
+     */
+    public function deviceCodeBrakeJustEngaged(): bool
+    {
+        return $this->deviceCodeFailuresEverywhere() === self::DEVICE_CODE_MAX_FAILURES_EVERYWHERE;
+    }
+
+    /** Wrong device codes from all IPs together in the last few minutes. */
+    private function deviceCodeFailuresEverywhere(): int
+    {
+        return $this->countFailures(
+            'attempt_type = :attempt_type',
+            ['attempt_type' => self::TYPE_DEVICE_CODE],
+            self::DEVICE_CODE_EVERYWHERE_WINDOW_MINUTES,
+        );
+    }
+
+    /**
      * Called right after a failed login was recorded: says which limit that failure has just
      * reached, so the administrator is told once per block rather than on every refused try.
      *
@@ -165,15 +217,18 @@ final class RateLimiter
         $pruneStatement->execute(['retention_hours' => self::RETENTION_HOURS]);
     }
 
-    /** @param array<string, mixed> $parameters */
-    private function countFailures(string $whereClause, array $parameters): int
+    /**
+     * @param array<string, mixed> $parameters
+     * @param int|null $windowMinutes A different window than the configured one, when given.
+     */
+    private function countFailures(string $whereClause, array $parameters, ?int $windowMinutes = null): int
     {
         $countStatement = $this->database->prepare(
             'SELECT COUNT(*) FROM auth_attempts
              WHERE ' . $whereClause . ' AND succeeded = 0
                AND attempted_at > UTC_TIMESTAMP() - INTERVAL :window_minutes MINUTE'
         );
-        $countStatement->execute($parameters + ['window_minutes' => $this->windowMinutes]);
+        $countStatement->execute($parameters + ['window_minutes' => $windowMinutes ?? $this->windowMinutes]);
 
         return (int) $countStatement->fetchColumn();
     }

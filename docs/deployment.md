@@ -163,6 +163,17 @@ Summary:
    administrator gets an ntfy alert, a number on the Workspaces link and (if picked) the gold
    shield. Approve it; the workspace then shows among the user's own.
 
+## Upgrading to device sign-in codes (D068)
+
+1. Deploy the API and run `sudo php84 bin/migrate.php` from `/volume1/Muninn` (it applies
+   migration `0014_device_sign_in_codes`: one new table; no existing data changes).
+2. FTP the frontend with overwrite on: it adds `assets/js/device-code.js`, and changes
+   `login.php`, `account.php`, `assets/js/login.js`, `assets/js/api-client.js`,
+   `assets/css/muninn.css` and `help/manual.html`.
+3. Try it: sign in as an everyday user on your phone, open Account and tap Show a code. On the
+   computer, choose "Sign in with a code from another device" and type the digits. The phone says
+   the code was used, and with ntfy set up you get a push about the sign-in.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when

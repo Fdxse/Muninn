@@ -26,6 +26,8 @@ use Muninn\Api\Chat\ChatController;
 use Muninn\Api\Chat\ChatPolicy;
 use Muninn\Api\Chat\ChatService;
 use Muninn\Api\Chat\ExpiredChatCleanup;
+use Muninn\Api\Auth\DeviceSignInCodeService;
+use Muninn\Api\Auth\DeviceSignInController;
 use Muninn\Api\Auth\PasswordResetController;
 use Muninn\Api\Auth\PasswordResetService;
 use Muninn\Api\Auth\PasswordService;
@@ -389,6 +391,17 @@ final class Application
             $userRepository,
             $auditLog,
         );
+        // Signing in on another device with a 6-digit code from a signed-in device (D068).
+        $deviceSignInCodeService = new DeviceSignInCodeService($this->database);
+        $deviceSignInController = new DeviceSignInController(
+            $deviceSignInCodeService,
+            $userRepository,
+            $this->sessionService,
+            $this->sessionCookie,
+            $rateLimiter,
+            $auditLog,
+            $this->adminNotifier,
+        );
         $passwordResetService = new PasswordResetService($this->database);
         $passwordResetController = new PasswordResetController(
             $passwordResetService,
@@ -398,6 +411,7 @@ final class Application
             $rateLimiter,
             $auditLog,
             $this->config->getString('frontend.base_url'),
+            $deviceSignInCodeService,
         );
         $userAdminController = new UserAdminController($userRepository, $this->sessionService, $passwordResetService, $auditLog);
         $workspaceController = new WorkspaceController($workspaceService, $workspaceAuthorizer, $auditLog);
@@ -509,6 +523,12 @@ final class Application
         $this->router->add('POST', '/api/v1/auth/logout', $authController->logout(...), Router::ACCESS_USER);
         $this->router->add('GET', '/api/v1/auth/me', $authController->me(...), Router::ACCESS_USER);
         $this->router->add('POST', '/api/v1/auth/password', $passwordResetController->changeOwn(...), Router::ACCESS_USER);
+
+        // Device sign-in codes (D068): a signed-in device shows a code, another device types it.
+        $this->router->add('POST', '/api/v1/auth/device-codes', $deviceSignInController->create(...), Router::ACCESS_USER);
+        $this->router->add('GET', '/api/v1/auth/device-codes/{id}', $deviceSignInController->show(...), Router::ACCESS_USER);
+        $this->router->add('DELETE', '/api/v1/auth/device-codes/{id}', $deviceSignInController->cancel(...), Router::ACCESS_USER);
+        $this->router->add('POST', '/api/v1/auth/device-code-login', $deviceSignInController->signIn(...), Router::ACCESS_PUBLIC);
 
         // Password reset links (D040): public, rate limited, token in the JSON body.
         $this->router->add('POST', '/api/v1/password-resets/inspect', $passwordResetController->inspect(...), Router::ACCESS_PUBLIC);

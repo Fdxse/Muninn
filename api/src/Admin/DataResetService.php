@@ -67,6 +67,7 @@ final class DataResetService
             'invitations (all states)' => 'SELECT COUNT(*) FROM invitations',
             'invitation requests' => 'SELECT COUNT(*) FROM invitation_requests',
             'password reset links' => 'SELECT COUNT(*) FROM password_resets',
+            'device sign-in codes (D068)' => 'SELECT COUNT(*) FROM device_sign_in_codes',
             'sign-in attempt records' => 'SELECT COUNT(*) FROM auth_attempts',
             'broadcast votes of those accounts' => 'SELECT COUNT(*) FROM broadcast_votes
                                                    JOIN users ON users.id = broadcast_votes.user_id
@@ -136,6 +137,8 @@ final class DataResetService
             'invitations (all states)' => 'DELETE FROM invitations',
             // Unused links stop mattering once the accounts are gone; administrators' links go too.
             'password reset links' => 'DELETE FROM password_resets',
+            // Codes point at sessions; administrators cannot create them (D068), so all of them go.
+            'device sign-in codes (D068)' => 'DELETE FROM device_sign_in_codes',
             'sessions of those accounts' => 'DELETE sessions FROM sessions
                                              JOIN users ON users.id = sessions.user_id
                                              WHERE users.is_system_admin = 0',

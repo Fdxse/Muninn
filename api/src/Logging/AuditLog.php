@@ -28,6 +28,11 @@ final class AuditLog
     public const PASSWORD_CHANGED = 'user.password_changed';
     public const PASSWORD_RESET_CREATED = 'password_reset.created';
     public const PASSWORD_RESET_COMPLETED = 'password_reset.completed';
+    public const DEVICE_CODE_CREATED = 'device_code.created';
+    public const DEVICE_CODE_CANCELLED = 'device_code.cancelled';
+    public const DEVICE_CODE_USED = 'device_code.used';
+    public const DEVICE_CODE_FAILED = 'device_code.failed';
+    public const DEVICE_CODE_RATE_LIMITED = 'device_code.rate_limited';
     public const INVITATION_REQUEST_CREATED = 'invitation_request.created';
     public const INVITATION_REQUEST_APPROVED = 'invitation_request.approved';
     public const INVITATION_REQUEST_DECLINED = 'invitation_request.declined';

@@ -974,3 +974,36 @@ workspaces cannot be converted. Awaiting review in the PR.
 
 Not in this version: users being told on their phone when they are approved, converting an
 existing workspace, and member-run moderation inside open workspaces.
+
+## D068 — Signing in on another device with a 6-digit code
+
+**Status:** Proposed (2026-10-11). The project owner asked to sign in on a computer by typing a
+short code shown on a phone where he is already signed in, and chose "code only" (no username on
+the computer) with the security choices below. Awaiting review in the PR.
+
+- **Flow.** A signed-in everyday user opens Account and taps "Show a code". The phone shows 6
+  digits and a 5-minute countdown. On the other device the sign-in page has "Sign in with a code
+  from another device"; typing the digits gives that device an ordinary session (D022) for the
+  same account. The phone checks every 3 seconds and says "Used" once the other device is in.
+- **The code.** 6 random digits from `random_int`, stored only as a SHA-256 hash in
+  `device_sign_in_codes` (migration `0014_device_sign_in_codes`). It works once (the row is locked
+  while it is used), for 5 minutes, and only while the session that showed it is still signed in,
+  so signing the phone out, disabling the account or a password reset kills it too. One open code
+  per account: a new code revokes the old one, as do "Cancel code" and changing one's password.
+  Two open codes never share the same digits, so a typed code always means one account. Six
+  digits are easy to reverse from a hash; that is accepted because a code lives 5 minutes and
+  database read access already exposes more than a code would.
+- **Guessing.** The code alone signs in, so one guess is tried against every open code at once.
+  Wrong codes are limited to 5 per IP in the normal rate-limit window (15 minutes), and 30 wrong
+  codes from all addresses together within 5 minutes pause code sign-in for everyone for 5
+  minutes (password sign-in is unaffected). That keeps a lucky guess at roughly 1 in 30,000 per
+  open code. Wrong, used, expired and cancelled codes give the same answer; input that is not 6
+  digits is refused as a typo without counting.
+- **Not for administrators.** System administrator accounts can neither show a code (403) nor be
+  signed in by one; they sign in with their password only (D044, D066).
+- **Audit and ntfy.** `device_code.created`, `.cancelled`, `.used` (with the new session), `.failed`
+  and `.rate_limited`. Each use pushes an ntfy alert to the administrator (D057) with the user and
+  IP address, and so does the moment code sign-in pauses. `bin/reset-data.php` deletes all codes.
+
+Not in this version: approving the sign-in on the phone, showing the code from the top bar, and
+listing or signing out individual devices.

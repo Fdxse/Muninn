@@ -166,6 +166,7 @@
     /** Endpoints that work without a session, so no CSRF token is needed first. */
     function isPublicPath(path) {
         return path === '/api/v1/auth/login'
+            || path === '/api/v1/auth/device-code-login'
             || path === '/api/v1/link/open'
             || path.indexOf('/api/v1/invitations/') === 0
             || path.indexOf('/api/v1/password-resets/') === 0;
