@@ -1007,3 +1007,29 @@ the computer) with the security choices below. Awaiting review in the PR.
 
 Not in this version: approving the sign-in on the phone, showing the code from the top bar, and
 listing or signing out individual devices.
+
+## D069 — Minimum safe PHP version (PHP2Shell, CVE-2026-109618 and CVE-2026-109619)
+
+**Status:** Proposed (2026-10-26). The project owner asked to check Muninn against
+CVE-2026-109618 and CVE-2026-109619 and to state the minimum PHP version that is safe to run.
+
+- **The bugs.** Both are unauthenticated remote code execution in PHP itself (CVSS 4.0 9.2, exploited
+  in the wild): out-of-memory handling leaves request data half-built (109618), and request state
+  survives into the next request on the same worker (109619). They fire while PHP parses the
+  request, before any Muninn code runs, so they cannot be fixed or avoided in Muninn's code.
+  Composer packages (PHPUnit is dev-only) and the vendored browser libraries (Bootstrap, marked,
+  DOMPurify, highlight.js) are not involved.
+- **Rule.** Muninn still *runs* on PHP 8.2+, but is only *safe* on 8.2.35, 8.3.36, 8.4.27, 8.5.12 or
+  newer on the same branch (php.net, 2026-10-21). The live NAS uses PHP 8.4, so its minimum is
+  **8.4.27** (Synology package 8.4.27-0051, Synology-SA-26:14). The frontend host (one.com) runs
+  PHP too and needs the same fix from the hosting provider.
+- **Checks.** `Security\PhpSecurityBaseline` holds the patched release per branch.
+  `bin/check-setup.php` reports an older command-line PHP as FAIL, and the admin Overview shows a
+  `php_security_update` danger warning when the PHP serving the API is older, which is the check that
+  sees Web Station's own PHP. Newer branches (8.6+) are assumed to include the fixes.
+  Distributions that backport fixes without raising the version (Ubuntu) are flagged even when
+  patched; check their security notice by hand. Synology and Debian use the upstream number.
+- **Until patched.** php.net's partial mitigations: `session.upload_progress.enabled = 0` in the
+  Web Station PHP profile (Muninn does not use PHP sessions or upload progress, so nothing breaks),
+  and keep `post_max_size` low (Muninn needs 12M for 10 MB images). They reduce, not remove, the risk.
+

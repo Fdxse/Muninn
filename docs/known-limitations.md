@@ -69,7 +69,8 @@ real-time collaboration) are not built.
   on the admin Users page afterwards (D052).
 - **The setup check cannot see the web server's PHP settings.** `bin/check-setup.php` runs with
   the command-line PHP, so `post_max_size` and `open_basedir` of the Web Station profile are
-  checked by hand.
+  checked by hand. The admin Overview reports the PHP version Web Station really runs and warns
+  when it lacks critical security fixes (D069).
 - **Manual deployment.** By design; see `deploy/DEPLOY.md`.
 - **No automated backups.** Use Synology Hyper Backup or a scheduled `mysqldump` for the
   `muninn` database until export/backup tooling exists.

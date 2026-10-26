@@ -49,7 +49,10 @@ GRANT ALL PRIVILEGES ON muninn.* TO 'muninn_migrate'@'localhost';
    `storage/attachments/`, which the API creates on the first upload).
 2. Copy the API there with `Deploy-Api.ps1` (see "Every release" below).
 3. Web Station → **Script Language Settings**: a PHP profile with **PHP 8.2 or newer** (live:
-   PHP 8.4) and the extensions `pdo_mysql`, `mbstring`, `openssl` and `sodium` (sodium enables
+   PHP 8.4), and that PHP must carry the security fixes for CVE-2026-109618 and CVE-2026-109619
+   (D069): at least **8.4.27** (Synology package `8.4.27-0051`), 8.5.12, 8.3.36 or 8.2.35. Update
+   it in Package Center; `bin/check-setup.php` and the admin Overview flag an older PHP. The
+   profile needs the extensions `pdo_mysql`, `mbstring`, `openssl` and `sodium` (sodium enables
    Argon2id password hashing; without it bcrypt is used). In the profile's core settings:
    - `open_basedir` must include `/volume1/Muninn`, otherwise PHP cannot load the source;
    - `post_max_size` at least `12M`, so 10 MB images can be uploaded.

@@ -136,6 +136,7 @@ Grows every week and feeds the Week 5 security review. Each line names how it is
 | Demo passwords are random (144 bits), printed once, stored only as password hashes | `bin/seed-demo.php`; `DemoDataTest` signs in with them |
 | Setup check only reads; flags non-production mode, insecure cookies, pending migrations, missing admin, storage inside the web root, world-readable `config.php` | `bin/check-setup.php` run locally |
 | Demo, setup and admin scripts refuse to run from a web request | `bin/cli-guard.php` |
+| PHP older than the release that fixes CVE-2026-109618/109619 (8.2.35, 8.3.36, 8.4.27, 8.5.12) is a FAIL in the setup check and a danger warning on the admin Overview (D069) | `PhpSecurityBaselineTest` |
 
 ## After the MVP — sub-folders, syntax highlighting, image removal
 
