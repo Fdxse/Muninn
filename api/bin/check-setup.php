@@ -21,6 +21,7 @@ use Muninn\Api\Application;
 use Muninn\Api\Bootstrap;
 use Muninn\Api\Config\Config;
 use Muninn\Api\Database\Migrator;
+use Muninn\Api\Security\PhpSecurityBaseline;
 
 /** Oldest PHP version the API supports. */
 const MINIMUM_PHP_VERSION = '8.2.0';
@@ -83,6 +84,14 @@ if (version_compare(PHP_VERSION, MINIMUM_PHP_VERSION, '>=')) {
 } else {
     report('FAIL', 'PHP ' . PHP_VERSION . ' is too old; use ' . MINIMUM_PHP_VERSION . ' or newer.');
 }
+// Running is not the same as safe: PHP itself must carry the critical security fixes (D069).
+$requiredPhpUpdate = PhpSecurityBaseline::requiredUpdateFor(PHP_VERSION);
+report(
+    $requiredPhpUpdate === null ? 'OK' : 'FAIL',
+    $requiredPhpUpdate === null
+        ? 'PHP ' . PHP_VERSION . ' has the fixes for ' . PhpSecurityBaseline::COVERED_CVES . '.'
+        : 'PHP ' . PHP_VERSION . ' is open to ' . PhpSecurityBaseline::COVERED_CVES . ' (remote code execution); update to ' . $requiredPhpUpdate . ' or newer (Package Center on a Synology).',
+);
 foreach (REQUIRED_EXTENSIONS as $extensionName) {
     report(extension_loaded($extensionName) ? 'OK' : 'FAIL', 'PHP extension ' . $extensionName . (extension_loaded($extensionName) ? '' : ' is missing.'));
 }

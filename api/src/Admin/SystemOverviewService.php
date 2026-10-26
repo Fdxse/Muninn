@@ -9,6 +9,7 @@ use DateTimeZone;
 use Muninn\Api\Database\Migrator;
 use Muninn\Api\Database\UtcTimestamp;
 use Muninn\Api\Logging\AuditLog;
+use Muninn\Api\Security\PhpSecurityBaseline;
 use PDO;
 
 /**
@@ -369,6 +370,12 @@ final class SystemOverviewService
         }
         if ($storage['log_file_bytes'] > self::LOG_FILE_WARNING_BYTES) {
             $addWarning('warning', 'log_file_large', 'The application log file is larger than 50 MB.');
+        }
+
+        // The PHP that serves this request is the one Web Station runs, unlike bin/check-setup.php (D069).
+        $requiredPhpUpdate = PhpSecurityBaseline::requiredUpdateFor($overview['software']['php_version']);
+        if ($requiredPhpUpdate !== null) {
+            $addWarning('danger', 'php_security_update', 'PHP ' . $overview['software']['php_version'] . ' is open to ' . PhpSecurityBaseline::COVERED_CVES . ' (remote code execution). Update PHP to ' . $requiredPhpUpdate . ' or newer in Package Center and restart Web Station.');
         }
 
         if (!$overview['software']['zip_available']) {
