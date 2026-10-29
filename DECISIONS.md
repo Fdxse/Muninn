@@ -1078,3 +1078,7 @@ which link it belongs to.
 - **Trade-off.** Two different links cannot be open side by side in one browser; the earlier tab
   says so and reloading it reopens its own link (which in turn stops the other tab). Unsaved edits
   in a tab whose link was replaced are lost.
+- **Script versions.** Right after deploying, browsers still ran their cached `api-client.js`, which
+  sent no token on reads, so every link said "This page no longer matches the link". Pages now load
+  the site's own scripts and `muninn.css` as `file.js?v=<file change time>`
+  (`assetVersionQuery()` in `includes/page.php`), so every upload is fetched fresh.
