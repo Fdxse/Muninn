@@ -18,6 +18,9 @@
  * Code blocks are coloured by highlight.js (D054) inside layer 1: it escapes the code itself and
  * adds only <span class="hljs-…"> tags, and its output still goes through DOMPurify. Pages that
  * do not load highlight.js simply show plain code blocks.
+ *
+ * Every code block gets its own Copy button (D070). The buttons are added with DOM calls after
+ * sanitising (DOMPurify forbids <button> in note content) and copy the block's text, never HTML.
  */
 (function () {
     'use strict';
@@ -198,6 +201,78 @@
         return sourceLines.join('\n');
     }
 
+    /** How long a Copy button says "Copied" before it goes back to "Copy". */
+    var copiedLabelMilliseconds = 2000;
+
+    /** Sets a Copy button's icon and visible word ("Copy", "Copied", "Select and copy"). */
+    function setCopyButtonLabel(copyButton, iconName, labelText) {
+        var buttonIcon = MuninnApi.createElement('i', 'bi ' + iconName);
+        buttonIcon.setAttribute('aria-hidden', 'true');
+        copyButton.replaceChildren(buttonIcon, document.createTextNode(' ' + labelText));
+    }
+
+    /**
+     * Copies one code block's text with the browser Clipboard API. When the browser refuses
+     * (no HTTPS, permission denied), the block's text is selected instead so the user can copy
+     * it by hand, the same fallback as one-time links.
+     */
+    async function copyCodeBlock(codeElement, copyButton, statusElement) {
+        // textContent is the plain code: highlight.js colour <span>s add no text of their own.
+        var codeText = codeElement.textContent;
+        try {
+            await navigator.clipboard.writeText(codeText);
+            setCopyButtonLabel(copyButton, 'bi-check2', 'Copied');
+            statusElement.textContent = 'Code copied.';
+        } catch (clipboardError) {
+            var textSelection = window.getSelection();
+            var selectionRange = document.createRange();
+            selectionRange.selectNodeContents(codeElement);
+            textSelection.removeAllRanges();
+            textSelection.addRange(selectionRange);
+            setCopyButtonLabel(copyButton, 'bi-cursor-text', 'Selected');
+            statusElement.textContent = 'Copying is blocked here. The code is selected; copy it yourself.';
+        }
+        // Go back to the normal label after a moment, unless the block was rendered again.
+        window.clearTimeout(copyButton.muninnResetTimer);
+        copyButton.muninnResetTimer = window.setTimeout(function () {
+            setCopyButtonLabel(copyButton, 'bi-clipboard', 'Copy');
+            statusElement.textContent = '';
+        }, copiedLabelMilliseconds);
+    }
+
+    /**
+     * Gives every code block in a rendered note its own Copy button, in a small bar above the
+     * block so it never covers code (also on a phone, where there is no hover).
+     */
+    function addCopyButtons(container) {
+        var codeBlocks = container.querySelectorAll('pre > code');
+        Array.prototype.forEach.call(codeBlocks, function (codeElement, blockIndex) {
+            var preElement = codeElement.parentElement;
+
+            var codeBlockWrapper = MuninnApi.createElement('div', 'muninn-code-block');
+            var toolbar = MuninnApi.createElement('div', 'muninn-code-toolbar');
+            var copyButton = MuninnApi.createElement('button', 'btn btn-sm btn-outline-secondary muninn-code-copy-button');
+            copyButton.type = 'button';
+            // Screen readers hear which block a button belongs to when a note has several.
+            copyButton.setAttribute('aria-label', codeBlocks.length > 1
+                ? 'Copy code block ' + (blockIndex + 1) + ' of ' + codeBlocks.length
+                : 'Copy code block');
+            setCopyButtonLabel(copyButton, 'bi-clipboard', 'Copy');
+
+            // Announces the result; the button's visible word changes too.
+            var statusElement = MuninnApi.createElement('span', 'visually-hidden');
+            statusElement.setAttribute('aria-live', 'polite');
+
+            copyButton.addEventListener('click', function () {
+                copyCodeBlock(codeElement, copyButton, statusElement);
+            });
+
+            toolbar.append(statusElement, copyButton);
+            preElement.replaceWith(codeBlockWrapper);
+            codeBlockWrapper.append(toolbar, preElement);
+        });
+    }
+
     /**
      * Renders Markdown into a container, replacing what was there.
      *
@@ -210,6 +285,7 @@
         var renderedHtml = markdownParser.parse(markdownSource || '');
         var safeFragment = window.DOMPurify.sanitize(renderedHtml, sanitiserSettings);
         container.replaceChildren(safeFragment);
+        addCopyButtons(container);
 
         // An image that no longer exists (removed, or an old version's image) shows a short
         // note instead of the browser's broken-image icon.

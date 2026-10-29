@@ -1033,3 +1033,20 @@ CVE-2026-109618 and CVE-2026-109619 and to state the minimum PHP version that is
   Web Station PHP profile (Muninn does not use PHP sessions or upload progress, so nothing breaks),
   and keep `post_max_size` low (Muninn needs 12M for 10 MB images). They reduce, not remove, the risk.
 
+
+## D070 — Copy button on code blocks
+
+**Status:** Proposed (2026-10-29). The project owner asked for a "Copy block" button on code blocks
+in Markdown notes; a note can hold several blocks, and each needs its own button.
+
+- **Where.** Every code block rendered by `markdown-renderer.js` gets a Copy button in a small bar
+  above the block (note page, editor preview, version history and Magic Link pages). It sits on its
+  own row rather than over the code, so it never hides text on a phone, and is at least 44px high.
+- **How.** The browser Clipboard API (`navigator.clipboard.writeText`), no new library. It copies the
+  block's plain text (`textContent`), never the highlighted HTML. When the browser refuses (for example
+  without HTTPS), the block's text is selected instead so it can be copied by hand, as for one-time links.
+- **Security.** The buttons are created with DOM calls after DOMPurify has sanitised the note, so the
+  sanitiser still forbids `<button>` in note content; nothing from the note becomes markup.
+- **Accessibility.** Each button says which block it copies ("Copy code block 2 of 3") and the
+  result ("Code copied.") is announced through an `aria-live` region; the visible label changes to
+  "Copied" for two seconds.
