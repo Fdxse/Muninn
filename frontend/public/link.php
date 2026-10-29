@@ -45,6 +45,9 @@ renderPageStart('Shared notes', '', true);
         <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
             <h1 id="link-heading" class="h4 mb-0 text-break"></h1>
             <span id="link-access-badge" class="badge text-bg-light border"></span>
+            <!-- How long the link keeps working and its daily hours; filled by link-page.js. -->
+            <span id="link-days-badge" class="badge text-bg-light border text-wrap text-start d-none"></span>
+            <span id="link-hours-badge" class="badge text-bg-light border text-wrap text-start d-none"></span>
         </div>
         <p id="link-summary" class="small text-muted-brand mb-3"></p>
 

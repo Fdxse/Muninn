@@ -185,7 +185,7 @@ content accept the cookie alone (marked "visit cookie" below).
 | Method | Path | Access | Purpose |
 |---|---|---|---|
 | POST | `/api/v1/link/open` | public | `{token}` → link description + `csrf_token`, sets the visit cookie; 404 `link_unavailable`, 403 `link_outside_hours`, 429 after guesses |
-| GET | `/api/v1/link/me` | visit cookie | what the link opens (`target_type`, `target_name`, `permission`, `valid_until`) + `csrf_token` |
+| GET | `/api/v1/link/me` | visit cookie | what the link opens (`target_type`, `target_name`, `permission`, `valid_until`, `daily_start_time`/`daily_end_time` or null, `window_time_zone`) + `csrf_token` |
 | POST | `/api/v1/link/close` | visit | end the visit (204) |
 | GET | `/api/v1/link/folders` | visit | folders the link reaches, in tree order |
 | GET | `/api/v1/link/notes` | visit | notes the link reaches, without content or member names; `?folder=<id>` (inside the link) or `?folder=none` (workspace links) |
