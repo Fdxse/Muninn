@@ -43,7 +43,9 @@
     var saveButton = document.getElementById('save-note-button');
     var cancelEditButton = document.getElementById('cancel-edit-button');
 
-    /** What the link opens, as GET /api/v1/link/me describes it. */
+    /** The token from the address this page opened; a different one means another link. */
+    var openedLinkToken = '';
+    /** What the link opens, as POST /api/v1/link/open describes it. */
     var openedLink = null;
     /** Folders the link reaches (empty for note links). */
     var reachableFolders = [];
@@ -66,12 +68,36 @@
         });
     }
 
+    /**
+     * Removes everything the page has shown of a link: headings, lists, the note and the editor.
+     * Used whenever there is any doubt about which link this page belongs to (D071), so nothing
+     * stays in the page, not even hidden.
+     */
+    function clearShownContent() {
+        openedLink = null;
+        currentNote = null;
+        reachableFolders = [];
+        linkHeading.textContent = '';
+        accessBadge.textContent = '';
+        linkSummary.textContent = '';
+        notesList.replaceChildren();
+        folderFilter.replaceChildren();
+        noteFolderSelect.replaceChildren();
+        noteHeading.textContent = '';
+        noteMeta.textContent = '';
+        noteContent.replaceChildren();
+        titleInput.value = '';
+        bodyInput.value = '';
+        document.title = 'Shared notes · Muninn';
+    }
+
     /** Replaces the page with the "does not work" message (e.g. revoked while open). */
     function showUnavailable(message) {
         hasUnsavedChanges = false;
         checkingMessage.classList.add('d-none');
         linkContent.classList.add('d-none');
         closeLinkButton.classList.add('d-none');
+        clearShownContent();
         if (message) {
             unavailableMessage.textContent = message;
         }
@@ -340,6 +366,7 @@
         hasUnsavedChanges = false;
         linkContent.classList.add('d-none');
         closeLinkButton.classList.add('d-none');
+        clearShownContent();
         closedAlert.classList.remove('d-none');
         closedAlert.focus();
     });
@@ -368,23 +395,71 @@
         await loadNotes();
     }
 
-    /** Opens the link from the fragment, or continues an open visit when there is no token. */
+    /**
+     * Opens the link from the fragment. Without a token the page shows nothing (D071): it never
+     * falls back to whatever link this browser opened last, which may be another workspace.
+     */
     async function start() {
         var fragmentParameters = new URLSearchParams(window.location.hash.replace(/^#/, ''));
         var linkToken = fragmentParameters.get('token') || '';
+        openedLinkToken = linkToken;
+        if (linkToken === '') {
+            showUnavailable('This address has no link in it. Open the full link you were given.');
+            return;
+        }
         try {
-            var linkDescription = linkToken !== ''
-                ? await MuninnApi.request('POST', '/api/v1/link/open', { token: linkToken })
-                : await MuninnApi.request('GET', '/api/v1/link/me');
+            var linkDescription = await MuninnApi.request('POST', '/api/v1/link/open', { token: linkToken });
             await startVisit(linkDescription);
         } catch (openError) {
-            // "Outside its hours", "too many attempts" and network trouble say so; the rest is one message.
-            var specificMessage = ['link_outside_hours', 'rate_limited', 'network_error'].indexOf(openError.code) !== -1
+            // "Outside its hours", "too many attempts", "another link opened" and network trouble
+            // say so; the rest is one message.
+            var specificMessage = ['link_outside_hours', 'rate_limited', 'network_error', 'link_visit_mismatch'].indexOf(openError.code) !== -1
                 ? openError.message
                 : null;
             showUnavailable(specificMessage);
         }
     }
+
+    // Pasting another link into this tab changes only the part after "#", which does not reload
+    // the page. Hide everything at once and load the page again, so the new link is opened from
+    // scratch and the old one is never shown under it (D071).
+    window.addEventListener('hashchange', function () {
+        var changedParameters = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        var changedToken = changedParameters.get('token');
+        // A fragment without a token is not a link (nothing to open); the same token is the same link.
+        if (changedToken === null || changedToken === openedLinkToken) {
+            return;
+        }
+        hasUnsavedChanges = false;
+        checkingMessage.classList.remove('d-none');
+        linkContent.classList.add('d-none');
+        closeLinkButton.classList.add('d-none');
+        unavailableAlert.classList.add('d-none');
+        closedAlert.classList.add('d-none');
+        clearShownContent();
+        window.location.reload();
+    });
+
+    // The skip link would put "#main-content" in the address in place of the token, and a reload
+    // would then find no link. Move the focus without touching the address instead.
+    var skipLink = document.querySelector('.muninn-skip-link');
+    if (skipLink) {
+        skipLink.addEventListener('click', function (skipEvent) {
+            skipEvent.preventDefault();
+            var mainContent = document.getElementById('main-content');
+            mainContent.setAttribute('tabindex', '-1');
+            mainContent.focus();
+        });
+    }
+
+    // Coming back with the Back button can restore this page from the browser's memory, showing
+    // what it showed before; load it again instead, so the link is checked anew.
+    window.addEventListener('pageshow', function (pageShowEvent) {
+        if (pageShowEvent.persisted) {
+            clearShownContent();
+            window.location.reload();
+        }
+    });
 
     start();
 })();

@@ -39,7 +39,10 @@
         if (isStateChanging && csrfToken === null && !isPublicPath(path)) {
             await loadCsrfTokenFor(path);
         }
-        if (isStateChanging && csrfToken !== null) {
+        // Magic Link reads carry the token too (D071): it names the visit this page opened, so
+        // the API refuses to answer with another link's notes when this browser's visit changed.
+        var isMagicLinkPath = path.indexOf('/api/v1/link/') === 0;
+        if ((isStateChanging || isMagicLinkPath) && csrfToken !== null) {
             requestHeaders['X-CSRF-Token'] = csrfToken;
         }
         if (body !== undefined) {

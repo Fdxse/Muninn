@@ -248,7 +248,9 @@ final class Application
         // link behind it is checked again (revoked, dates, daily window, creator, target) right here.
         $magicLinkAccess = null;
         if ($matchedRoute['access'] === Router::ACCESS_MAGIC_LINK) {
-            $magicLinkAccess = $this->requireMagicLinkVisit($request);
+            $magicLinkAccess = $this->requireMagicLinkVisit($request, true);
+        } elseif ($matchedRoute['access'] === Router::ACCESS_MAGIC_LINK_COOKIE_ONLY) {
+            $magicLinkAccess = $this->requireMagicLinkVisit($request, false);
         }
 
         $currentSession = null;
@@ -287,20 +289,34 @@ final class Application
      * Resolves the Magic Link visit cookie and applies the CSRF check to state changes, exactly
      * like a signed-in session (D023), but with the visit's own token.
      *
+     * With $requireVisitTokenOnReads, reads must name the visit too (D071): a browser holds one
+     * visit cookie, so after a second link is opened in another tab, a page still showing the
+     * first link would otherwise get the second link's notes. Its token no longer matches, so it
+     * gets a 401 and shows nothing instead.
+     *
      * @throws HttpException 401 when there is no usable visit (the link may have been revoked,
-     *                       expired, left its daily window, or lost its creator or target).
+     *                       expired, left its daily window, or lost its creator or target), or
+     *                       when the request names another visit than the cookie's.
+     *         403 for a state change without any token.
      */
-    private function requireMagicLinkVisit(Request $request): MagicLinkAccess
+    private function requireMagicLinkVisit(Request $request, bool $requireVisitTokenOnReads): MagicLinkAccess
     {
         $magicLinkAccess = $this->magicLinkService->findActiveVisit($request->cookie($this->magicLinkVisitCookie->name()));
         if ($magicLinkAccess === null) {
             throw new HttpException(401, 'link_unavailable', 'This link no longer works here. Open it again, or ask for a new one.');
         }
-        if ($request->isStateChanging()) {
-            $submittedCsrfToken = (string) $request->header('X-CSRF-Token');
-            if (!hash_equals($magicLinkAccess->csrfToken, $submittedCsrfToken)) {
-                throw HttpException::forbidden('csrf_failed', 'The security token is missing or invalid. Reload and try again.');
-            }
+        $submittedVisitToken = (string) $request->header('X-CSRF-Token');
+        if (hash_equals($magicLinkAccess->csrfToken, $submittedVisitToken)) {
+            return $magicLinkAccess;
+        }
+        // A state change without any token is the classic CSRF case.
+        if ($request->isStateChanging() && $submittedVisitToken === '') {
+            throw HttpException::forbidden('csrf_failed', 'The security token is missing or invalid. Reload and try again.');
+        }
+        // A token of another visit means this page belongs to a link the browser no longer has
+        // open: answer nothing, whatever the method.
+        if ($requireVisitTokenOnReads || $request->isStateChanging()) {
+            throw new HttpException(401, 'link_visit_mismatch', 'This page no longer matches the link open in this browser (another link may have been opened). Reload the page to open this link again.');
         }
 
         return $magicLinkAccess;
@@ -681,7 +697,7 @@ final class Application
         // Magic Link visitors (D059): opening is public and rate limited (token in the JSON body,
         // never in a URL the server sees); everything else needs the visit cookie.
         $this->router->add('POST', '/api/v1/link/open', $linkVisitorController->open(...), Router::ACCESS_PUBLIC);
-        $this->router->add('GET', '/api/v1/link/me', $linkVisitorController->me(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('GET', '/api/v1/link/me', $linkVisitorController->me(...), Router::ACCESS_MAGIC_LINK_COOKIE_ONLY);
         $this->router->add('POST', '/api/v1/link/close', $linkVisitorController->close(...), Router::ACCESS_MAGIC_LINK);
         $this->router->add('GET', '/api/v1/link/folders', $linkVisitorController->folders(...), Router::ACCESS_MAGIC_LINK);
         $this->router->add('GET', '/api/v1/link/notes', $linkVisitorController->notes(...), Router::ACCESS_MAGIC_LINK);
@@ -689,6 +705,6 @@ final class Application
         $this->router->add('GET', '/api/v1/link/notes/{id}', $linkVisitorController->showNote(...), Router::ACCESS_MAGIC_LINK);
         $this->router->add('PATCH', '/api/v1/link/notes/{id}', $linkVisitorController->updateNote(...), Router::ACCESS_MAGIC_LINK);
         $this->router->add('POST', '/api/v1/link/notes/{id}/attachments', $linkVisitorController->uploadAttachment(...), Router::ACCESS_MAGIC_LINK);
-        $this->router->add('GET', '/api/v1/link/attachments/{id}/content', $linkVisitorController->attachmentContent(...), Router::ACCESS_MAGIC_LINK);
+        $this->router->add('GET', '/api/v1/link/attachments/{id}/content', $linkVisitorController->attachmentContent(...), Router::ACCESS_MAGIC_LINK_COOKIE_ONLY);
     }
 }
