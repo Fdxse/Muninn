@@ -17,6 +17,8 @@
     var closeLinkButton = document.getElementById('close-link-button');
     var linkHeading = document.getElementById('link-heading');
     var accessBadge = document.getElementById('link-access-badge');
+    var daysBadge = document.getElementById('link-days-badge');
+    var hoursBadge = document.getElementById('link-hours-badge');
     var linkSummary = document.getElementById('link-summary');
     var errorAlert = document.getElementById('link-error');
 
@@ -79,6 +81,8 @@
         reachableFolders = [];
         linkHeading.textContent = '';
         accessBadge.textContent = '';
+        clearInfoBadge(daysBadge);
+        clearInfoBadge(hoursBadge);
         linkSummary.textContent = '';
         notesList.replaceChildren();
         folderFilter.replaceChildren();
@@ -371,13 +375,71 @@
         closedAlert.focus();
     });
 
+    /** Empties and hides one of the link information badges. */
+    function clearInfoBadge(infoBadge) {
+        infoBadge.replaceChildren();
+        infoBadge.removeAttribute('title');
+        infoBadge.classList.add('d-none');
+    }
+
+    /**
+     * Fills one information badge with an icon and a short text. The longer explanation goes in
+     * the tooltip and in hidden text for screen readers, since tooltips are not read out.
+     */
+    function fillInfoBadge(infoBadge, iconName, shortText, longText) {
+        var badgeIcon = MuninnApi.createElement('i', 'bi ' + iconName + ' me-1');
+        badgeIcon.setAttribute('aria-hidden', 'true');
+        var visibleText = MuninnApi.createElement('span', '', shortText);
+        visibleText.setAttribute('aria-hidden', 'true');
+        var spokenText = MuninnApi.createElement('span', 'visually-hidden', longText);
+        infoBadge.replaceChildren(badgeIcon, visibleText, spokenText);
+        infoBadge.title = longText;
+        infoBadge.classList.remove('d-none');
+    }
+
+    /**
+     * "12 days left", "1 day left" or "Less than a day left" until the link stops working.
+     * Counted from this device's clock; the API still decides when the link really stops.
+     */
+    function daysLeftText(validUntilIso) {
+        var millisecondsPerDay = 24 * 60 * 60 * 1000;
+        var millisecondsLeft = new Date(validUntilIso).getTime() - Date.now();
+        var wholeDaysLeft = Math.floor(millisecondsLeft / millisecondsPerDay);
+        if (wholeDaysLeft < 1) {
+            return 'Less than a day left';
+        }
+        return wholeDaysLeft === 1 ? '1 day left' : wholeDaysLeft + ' days left';
+    }
+
+    /** Shows the expiry badge and, when the link has daily hours, the opening-hours badge. */
+    function showInfoBadges() {
+        // The "works until" date used to sit in the line under the heading; it now lives here,
+        // together with how many days that is from today.
+        var untilText = 'Until ' + MuninnApi.formatDateTime(openedLink.valid_until);
+        var daysText = daysLeftText(openedLink.valid_until);
+        fillInfoBadge(daysBadge, 'bi-hourglass-split', untilText + ' \u00B7 ' + daysText,
+            'Link works until ' + MuninnApi.formatDateTime(openedLink.valid_until) + ' (' + daysText.toLowerCase() + ').');
+
+        if (openedLink.daily_start_time && openedLink.daily_end_time) {
+            // The hours are in the server's window time zone (e.g. Europe/Stockholm), not
+            // necessarily this device's, so the tooltip names it.
+            var hoursText = openedLink.daily_start_time + '\u2013' + openedLink.daily_end_time;
+            fillInfoBadge(hoursBadge, 'bi-clock', 'Open ' + hoursText,
+                'Open every day ' + openedLink.daily_start_time + ' to ' + openedLink.daily_end_time
+                    + ' (' + openedLink.window_time_zone + ' time).');
+        } else {
+            clearInfoBadge(hoursBadge);
+        }
+    }
+
     /** Shows what the link opens and loads its first view. */
     async function startVisit(linkDescription) {
         openedLink = linkDescription.link;
         linkHeading.textContent = openedLink.target_name;
         accessBadge.textContent = canWrite() ? 'Read and write' : 'Read only';
+        showInfoBadges();
         var summaryText = openedLink.target_type === 'workspace' ? 'Shared workspace' : 'From ' + openedLink.workspace_name;
-        linkSummary.textContent = summaryText + ' · link works until ' + MuninnApi.formatDateTime(openedLink.valid_until);
+        linkSummary.textContent = summaryText;
         document.title = openedLink.target_name + ' · Muninn';
 
         checkingMessage.classList.add('d-none');

@@ -335,6 +335,8 @@ final class MagicLinkService
             permission: (string) $linkRow['permission'],
             creatorUserId: (string) $linkRow['created_by_user_id'],
             validUntilIso: UtcTimestamp::toIso((string) $linkRow['valid_until']),
+            dailyStartTime: self::shortTime($linkRow['daily_start_time']),
+            dailyEndTime: self::shortTime($linkRow['daily_end_time']),
         );
     }
 

@@ -329,6 +329,11 @@ final class LinkVisitorController
                 'workspace_name' => $access->workspaceName,
                 'permission' => $access->permission,
                 'valid_until' => $access->validUntilIso,
+                // The daily hours (null when the link works all day), so the visitor's page can
+                // show when the link is open. Only someone holding the token gets this far.
+                'daily_start_time' => $access->dailyStartTime,
+                'daily_end_time' => $access->dailyEndTime,
+                'window_time_zone' => $this->magicLinkService->windowTimeZoneName(),
             ],
             'csrf_token' => $access->csrfToken,
         ];

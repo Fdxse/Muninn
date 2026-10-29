@@ -1078,3 +1078,20 @@ which link it belongs to.
 - **Trade-off.** Two different links cannot be open side by side in one browser; the earlier tab
   says so and reloading it reopens its own link (which in turn stops the other tab). Unsaved edits
   in a tab whose link was replaced are lost.
+
+
+## D072 — Expiry and opening-hours badges on the Magic Link page
+
+**Status:** Proposed (2026-10-29). The project owner asked for the link's information to sit in
+badges next to the *Read only* / *Read and write* badge when a link is opened.
+
+- **Expiry badge.** The "link works until" text moved from the line under the heading into a badge:
+  "Until <date> · 12 days left" ("1 day left", "Less than a day left"). Days are counted from the
+  visitor's device clock; the API alone still decides when the link stops.
+- **Opening-hours badge.** Only for links with daily hours: "Open 07:00–18:00". Its tooltip and
+  screen-reader text name the time zone the hours are evaluated in (`magic_links.timezone`,
+  Europe/Stockholm), since the visitor's device may be in another zone.
+- **API.** `GET /link/me` and `POST /link/open` now also return `daily_start_time`,
+  `daily_end_time` (null without a window) and `window_time_zone`. Only a holder of the token gets
+  this, and `POST /link/open` already told them the hours when outside the window (403), so nothing
+  new is disclosed. No migration.

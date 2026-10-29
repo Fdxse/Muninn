@@ -39,6 +39,10 @@ final class MagicLinkAccess
         public readonly string $creatorUserId,
         /** ISO 8601 UTC end of the link's validity, shown to the visitor. */
         public readonly string $validUntilIso,
+        /** Daily window start "HH:MM" in the window time zone, or null when the link has no window. */
+        public readonly ?string $dailyStartTime = null,
+        /** Daily window end "HH:MM" (not included); set together with $dailyStartTime. */
+        public readonly ?string $dailyEndTime = null,
     ) {
     }
 
