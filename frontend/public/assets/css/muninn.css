@@ -472,6 +472,27 @@ a.btn {
     overflow-wrap: normal;
 }
 
+/* Copy button above each code block (D070): its own row, so it never hides code on a phone. */
+.muninn-code-block {
+    margin-bottom: 1rem;
+}
+
+.muninn-code-block pre {
+    margin-bottom: 0;
+}
+
+.muninn-code-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.25rem;
+}
+
+/* At least 44px high so it is easy to hit with a thumb. */
+.muninn-code-copy-button {
+    min-height: 2.75rem;
+    min-width: 5.5rem;
+}
+
 /* Markdown help dialog on the note page: the example code block and the language list. */
 .muninn-markdown-help-example {
     padding: 0.75rem 1rem;
