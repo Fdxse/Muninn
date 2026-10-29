@@ -155,6 +155,9 @@ final class MagicLinkTest extends WorkspaceTestCase
         self::assertSame('workspace', $describedLink['target_type']);
         self::assertSame('Team', $describedLink['target_name']);
         self::assertSame('read', $describedLink['permission']);
+        // No daily window: the visitor's page shows no opening-hours badge.
+        self::assertNull($describedLink['daily_start_time']);
+        self::assertNull($describedLink['daily_end_time']);
 
         $listedTitles = $this->listedTitles($visit);
         sort($listedTitles);
@@ -380,6 +383,11 @@ final class MagicLinkTest extends WorkspaceTestCase
         ]);
         $visit = $this->openLink($openToken);
         self::assertSame(200, $this->visitorRequest($visit, 'GET', '/api/v1/link/notes')->statusCode());
+        // The visitor's page is told the hours and their time zone, for the opening-hours badge.
+        $describedLink = $this->assertOkData($this->visitorRequest($visit, 'GET', '/api/v1/link/me'))['link'];
+        self::assertSame($hourText(0), $describedLink['daily_start_time']);
+        self::assertSame($hourText(2), $describedLink['daily_end_time']);
+        self::assertSame('Europe/Stockholm', $describedLink['window_time_zone']);
         $this->database->prepare('UPDATE magic_links SET daily_start_time = ?, daily_end_time = ? WHERE id = ?')
             ->execute([$hourText(2) . ':00', $hourText(3) . ':00', $openLink['id']]);
         $this->assertError($this->visitorRequest($visit, 'GET', '/api/v1/link/notes'), 401, 'link_unavailable');
