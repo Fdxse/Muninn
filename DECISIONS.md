@@ -1050,3 +1050,31 @@ in Markdown notes; a note can hold several blocks, and each needs its own button
 - **Accessibility.** Each button says which block it copies ("Copy code block 2 of 3") and the
   result ("Code copied.") is announced through an `aria-live` region; the visible label changes to
   "Copied" for two seconds.
+
+
+## D071 — A Magic Link page shows nothing when in doubt about its link
+
+**Status:** Proposed (2026-10-29). The project owner reported that a Magic Link made for one
+workspace opened another, and asked that the page shows nothing whenever there is any doubt about
+which link it belongs to.
+
+- **Cause.** Links are stored and checked with the right workspace; the fault was in the visitor
+  page. Pasting a second `link.php#token=…` into a tab already on `link.php` changes only the part
+  after `#`, which does not reload the page, so it kept showing the first link. A `link.php` without
+  a token also fell back to the last link this browser opened (`GET /link/me`), which may be another
+  workspace. And a browser holds one visit cookie, so a tab of an earlier link would read the newer
+  link's notes.
+- **Page.** `link-page.js` only opens a link from the token in the address. No token: "This address
+  has no link in it", never the last visit. A new token after `#`: everything shown is removed and
+  the page loads again. Back/forward restores from the browser's memory reload too. Whenever the
+  page gives up (link stopped, mismatch, closed), headings, lists, the note and the editor are
+  emptied, not just hidden. The skip link moves focus without replacing the token in the address.
+- **API.** Visitor requests must name their visit: the visit's token (the one already used against
+  CSRF) is sent as `X-CSRF-Token` on reads too, and a token of another visit gets
+  `401 link_visit_mismatch` for any method. So a tab of an earlier link gets nothing, and cannot
+  close or write through the newer visit. Exempt (cookie alone, `ACCESS_MAGIC_LINK_COOKIE_ONLY`):
+  `GET /link/me`, which hands out the token, and image content, which `<img>` loads without headers
+  and which is still limited to what the current link reaches.
+- **Trade-off.** Two different links cannot be open side by side in one browser; the earlier tab
+  says so and reloading it reopens its own link (which in turn stops the other tab). Unsaved edits
+  in a tab whose link was replaced are lost.

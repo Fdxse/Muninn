@@ -287,6 +287,48 @@ final class MagicLinkTest extends WorkspaceTestCase
         $this->assertError($withoutToken, 403, 'csrf_failed');
     }
 
+    public function testEachWorkspaceLinkOpensItsOwnWorkspace(): void
+    {
+        [, $teamToken] = $this->createLink(['label' => 'Team kiosk', 'target_type' => 'workspace']);
+        $bobLinkResponse = $this->sendAs($this->bob, 'POST', '/api/v1/workspaces/' . $this->personalWorkspaceId($this->bob) . '/magic-links', [
+            'label' => 'Bob kiosk',
+            'target_type' => 'workspace',
+        ]);
+        self::assertSame(201, $bobLinkResponse->statusCode(), $bobLinkResponse->body());
+        $bobToken = explode('#token=', $bobLinkResponse->json()['data']['link_url'])[1];
+
+        $teamVisit = $this->openLink($teamToken);
+        self::assertSame('Team', $this->assertOkData($this->visitorRequest($teamVisit, 'GET', '/api/v1/link/me'))['link']['target_name']);
+        self::assertContains('Project plan', $this->listedTitles($teamVisit));
+        self::assertNotContains('Bob secret', $this->listedTitles($teamVisit));
+
+        $bobVisit = $this->openLink($bobToken);
+        self::assertSame(['Bob secret'], $this->listedTitles($bobVisit));
+    }
+
+    public function testAPageOfAnEarlierLinkGetsNothingOnceTheBrowserOpensAnotherLink(): void
+    {
+        [, $firstToken] = $this->createLink(['label' => 'First', 'target_type' => 'workspace', 'permission' => 'write']);
+        [, $secondToken] = $this->createLink(['label' => 'Second', 'target_type' => 'note', 'target_id' => $this->gardenNote['id']]);
+        $firstVisit = $this->openLink($firstToken);
+        $secondVisit = $this->openLink($secondToken);
+
+        // One browser holds one visit cookie: the second link's. A page still showing the first
+        // link sends the first visit's token with it, and gets nothing back, whatever it asks.
+        $browserOfFirstPage = ['visit_token' => $secondVisit['visit_token'], 'csrf_token' => $firstVisit['csrf_token']];
+        foreach (['/api/v1/link/notes', '/api/v1/link/folders', '/api/v1/link/notes/' . $this->gardenNote['id']] as $visitorPath) {
+            $this->assertError($this->visitorRequest($browserOfFirstPage, 'GET', $visitorPath), 401, 'link_visit_mismatch');
+        }
+        $this->assertError($this->visitorRequest($browserOfFirstPage, 'PATCH', '/api/v1/link/notes/' . $this->gardenNote['id'], ['revision' => 1, 'title' => 'x']), 401, 'link_visit_mismatch');
+        $this->assertError($this->visitorRequest($browserOfFirstPage, 'POST', '/api/v1/link/close'), 401, 'link_visit_mismatch');
+
+        // Reads without any token are refused too.
+        $this->assertError($this->send('GET', '/api/v1/link/notes', null, [], [self::VISIT_COOKIE_NAME => $secondVisit['visit_token']]), 401, 'link_visit_mismatch');
+
+        // The page of the second link keeps working, and the first page did not close its visit.
+        self::assertSame(['Tomatoes'], $this->listedTitles($secondVisit));
+    }
+
     // ----- Every way a link stops working --------------------------------------------------------
 
     public function testRevokingStopsTheLinkAndOpenVisitsAtOnce(): void
@@ -497,7 +539,7 @@ final class MagicLinkTest extends WorkspaceTestCase
      */
     private function visitorGet(array $visit, string $path, array $queryParameters): Response
     {
-        return $this->application->handle(new Request('GET', $path, [], [self::VISIT_COOKIE_NAME => $visit['visit_token']], '', '203.0.113.10', $queryParameters));
+        return $this->application->handle(new Request('GET', $path, ['X-CSRF-Token' => $visit['csrf_token']], [self::VISIT_COOKIE_NAME => $visit['visit_token']], '', '203.0.113.10', $queryParameters));
     }
 
     /** @param array{visit_token: string, csrf_token: string} $visit */

@@ -176,10 +176,16 @@ cookie does not work here, and the visit cookie works nowhere else. Every reques
 link again (revoked, dates, daily hours, creator still Admin/Owner, target still there) and
 answers 401 `link_unavailable` once it stops. Notes and folders outside the link give 404.
 
+Every request also names its visit (D071): send the `csrf_token` from `POST /link/open` as
+`X-CSRF-Token` on reads as well as state changes. A missing or other visit's token gives 401
+`link_visit_mismatch` (a state change with no token at all keeps 403 `csrf_failed`), so a tab of
+an earlier link gets nothing once the browser opens another link. Only `GET /link/me` and image
+content accept the cookie alone (marked "visit cookie" below).
+
 | Method | Path | Access | Purpose |
 |---|---|---|---|
 | POST | `/api/v1/link/open` | public | `{token}` → link description + `csrf_token`, sets the visit cookie; 404 `link_unavailable`, 403 `link_outside_hours`, 429 after guesses |
-| GET | `/api/v1/link/me` | visit | what the link opens (`target_type`, `target_name`, `permission`, `valid_until`) + `csrf_token` |
+| GET | `/api/v1/link/me` | visit cookie | what the link opens (`target_type`, `target_name`, `permission`, `valid_until`) + `csrf_token` |
 | POST | `/api/v1/link/close` | visit | end the visit (204) |
 | GET | `/api/v1/link/folders` | visit | folders the link reaches, in tree order |
 | GET | `/api/v1/link/notes` | visit | notes the link reaches, without content or member names; `?folder=<id>` (inside the link) or `?folder=none` (workspace links) |
@@ -187,7 +193,7 @@ answers 401 `link_unavailable` once it stops. Notes and folders outside the link
 | POST | `/api/v1/link/notes` | write visit | `{title?, content?, folder_id?}` → 201; workspace and folder links only (else 403 `link_cannot_create`) |
 | PATCH | `/api/v1/link/notes/{id}` | write visit | `{revision, title?, content?}`; stale revision → 409 `revision_conflict` |
 | POST | `/api/v1/link/notes/{id}/attachments` | write visit | raw image bytes, same checks as the signed-in upload → 201 |
-| GET | `/api/v1/link/attachments/{id}/content` | visit | an image of a note the link reaches |
+| GET | `/api/v1/link/attachments/{id}/content` | visit cookie | an image of a note the link reaches |
 
 ### Folders and tags
 

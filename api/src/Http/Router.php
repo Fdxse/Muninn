@@ -21,6 +21,12 @@ final class Router
     public const ACCESS_SYSTEM_ADMIN = 'system_admin';
     /** A browser that opened a Magic Link (the visit cookie) is required; sign-in does not count (D059). */
     public const ACCESS_MAGIC_LINK = 'magic_link';
+    /**
+     * Like ACCESS_MAGIC_LINK, but the visit cookie alone is enough: no X-CSRF-Token naming the
+     * visit is needed, even for reads. Only for GET /link/me (it hands out that token) and for
+     * images, which <img> tags load without custom headers.
+     */
+    public const ACCESS_MAGIC_LINK_COOKIE_ONLY = 'magic_link_cookie_only';
 
     /** @var list<array{method: string, pattern: string, regex: string, handler: callable, access: string}> */
     private array $routes = [];
@@ -34,7 +40,7 @@ final class Router
     {
         // Deny by default: a typo in an access level must fail loudly at startup, never leave a
         // route without its checks.
-        if (!in_array($access, [self::ACCESS_PUBLIC, self::ACCESS_USER, self::ACCESS_SYSTEM_ADMIN, self::ACCESS_MAGIC_LINK], true)) {
+        if (!in_array($access, [self::ACCESS_PUBLIC, self::ACCESS_USER, self::ACCESS_SYSTEM_ADMIN, self::ACCESS_MAGIC_LINK, self::ACCESS_MAGIC_LINK_COOKIE_ONLY], true)) {
             throw new \InvalidArgumentException('Unknown access level for ' . $pattern . ': ' . $access);
         }
 
