@@ -113,11 +113,26 @@ function renderPageStart(string $pageTitle, string $assetPrefix = '', bool $isMa
     <link rel="apple-touch-icon" href="<?= $assetPrefix ?>assets/icons/apple-touch-icon.png">
     <link rel="stylesheet" href="<?= $assetPrefix ?>assets/vendor/bootstrap-5.3.8/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= $assetPrefix ?>assets/vendor/bootstrap-icons-1.13.1/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="<?= $assetPrefix ?>assets/css/muninn.css">
+    <link rel="stylesheet" href="<?= $assetPrefix ?>assets/css/muninn.css<?= assetVersionQuery('css/muninn.css') ?>">
 </head>
 <body>
 <a class="visually-hidden-focusable muninn-skip-link" href="#main-content">Skip to main content</a>
     <?php
+}
+
+/**
+ * Returns "?v=<last change time>" for one of the site's own files under assets/, so browsers
+ * fetch it again after every upload instead of running a cached older copy (D071). An old
+ * cached script with a newer API can break pages, e.g. the Magic Link page.
+ *
+ * @param string $assetPath Path below assets/, e.g. 'js/api-client.js'.
+ */
+function assetVersionQuery(string $assetPath): string
+{
+    $assetFilePath = dirname(__DIR__) . '/assets/' . $assetPath;
+    $lastChangeTime = is_file($assetFilePath) ? filemtime($assetFilePath) : false;
+
+    return $lastChangeTime === false ? '' : '?v=' . $lastChangeTime;
 }
 
 /**
@@ -136,7 +151,7 @@ function renderPageEnd(array $pageScripts, string $assetPrefix = '', array $vend
 <script src="<?= $assetPrefix ?>assets/vendor/<?= escapeHtml($vendorScriptFile) ?>" defer></script>
 <?php endforeach; ?>
 <?php foreach ($allScripts as $scriptFile): ?>
-<script src="<?= $assetPrefix ?>assets/js/<?= escapeHtml($scriptFile) ?>" defer></script>
+<script src="<?= $assetPrefix ?>assets/js/<?= escapeHtml($scriptFile) ?><?= assetVersionQuery('js/' . $scriptFile) ?>" defer></script>
 <?php endforeach; ?>
 </body>
 </html>
