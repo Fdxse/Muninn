@@ -1099,3 +1099,28 @@ badges next to the *Read only* / *Read and write* badge when a link is opened.
   `daily_end_time` (null without a window) and `window_time_zone`. Only a holder of the token gets
   this, and `POST /link/open` already told them the hours when outside the window (403), so nothing
   new is disclosed. No migration.
+
+## D073 — Magic Links that hide code
+
+**Status:** Proposed (2026-10-29). The project owner opens notes on a customer's network whose
+security flags any page that shows code ("code has been detected"), often PowerShell scripts. He
+still needs to store the code, but does not want Muninn to get the code past the customer's
+defence. Encoding note content in transit was suggested and **rejected** for that reason.
+
+- **A per-link option, not per folder.** Creating a Magic Link has a *Hide code* checkbox
+  (`hide_code`, migration 0015, default off). Signed in, the owner still sees everything; he can
+  keep one link that shows code and one that does not.
+- **Taken out on the server.** For such a link the API replaces code in every note it sends
+  (`GET /link/notes/{id}`) and in list previews (`GET /link/notes`) before the response leaves
+  the server (`MarkdownCodeHider`). Hiding it only in the browser would still send the code over
+  the network. Removed: fenced blocks (an unclosed fence hides the rest of the note), indented
+  blocks, inline code, and `<pre>`, `<code>`, `<samp>`, `<xmp>`, `<listing>`, `<plaintext>`,
+  `<textarea>` HTML (unclosed: hides the rest). Blocks become "*[Code hidden]*", inline code
+  "[code hidden]". It is not a full Markdown parser; when in doubt it hides more, not less. Note
+  titles are not changed.
+- **Always read-only.** A visitor who never saw the code could only destroy it by saving, so a
+  link cannot be both *Hide code* and *Read and write*: the API refuses it (422), the form
+  switches Write off, and `MagicLinkAccess::canWrite()` is false for such a link whatever its
+  stored permission says.
+- **Shown.** The link list has a *Code hidden* badge; the visitor's page has one too.
+

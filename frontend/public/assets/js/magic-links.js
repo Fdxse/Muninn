@@ -27,6 +27,9 @@
     var validUntilInput = document.getElementById('link-valid-until');
     var dailyStartInput = document.getElementById('link-daily-start');
     var dailyEndInput = document.getElementById('link-daily-end');
+    var hideCodeCheckbox = document.getElementById('link-hide-code');
+    var permissionReadRadio = document.getElementById('link-permission-read');
+    var permissionWriteRadio = document.getElementById('link-permission-write');
     var newLinkResult = document.getElementById('new-link-result');
     var newLinkUrl = document.getElementById('new-link-url');
     var copyLinkButton = document.getElementById('copy-link-button');
@@ -109,6 +112,17 @@
         });
     }
 
+    /**
+     * A link that hides code can only read (D073), so ticking "Hide code" picks Read only and
+     * switches Read and write off. The API refuses the combination too.
+     */
+    function syncPermissionWithHideCode() {
+        if (hideCodeCheckbox.checked) {
+            permissionReadRadio.checked = true;
+        }
+        permissionWriteRadio.disabled = hideCodeCheckbox.checked;
+    }
+
     /** One line of the link list, with a Revoke button while the link can still be used. */
     function buildLinkRow(magicLink) {
         var linkRow = MuninnApi.createElement('li', 'list-group-item');
@@ -125,6 +139,9 @@
             'badge text-bg-light border',
             magicLink.permission === 'write' ? 'Read and write' : 'Read only'
         ));
+        if (magicLink.hide_code) {
+            headerLine.appendChild(MuninnApi.createElement('span', 'badge text-bg-light border', 'Code hidden'));
+        }
         linkRow.appendChild(headerLine);
 
         var targetText = targetTypeLabels[magicLink.target_type] + ': ' + (magicLink.target_name || '(no longer available)');
@@ -201,6 +218,7 @@
     }
 
     targetTypeSelect.addEventListener('change', refreshTargetChoice);
+    hideCodeCheckbox.addEventListener('change', syncPermissionWithHideCode);
 
     createForm.addEventListener('submit', async function (submitEvent) {
         submitEvent.preventDefault();
@@ -212,6 +230,7 @@
             label: labelInput.value.trim(),
             target_type: targetTypeSelect.value,
             permission: createForm.querySelector('input[name="link-permission"]:checked').value,
+            hide_code: hideCodeCheckbox.checked,
             valid_from: toIsoOrUndefined(validFromInput.value),
             valid_until: toIsoOrUndefined(validUntilInput.value),
             daily_start_time: dailyStartInput.value || undefined,
@@ -229,6 +248,7 @@
             newLinkResult.classList.remove('d-none');
             newLinkResult.focus();
             createForm.reset();
+            syncPermissionWithHideCode();
             resetValidUntil();
             refreshTargetChoice();
             await loadLinks();

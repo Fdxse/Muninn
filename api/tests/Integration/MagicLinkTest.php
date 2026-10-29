@@ -471,6 +471,66 @@ final class MagicLinkTest extends WorkspaceTestCase
         $this->assertError($this->sendAs($this->alice, 'GET', '/api/v1/admin/magic-links'), 404, 'not_found');
     }
 
+    // ----- Links that hide code (D073) ----------------------------------------------------------
+
+    public function testHideCodeLinkNeverSendsCodeButSignedInUsersStillSeeIt(): void
+    {
+        $scriptContent = "Run `Invoke-Expression` first.\n\n```powershell\nGet-ChildItem C:\\Temp | Remove-Item\n```\n\nThen <code>Stop-Service</code> and done.";
+        $scriptNote = $this->createNote($this->alice, $this->teamWorkspaceId, 'Cleanup script', $scriptContent);
+
+        [$createdLink, $rawToken] = $this->createLink(['label' => 'Customer', 'target_type' => 'workspace', 'hide_code' => true]);
+        self::assertTrue($createdLink['hide_code']);
+        self::assertSame('read', $createdLink['permission']);
+        $visit = $this->openLink($rawToken);
+
+        $describedLink = $this->assertOkData($this->visitorRequest($visit, 'GET', '/api/v1/link/me'))['link'];
+        self::assertTrue($describedLink['hide_code']);
+        self::assertSame('read', $describedLink['permission']);
+
+        // Neither the note itself nor the list preview carries any of the code.
+        $shownResponse = $this->visitorRequest($visit, 'GET', '/api/v1/link/notes/' . $scriptNote['id']);
+        $listResponse = $this->visitorRequest($visit, 'GET', '/api/v1/link/notes');
+        foreach ([$shownResponse, $listResponse] as $visitorResponse) {
+            self::assertSame(200, $visitorResponse->statusCode(), $visitorResponse->body());
+            foreach (['Invoke-Expression', 'Get-ChildItem', 'Remove-Item', 'Stop-Service'] as $codeWord) {
+                self::assertStringNotContainsString($codeWord, $visitorResponse->body());
+            }
+        }
+        $shownContent = $shownResponse->json()['data']['note']['content'];
+        self::assertStringContainsString('Run [code hidden] first.', $shownContent);
+        self::assertStringContainsString('*[Code hidden]*', $shownContent);
+        self::assertStringContainsString('Then [code hidden] and done.', $shownContent);
+
+        // The stored note is untouched, and signed in it shows everything.
+        $signedInNote = $this->assertOkData($this->sendAs($this->alice, 'GET', '/api/v1/notes/' . $scriptNote['id']))['note'];
+        self::assertSame($scriptContent, $signedInNote['content']);
+
+        // A link without the option still shows code.
+        [, $plainToken] = $this->createLink(['label' => 'Home', 'target_type' => 'workspace']);
+        $plainVisit = $this->openLink($plainToken);
+        $plainNote = $this->assertOkData($this->visitorRequest($plainVisit, 'GET', '/api/v1/link/notes/' . $scriptNote['id']))['note'];
+        self::assertSame($scriptContent, $plainNote['content']);
+    }
+
+    public function testHideCodeLinkIsAlwaysReadOnly(): void
+    {
+        // Asking for write together with hide_code is refused.
+        $refusedResponse = $this->createLinkResponse($this->alice, ['label' => 'x', 'target_type' => 'workspace', 'permission' => 'write', 'hide_code' => true]);
+        $this->assertError($refusedResponse, 422, 'validation_failed');
+        self::assertArrayHasKey('permission', $refusedResponse->json()['error']['fields']);
+        $this->assertError($this->createLinkResponse($this->alice, ['label' => 'x', 'target_type' => 'workspace', 'hide_code' => 'yes']), 422, 'validation_failed');
+
+        // Even a row that somehow says write cannot write while it hides code.
+        [$hideCodeLink, $rawToken] = $this->createLink(['label' => 'Customer', 'target_type' => 'workspace', 'hide_code' => true]);
+        $this->database->prepare("UPDATE magic_links SET permission = 'write' WHERE id = :id")->execute(['id' => $hideCodeLink['id']]);
+        $visit = $this->openLink($rawToken);
+
+        self::assertSame('read', $this->assertOkData($this->visitorRequest($visit, 'GET', '/api/v1/link/me'))['link']['permission']);
+        $this->assertError($this->visitorRequest($visit, 'PATCH', '/api/v1/link/notes/' . $this->projectNote['id'], ['revision' => 1, 'content' => 'Overwritten']), 403, 'link_read_only');
+        $this->assertError($this->visitorRequest($visit, 'POST', '/api/v1/link/notes', ['title' => 'New']), 403, 'link_read_only');
+        $this->assertError($this->visitorUpload($visit, $this->projectNote['id']), 403, 'link_read_only');
+    }
+
     // ----- Helpers -------------------------------------------------------------------------------
 
     /** Creates a note in the Team workspace and files it into a folder. */

@@ -19,6 +19,7 @@
     var accessBadge = document.getElementById('link-access-badge');
     var daysBadge = document.getElementById('link-days-badge');
     var hoursBadge = document.getElementById('link-hours-badge');
+    var codeBadge = document.getElementById('link-code-badge');
     var linkSummary = document.getElementById('link-summary');
     var errorAlert = document.getElementById('link-error');
 
@@ -83,6 +84,7 @@
         accessBadge.textContent = '';
         clearInfoBadge(daysBadge);
         clearInfoBadge(hoursBadge);
+        clearInfoBadge(codeBadge);
         linkSummary.textContent = '';
         notesList.replaceChildren();
         folderFilter.replaceChildren();
@@ -429,6 +431,14 @@
                     + ' (' + openedLink.window_time_zone + ' time).');
         } else {
             clearInfoBadge(hoursBadge);
+        }
+
+        // A link that hides code (D073): the API already took the code out, this only says so.
+        if (openedLink.hide_code) {
+            fillInfoBadge(codeBadge, 'bi-code-slash', 'Code hidden',
+                'Code is hidden on this link. It is not sent to this page at all.');
+        } else {
+            clearInfoBadge(codeBadge);
         }
     }
 

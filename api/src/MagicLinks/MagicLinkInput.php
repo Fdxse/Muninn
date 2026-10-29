@@ -19,6 +19,8 @@ final class MagicLinkInput
         public readonly ?string $targetId,
         /** MagicLinkAccess::PERMISSION_READ or PERMISSION_WRITE. */
         public readonly string $permission,
+        /** True when the link never sends code to the visitor (D073); such a link is read-only. */
+        public readonly bool $hideCode,
         public readonly DateTimeImmutable $validFromUtc,
         public readonly DateTimeImmutable $validUntilUtc,
         /** "HH:MM", or null when the link works all day. */

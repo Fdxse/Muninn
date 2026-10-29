@@ -71,6 +71,12 @@ renderAppNavbar();
                             <label class="form-check-label" for="link-permission-write">Read and write <span class="small text-muted-brand">(edit notes and add new ones; never delete)</span></label>
                         </div>
                         <div id="link-permission-feedback" class="invalid-feedback d-block"></div>
+                        <!-- Hide code (D073): the API takes code out of every note before sending it, and the link can only read. -->
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="link-hide-code" aria-describedby="link-hide-code-help">
+                            <label class="form-check-label" for="link-hide-code">Hide code</label>
+                            <div id="link-hide-code-help" class="form-text mt-0">Code blocks and inline code are never sent to whoever opens the link; they see "Code hidden" instead. A link that hides code can only read.</div>
+                        </div>
                     </fieldset>
                     <div class="col-12 col-sm-6">
                         <label for="link-valid-from" class="form-label">Works from <span class="small text-muted-brand">(empty = now)</span></label>

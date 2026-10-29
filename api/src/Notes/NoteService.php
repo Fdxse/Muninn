@@ -82,6 +82,7 @@ final class NoteService
      * @param string|null $folderFilter A folder ID (its sub-folders' notes included), FOLDER_FILTER_NONE,
      *                                  or null for all folders.
      * @param string|null $tagFilter    Only notes carrying this tag (case-insensitive), or null.
+     * @param bool        $hideCode     Take code out of the previews, for Magic Links that hide code (D073).
      * @return list<array<string, mixed>>
      */
     public function listInWorkspace(
@@ -89,6 +90,7 @@ final class NoteService
         ?string $folderFilter = null,
         ?string $tagFilter = null,
         bool $listArchived = false,
+        bool $hideCode = false,
     ): array {
         $whereConditions = [
             'notes.workspace_id = :workspace_id',
@@ -144,8 +146,9 @@ final class NoteService
             'id' => $noteRow['id'],
             'folder_id' => $noteRow['folder_id'],
             'title' => $noteRow['title'],
-            // Markdown markers removed, so the preview is one readable line (D051).
-            'excerpt' => self::excerpt($noteRow),
+            // Markdown markers removed, so the preview is one readable line (D051). For Magic
+            // Links that hide code the code is taken out first (D073).
+            'excerpt' => self::excerpt($noteRow, $hideCode),
             'tags' => $tagNamesByNote[$noteRow['id']] ?? [],
             'revision' => (int) $noteRow['revision'],
             'created_at' => UtcTimestamp::toIso((string) $noteRow['created_at']),
@@ -477,8 +480,15 @@ final class NoteService
      *
      * @param array<string, mixed> $noteRow
      */
-    private static function excerpt(array $noteRow): string
+    private static function excerpt(array $noteRow, bool $hideCode = false): string
     {
-        return MarkdownExcerpt::preview((string) $noteRow['excerpt'], self::EXCERPT_LENGTH, (bool) $noteRow['excerpt_source_cut'], (string) $noteRow['title']);
+        $excerptSource = (string) $noteRow['excerpt'];
+        if ($hideCode) {
+            // Only the start of the note was read, so a code block may be cut off mid-way; an
+            // unclosed fence then hides everything after it, which is the safe direction.
+            $excerptSource = MarkdownCodeHider::withoutCode($excerptSource);
+        }
+
+        return MarkdownExcerpt::preview($excerptSource, self::EXCERPT_LENGTH, (bool) $noteRow['excerpt_source_cut'], (string) $noteRow['title']);
     }
 }

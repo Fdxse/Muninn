@@ -174,6 +174,16 @@ Summary:
    computer, choose "Sign in with a code from another device" and type the digits. The phone says
    the code was used, and with ntfy set up you get a push about the sign-in.
 
+## Upgrading to Magic Links that hide code (D073)
+
+1. Deploy the API and run `sudo php84 bin/migrate.php` from `/volume1/Muninn` (it applies
+   migration `0015_magic_link_hide_code`: one new column with a default; existing links keep
+   working exactly as before).
+2. FTP the frontend with overwrite on: it changes `magic-links.php`, `link.php`,
+   `assets/js/magic-links.js`, `assets/js/link-page.js` and `help/manual.html`.
+3. Try it: create a Magic Link with *Hide code* ticked and open it in a private window. A note
+   with a code block shows *Code hidden* in its place; signed in, the note still shows the code.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when
