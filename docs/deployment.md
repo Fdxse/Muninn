@@ -184,6 +184,17 @@ Summary:
 3. Try it: create a Magic Link with *Hide code* ticked and open it in a private window. A note
    with a code block shows *Code hidden* in its place; signed in, the note still shows the code.
 
+## Upgrading to news-ticker broadcasts (D074)
+
+1. Deploy the API and run `sudo php84 bin/migrate.php` from `/volume1/Muninn` (it applies
+   migration `0016_broadcast_ticker`: one more value in the broadcast `kind` list; existing
+   broadcasts do not change).
+2. FTP the frontend with overwrite on: it changes `includes/page.php`, `admin/broadcasts.php`,
+   `assets/js/app-shell.js`, `assets/js/admin-broadcasts.js` and `assets/css/muninn.css`.
+3. Try it: on Broadcasts create two *News ticker* broadcasts that run now. Sign in as an everyday
+   user: both scroll along one line under the top bar, separated by a bullet; the pause button
+   stops them.
+
 ## Administrator notifications (ntfy)
 
 Muninn can push a notification to your phone when someone asks for an invitation and when

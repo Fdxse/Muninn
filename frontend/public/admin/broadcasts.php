@@ -2,7 +2,7 @@
 
 /**
  * Broadcast messages for system administrators (D061): schedule one-time banners, sticky
- * banners and votes for every signed-in user, see who has seen or answered them, and read the
+ * banners, votes and news tickers (D074) for every signed-in user, see who has seen or answered them, and read the
  * vote results. Non-admins get 404 from the API and this page then shows "not available".
  */
 
@@ -51,6 +51,12 @@ renderAppNavbar('../');
                             <input class="form-check-input" type="radio" name="broadcast-kind" id="broadcast-kind-vote" value="vote">
                             <label class="form-check-label" for="broadcast-kind-vote">
                                 Vote <span class="small text-muted-brand">(shown until the user has voted; you get each vote on ntfy)</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="broadcast-kind" id="broadcast-kind-ticker" value="ticker">
+                            <label class="form-check-label" for="broadcast-kind-ticker">
+                                News ticker <span class="small text-muted-brand">(scrolls across the top of every page until it ends; users cannot close it)</span>
                             </label>
                         </div>
                         <div id="broadcast-kind-feedback" class="invalid-feedback d-block"></div>

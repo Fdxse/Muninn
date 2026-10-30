@@ -305,7 +305,8 @@
      * Broadcast messages from the administrator (D061), shown under the top bar:
      *   once   shown on one page, then the API is told it was seen and it never comes back;
      *   sticky shown on every page until the user closes it with its X;
-     *   vote   shown until the user has voted.
+     *   vote   shown until the user has voted;
+     *   ticker scrolls on one line with the other tickers until it ends (D074, see showTicker).
      * The text is the administrator's plain text and is always inserted as text, never as HTML.
      */
     var broadcastArea = document.getElementById('broadcast-area');
@@ -458,6 +459,124 @@
         voteCard.replaceWith(thanksElement);
     }
 
+    /*
+     * News ticker (D074): every running ticker broadcast scrolls along one full-width line under
+     * the top bar, separated by bullets. Users cannot close it; they can pause it with its button
+     * (and it stops while the pointer or keyboard focus is on it). With "reduce motion" switched
+     * on in the operating system the CSS does not scroll at all and shows the messages as text.
+     */
+    var tickerArea = document.getElementById('broadcast-ticker');
+    // Remembered for this browser tab only, so a paused ticker stays paused from page to page.
+    var tickerPausedStorageKey = 'muninn-ticker-paused';
+    // Scrolling speed in pixels per second: slow enough to read comfortably on a phone.
+    var tickerPixelsPerSecond = 60;
+
+    /** True when the user paused the ticker earlier in this tab. Storage may be blocked. */
+    function isTickerPausedEarlier() {
+        try {
+            return window.sessionStorage.getItem(tickerPausedStorageKey) === '1';
+        } catch (storageError) {
+            return false;
+        }
+    }
+
+    /** Remembers the pause button's state for the next page in this tab. */
+    function rememberTickerPaused(isPaused) {
+        try {
+            if (isPaused) {
+                window.sessionStorage.setItem(tickerPausedStorageKey, '1');
+            } else {
+                window.sessionStorage.removeItem(tickerPausedStorageKey);
+            }
+        } catch (storageError) {
+            // Not remembered; the button still works on this page.
+        }
+    }
+
+    /**
+     * One pass of all messages: "first • second • ". The trailing bullet separates the last
+     * message from the first when the line starts over. Line breaks become spaces, because the
+     * ticker is a single line.
+     */
+    function buildTickerRun(tickerMessages) {
+        var tickerRun = MuninnApi.createElement('span', 'muninn-ticker-run');
+        tickerMessages.forEach(function (tickerMessage) {
+            tickerRun.appendChild(MuninnApi.createElement('span', 'muninn-ticker-item', tickerMessage));
+            tickerRun.appendChild(MuninnApi.createElement('span', 'muninn-ticker-separator', '\u2022'));
+        });
+        return tickerRun;
+    }
+
+    /** Fills the ticker line with the given ticker broadcasts and starts it scrolling. */
+    function showTicker(tickerBroadcasts) {
+        if (!tickerArea || tickerBroadcasts.length === 0) {
+            return;
+        }
+        var tickerMessages = tickerBroadcasts.map(function (tickerBroadcast) {
+            return tickerBroadcast.message.replace(/\s+/g, ' ').trim();
+        });
+
+        // Pause / play button: moving text that lasts more than five seconds must be stoppable (WCAG 2.2.2).
+        var pauseButton = MuninnApi.createElement('button', 'btn btn-sm muninn-ticker-pause flex-shrink-0');
+        pauseButton.type = 'button';
+        var pauseIcon = MuninnApi.createElement('i', 'bi');
+        pauseIcon.setAttribute('aria-hidden', 'true');
+        pauseButton.appendChild(pauseIcon);
+        var pauseButtonText = MuninnApi.createElement('span', 'visually-hidden');
+        pauseButton.appendChild(pauseButtonText);
+
+        /** Shows the paused or playing state on the line and on the button. */
+        function setTickerPaused(isPaused) {
+            tickerArea.classList.toggle('is-paused', isPaused);
+            pauseButton.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
+            pauseIcon.className = 'bi ' + (isPaused ? 'bi-play-fill' : 'bi-pause-fill');
+            pauseButtonText.textContent = 'Pause the news ticker';
+            pauseButton.title = isPaused ? 'Play' : 'Pause';
+        }
+        pauseButton.addEventListener('click', function () {
+            var isPaused = !tickerArea.classList.contains('is-paused');
+            setTickerPaused(isPaused);
+            rememberTickerPaused(isPaused);
+        });
+
+        var tickerIcon = MuninnApi.createElement('i', 'bi bi-megaphone flex-shrink-0 muninn-ticker-icon');
+        tickerIcon.setAttribute('aria-hidden', 'true');
+
+        // The moving line is hidden from screen readers (they would read it twice and it never
+        // stops); they get the same messages once, as a plain list, instead.
+        var tickerViewport = MuninnApi.createElement('div', 'muninn-ticker-viewport flex-grow-1');
+        var tickerTrack = MuninnApi.createElement('div', 'muninn-ticker-track');
+        tickerTrack.setAttribute('aria-hidden', 'true');
+        var firstRun = buildTickerRun(tickerMessages);
+        // Two identical passes side by side: when the first has scrolled out of view, the second
+        // stands exactly where the first began, so the loop is seamless.
+        var secondRun = buildTickerRun(tickerMessages);
+        secondRun.classList.add('muninn-ticker-run-copy');
+        tickerTrack.appendChild(firstRun);
+        tickerTrack.appendChild(secondRun);
+        tickerViewport.appendChild(tickerTrack);
+
+        var screenReaderList = MuninnApi.createElement('ul', 'visually-hidden');
+        tickerMessages.forEach(function (tickerMessage) {
+            screenReaderList.appendChild(MuninnApi.createElement('li', '', tickerMessage));
+        });
+        tickerViewport.appendChild(screenReaderList);
+
+        var tickerRow = MuninnApi.createElement('div', 'd-flex align-items-center gap-2 px-3');
+        tickerRow.appendChild(tickerIcon);
+        tickerRow.appendChild(tickerViewport);
+        tickerRow.appendChild(pauseButton);
+        tickerArea.replaceChildren(tickerRow);
+        setTickerPaused(isTickerPausedEarlier());
+        tickerArea.classList.remove('d-none');
+
+        // Same speed whatever the length: the time for one pass follows the pass's width.
+        // Set through the CSSOM, which the Content Security Policy allows (no style attribute).
+        var runWidthInPixels = firstRun.getBoundingClientRect().width;
+        var secondsPerPass = Math.max(8, runWidthInPixels / tickerPixelsPerSecond);
+        tickerTrack.style.setProperty('--muninn-ticker-duration', secondsPerPass.toFixed(1) + 's');
+    }
+
     /**
      * Loads and shows the broadcasts for this user. A failure shows nothing: the messages are
      * extras, and the page itself must keep working.
@@ -472,7 +591,12 @@
         } catch (loadError) {
             return;
         }
+        // All tickers share one scrolling line (D074); the other kinds each get their own box.
+        showTicker(broadcastData.broadcasts.filter(function (broadcast) { return broadcast.kind === 'ticker'; }));
         broadcastData.broadcasts.forEach(function (broadcast) {
+            if (broadcast.kind === 'ticker') {
+                return;
+            }
             if (broadcast.kind === 'vote') {
                 broadcastArea.appendChild(buildBroadcastVote(broadcast));
                 return;

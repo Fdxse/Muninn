@@ -116,6 +116,35 @@ final class BroadcastTest extends WorkspaceTestCase
         self::assertCount(1, $this->showing($this->bob));
     }
 
+    public function testTickersShowUntilTheirEndAndCannotBeClosed(): void
+    {
+        // Two tickers at once (D074): both are listed, oldest start first, for the browser to join.
+        $firstTicker = $this->createBroadcast(['kind' => 'ticker', 'message' => 'Update tonight', 'starts_at' => self::minutesFromNow(-5)]);
+        $this->createBroadcast(['kind' => 'ticker', 'message' => 'New: code copy buttons']);
+
+        // Showing them does not make them go away, on any number of pages.
+        self::assertSame(['Update tonight', 'New: code copy buttons'], array_column($this->showing($this->alice), 'message'));
+        self::assertSame(['ticker', 'ticker'], array_column($this->showing($this->alice), 'kind'));
+
+        // There is no way for a user to be done with a ticker.
+        $this->assertError($this->sendAs($this->alice, 'POST', '/api/v1/broadcasts/' . $firstTicker['id'] . '/seen'), 404, 'not_found');
+        $this->assertError($this->sendAs($this->alice, 'POST', '/api/v1/broadcasts/' . $firstTicker['id'] . '/dismiss'), 404, 'not_found');
+        $this->assertError($this->vote($this->alice, $firstTicker['id'], ['x']), 404, 'not_found');
+        self::assertCount(2, $this->showing($this->alice));
+
+        // Administrator accounts write tickers and are not shown them.
+        self::assertSame([], $this->showing($this->admin));
+
+        // "End now" stops it for everyone.
+        $endResponse = $this->sendAs($this->admin, 'PATCH', '/api/v1/admin/broadcasts/' . $firstTicker['id'], [
+            'message' => 'Update tonight',
+            'starts_at' => $firstTicker['starts_at'],
+            'ends_at' => self::minutesFromNow(0),
+        ]);
+        self::assertSame(200, $endResponse->statusCode(), $endResponse->body());
+        self::assertSame(['New: code copy buttons'], array_column($this->showing($this->bob), 'message'));
+    }
+
     public function testBroadcastsShowOnlyBetweenStartAndEnd(): void
     {
         $this->createBroadcast(['kind' => 'sticky', 'message' => 'Later', 'starts_at' => self::minutesFromNow(30), 'ends_at' => self::minutesFromNow(90)]);

@@ -19,7 +19,8 @@ use Throwable;
  * signed-in everyday user sees it until they are done with it:
  *   once   seen once, then gone;
  *   sticky shown on every page until closed with its X;
- *   vote   shown until the user has voted (one or several of 2-5 options).
+ *   vote   shown until the user has voted (one or several of 2-5 options);
+ *   ticker scrolls across the top of every page until its end; it cannot be closed (D074).
  * "Done" is one row in broadcast_receipts per user and broadcast, so it holds on every device.
  */
 final class BroadcastService
@@ -27,7 +28,8 @@ final class BroadcastService
     public const KIND_ONCE = 'once';
     public const KIND_STICKY = 'sticky';
     public const KIND_VOTE = 'vote';
-    public const KINDS = [self::KIND_ONCE, self::KIND_STICKY, self::KIND_VOTE];
+    public const KIND_TICKER = 'ticker';
+    public const KINDS = [self::KIND_ONCE, self::KIND_STICKY, self::KIND_VOTE, self::KIND_TICKER];
 
     public const MINIMUM_OPTIONS = 2;
     public const MAXIMUM_OPTIONS = 5;
@@ -41,7 +43,8 @@ final class BroadcastService
 
     /**
      * The broadcasts showing to this user right now: started, not ended, and not yet seen,
-     * closed or voted on by them. Oldest start first, so the order stays stable between pages.
+     * closed or voted on by them. A ticker never gets a receipt, so it shows until its end.
+     * Oldest start first, so the order stays stable between pages.
      *
      * @return list<array<string, mixed>>
      */
