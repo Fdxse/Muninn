@@ -43,12 +43,18 @@ final class MagicLinkAccess
         public readonly ?string $dailyStartTime = null,
         /** Daily window end "HH:MM" (not included); set together with $dailyStartTime. */
         public readonly ?string $dailyEndTime = null,
+        /** True when code is taken out of everything this link sends (D073). */
+        public readonly bool $hideCode = false,
     ) {
     }
 
+    /**
+     * A link that hides code can never write, whatever its stored permission says (D073): the
+     * visitor never sees the code, so a save from their browser would destroy it.
+     */
     public function canWrite(): bool
     {
-        return $this->permission === self::PERMISSION_WRITE;
+        return $this->permission === self::PERMISSION_WRITE && !$this->hideCode;
     }
 
     /**

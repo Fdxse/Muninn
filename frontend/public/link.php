@@ -48,6 +48,7 @@ renderPageStart('Shared notes', '', true);
             <!-- How long the link keeps working and its daily hours; filled by link-page.js. -->
             <span id="link-days-badge" class="badge text-bg-light border text-wrap text-start d-none"></span>
             <span id="link-hours-badge" class="badge text-bg-light border text-wrap text-start d-none"></span>
+            <span id="link-code-badge" class="badge text-bg-light border text-wrap text-start d-none"></span>
         </div>
         <p id="link-summary" class="small text-muted-brand mb-3"></p>
 

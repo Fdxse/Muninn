@@ -66,6 +66,24 @@ final class InputReader
     }
 
     /**
+     * Returns a true/false field, or null when it is missing.
+     *
+     * @param array<string, mixed> $body
+     * @throws HttpException 422 when present but not true or false.
+     */
+    public static function optionalBool(array $body, string $fieldName): ?bool
+    {
+        if (!array_key_exists($fieldName, $body) || $body[$fieldName] === null) {
+            return null;
+        }
+        if (!is_bool($body[$fieldName])) {
+            throw HttpException::validation([$fieldName => 'Must be true or false.']);
+        }
+
+        return $body[$fieldName];
+    }
+
+    /**
      * Reads an optional ISO 8601 timestamp with an explicit offset ("...Z" or "...+02:00") and
      * returns it in UTC, whole seconds. A timestamp without an offset is refused rather than
      * guessed, so no server time zone is ever assumed.

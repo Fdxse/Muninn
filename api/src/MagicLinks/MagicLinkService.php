@@ -91,10 +91,10 @@ final class MagicLinkService
         $newLinkId = UuidGenerator::generate();
         $rawToken = SecretToken::generate();
         $insertStatement = $this->database->prepare(
-            'INSERT INTO magic_links (id, workspace_id, target_type, target_id, label, permission, token_hash,
+            'INSERT INTO magic_links (id, workspace_id, target_type, target_id, label, permission, hide_code, token_hash,
                                       valid_from, valid_until, daily_start_time, daily_end_time,
                                       created_by_user_id, created_at)
-             VALUES (:id, :workspace_id, :target_type, :target_id, :label, :permission, :token_hash,
+             VALUES (:id, :workspace_id, :target_type, :target_id, :label, :permission, :hide_code, :token_hash,
                      :valid_from, :valid_until, :daily_start_time, :daily_end_time, :created_by_user_id, UTC_TIMESTAMP())'
         );
         $insertStatement->execute([
@@ -104,6 +104,7 @@ final class MagicLinkService
             'target_id' => $linkInput->targetId,
             'label' => $linkInput->label,
             'permission' => $linkInput->permission,
+            'hide_code' => $linkInput->hideCode ? 1 : 0,
             'token_hash' => SecretToken::hash($rawToken),
             'valid_from' => $linkInput->validFromUtc->format('Y-m-d H:i:s'),
             'valid_until' => $linkInput->validUntilUtc->format('Y-m-d H:i:s'),
@@ -203,6 +204,7 @@ final class MagicLinkService
                 'workspace_kind' => $linkRow['workspace_kind'],
                 'target_type' => $linkRow['target_type'],
                 'permission' => $linkRow['permission'],
+                'hide_code' => (bool) $linkRow['hide_code'],
                 'status' => $this->statusOf($linkRow, self::nowUtc()),
                 'created_by_username' => $linkRow['creator_username'],
                 'created_at' => UtcTimestamp::toIso((string) $linkRow['created_at']),
@@ -337,6 +339,7 @@ final class MagicLinkService
             validUntilIso: UtcTimestamp::toIso((string) $linkRow['valid_until']),
             dailyStartTime: self::shortTime($linkRow['daily_start_time']),
             dailyEndTime: self::shortTime($linkRow['daily_end_time']),
+            hideCode: (bool) $linkRow['hide_code'],
         );
     }
 
@@ -433,6 +436,7 @@ final class MagicLinkService
             // Null when the folder or note is gone (or in Trash).
             'target_name' => $targetName,
             'permission' => $linkRow['permission'],
+            'hide_code' => (bool) $linkRow['hide_code'],
             'status' => $this->statusOf($linkRow, self::nowUtc()),
             'valid_from' => UtcTimestamp::toIso((string) $linkRow['valid_from']),
             'valid_until' => UtcTimestamp::toIso((string) $linkRow['valid_until']),

@@ -62,7 +62,7 @@ final class MagicLinkController
     /**
      * POST /api/v1/workspaces/{id}/magic-links
      *   {"label": "...", "target_type": "workspace|folder|note", "target_id": "...",
-     *    "permission": "read|write", "valid_from": "<ISO 8601>", "valid_until": "<ISO 8601>",
+     *    "permission": "read|write", "hide_code": true, "valid_from": "<ISO 8601>", "valid_until": "<ISO 8601>",
      *    "daily_start_time": "07:00", "daily_end_time": "18:00"}
      *
      * Answers 201 with the link and "link_url". The URL holds the raw token and is never shown again.
@@ -88,6 +88,7 @@ final class MagicLinkController
                 'target_type' => $linkInput->targetType,
                 'target_id' => $linkInput->targetId,
                 'permission' => $linkInput->permission,
+                'hide_code' => $linkInput->hideCode,
                 'valid_until' => $createdLink['magic_link']['valid_until'],
             ],
         );
@@ -185,6 +186,13 @@ final class MagicLinkController
             $fieldErrors['permission'] = 'Choose read or write.';
         }
 
+        // "Hide code" (D073): the visitor never receives code, so the link may only read. A save
+        // from a browser that never saw the code would remove it from the note.
+        $hideCode = InputReader::optionalBool($requestBody, 'hide_code') ?? false;
+        if ($hideCode && $permission === MagicLinkAccess::PERMISSION_WRITE) {
+            $fieldErrors['permission'] = 'A link that hides code can only read.';
+        }
+
         $nowUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $latestAllowedEndUtc = $nowUtc->modify('+' . $this->maximumValidDays . ' days');
 
@@ -213,6 +221,7 @@ final class MagicLinkController
             targetType: (string) $targetType,
             targetId: $targetId,
             permission: $permission,
+            hideCode: $hideCode,
             validFromUtc: $validFromUtc,
             validUntilUtc: $validUntilUtc,
             dailyStartTime: $dailyStartTime,

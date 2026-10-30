@@ -15,6 +15,7 @@ use Muninn\Api\Http\Request;
 use Muninn\Api\Http\RequestContext;
 use Muninn\Api\Http\Response;
 use Muninn\Api\Logging\AuditLog;
+use Muninn\Api\Notes\MarkdownCodeHider;
 use Muninn\Api\Notes\NoteController;
 use Muninn\Api\Notes\NoteInput;
 use Muninn\Api\Notes\NoteService;
@@ -37,6 +38,9 @@ use Muninn\Api\Notes\NoteService;
  * these. Before every request the Application checks the link again (MagicLinkService), and every
  * handler asks MagicLinkScope whether the note or folder is inside what the link opens. Anything
  * outside gives the same 404 as something that does not exist.
+ *
+ * A link that hides code (D073) gets every note's content and preview with the code taken out
+ * here, on the server, so the code never reaches the visitor's browser. Such a link never writes.
  */
 final class LinkVisitorController
 {
@@ -172,7 +176,7 @@ final class LinkVisitorController
             $folderFilter = (string) $access->targetId;
         }
 
-        $noteSummaries = $this->noteService->listInWorkspace($access->serviceMembership(), $folderFilter);
+        $noteSummaries = $this->noteService->listInWorkspace($access->serviceMembership(), $folderFilter, hideCode: $access->hideCode);
 
         return Response::data(['notes' => array_map(self::withoutPeople(...), $noteSummaries)]);
     }
@@ -327,7 +331,9 @@ final class LinkVisitorController
                 'target_id' => $access->targetId,
                 'target_name' => $targetName,
                 'workspace_name' => $access->workspaceName,
-                'permission' => $access->permission,
+                // A link that hides code is always read-only (D073), whatever was stored.
+                'permission' => $access->canWrite() ? MagicLinkAccess::PERMISSION_WRITE : MagicLinkAccess::PERMISSION_READ,
+                'hide_code' => $access->hideCode,
                 'valid_until' => $access->validUntilIso,
                 // The daily hours (null when the link works all day), so the visitor's page can
                 // show when the link is open. Only someone holding the token gets this far.
@@ -341,7 +347,8 @@ final class LinkVisitorController
 
     /**
      * The note as a visitor sees it: no author names, no history counter (history is not
-     * reachable through a link), and for note links no folder.
+     * reachable through a link), for note links no folder, and for links that hide code no
+     * code (D073).
      *
      * @return array<string, mixed>
      */
@@ -352,6 +359,9 @@ final class LinkVisitorController
         if ($access->targetType === MagicLinkAccess::TARGET_NOTE) {
             $note['folder_id'] = null;
             $note['folder_name'] = null;
+        }
+        if ($access->hideCode) {
+            $note['content'] = MarkdownCodeHider::withoutCode((string) $note['content']);
         }
 
         return $note;
