@@ -1,6 +1,6 @@
 /*
  * Broadcast messages (D061): the administrator creates, edits, ends and deletes one-time
- * banners, sticky banners and votes, and reads who has seen or answered them.
+ * banners, sticky banners, votes and news tickers (D074), and reads who has seen or answered them.
  *
  * Times are entered in the browser's own time zone (datetime-local fields) and sent to the
  * API as UTC with an explicit "Z", so the server never has to guess a time zone.
@@ -11,7 +11,7 @@
     document.body.setAttribute('data-shell-hold', '');
 
     var maximumAnswerCount = 5;
-    var kindLabels = { once: 'One-time banner', sticky: 'Sticky banner', vote: 'Vote' };
+    var kindLabels = { once: 'One-time banner', sticky: 'Sticky banner', vote: 'Vote', ticker: 'News ticker' };
     var statusLabels = { scheduled: 'Scheduled', showing: 'Showing now', ended: 'Ended' };
     var statusBadgeClasses = { scheduled: 'text-bg-secondary', showing: 'text-bg-success', ended: 'text-bg-light border' };
 
@@ -146,6 +146,10 @@
         }
         if (broadcast.kind === 'sticky') {
             return 'Closed by ' + broadcast.done_count + userWord + '.';
+        }
+        // A ticker cannot be closed (D074), so there is nothing to count.
+        if (broadcast.kind === 'ticker') {
+            return 'Shown to everyone until it ends.';
         }
         return broadcast.done_count + userWord + ' voted.';
     }

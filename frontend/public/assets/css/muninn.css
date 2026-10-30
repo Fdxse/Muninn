@@ -801,6 +801,113 @@ a.btn {
     flex-shrink: 0;
 }
 
+/*
+ * News ticker (D074): a full-width line under the top bar where every running ticker broadcast
+ * scrolls from right to left, separated by bullets. Same warning colours as the sticky banner.
+ * The track holds the messages twice; moving it left by half its width brings the second copy
+ * exactly where the first began, so the loop has no visible jump. app-shell.js sets
+ * --muninn-ticker-duration from the width, so long and short texts scroll at the same speed.
+ */
+.muninn-ticker {
+    background: var(--bs-warning-bg-subtle);
+    color: var(--bs-warning-text-emphasis);
+    border-bottom: 1px solid var(--bs-warning-border-subtle);
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+}
+
+.muninn-ticker > div {
+    width: 100%;
+}
+
+.muninn-ticker-viewport {
+    overflow: hidden;
+    min-width: 0;
+}
+
+.muninn-ticker-track {
+    display: flex;
+    width: max-content;
+    animation: muninn-ticker-scroll var(--muninn-ticker-duration, 30s) linear infinite;
+}
+
+/* Each pass is at least as wide as the screen, so a short message never leaves a gap. */
+.muninn-ticker-run {
+    display: inline-flex;
+    flex-shrink: 0;
+    min-width: 100vw;
+    white-space: nowrap;
+}
+
+.muninn-ticker-item {
+    font-weight: 500;
+}
+
+.muninn-ticker-separator {
+    padding: 0 1rem;
+}
+
+/* Stops while the pause button is pressed, and while the pointer or keyboard focus is on it. */
+.muninn-ticker.is-paused .muninn-ticker-track,
+.muninn-ticker:hover .muninn-ticker-track,
+.muninn-ticker:focus-within .muninn-ticker-track {
+    animation-play-state: paused;
+}
+
+/* A comfortable touch target for the pause button. */
+.muninn-ticker-pause {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: inherit;
+    border: 0;
+}
+
+.muninn-ticker-pause:hover,
+.muninn-ticker-pause:focus-visible {
+    color: inherit;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+@keyframes muninn-ticker-scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+/* "Reduce motion": no scrolling at all. The messages wrap as ordinary text and need no pause button. */
+@media (prefers-reduced-motion: reduce) {
+    .muninn-ticker-track {
+        animation: none;
+        width: auto;
+    }
+
+    .muninn-ticker-run {
+        min-width: 0;
+        white-space: normal;
+        display: inline;
+    }
+
+    .muninn-ticker-run-copy,
+    .muninn-ticker-pause,
+    .muninn-ticker-run .muninn-ticker-separator:last-child {
+        display: none;
+    }
+
+    .muninn-ticker-separator {
+        padding: 0 0.5rem;
+    }
+
+    .muninn-ticker-viewport {
+        padding: 0.5rem 0;
+    }
+}
+
 /* Result bars on the admin Broadcasts page: plain CSS, no chart library (like D060). */
 .muninn-result-bar {
     height: 0.5rem;

@@ -1124,3 +1124,27 @@ defence. Encoding note content in transit was suggested and **rejected** for tha
   stored permission says.
 - **Shown.** The link list has a *Code hidden* badge; the visitor's page has one too.
 
+## D074 — News-ticker broadcasts
+
+**Status:** Proposed (2026-10-30). The project owner asked for a fourth broadcast kind (D061): a
+banner that scrolls like a news ticker, with several running at once separated by a bullet.
+
+- **A fourth kind, `ticker`.** Created, scheduled, edited, ended and deleted on the Broadcasts
+  page exactly like the other kinds (start and end required, plain text, up to 1000 bytes,
+  audited the same way). Migration `0016_broadcast_ticker` adds `ticker` to the `kind` ENUM; no
+  existing row changes.
+- **Cannot be closed.** A ticker shows on every page from its start to its end. It never gets a
+  `broadcast_receipts` row: `seen`, `dismiss` and `vote` answer 404 for it, and the admin page
+  shows "Shown to everyone until it ends" instead of a count. "End now" stops it for everyone.
+- **One line for all tickers.** Every running ticker scrolls along one full-width line directly
+  under the top bar (above the other banners), oldest start first, each followed by a bullet
+  (•). Line breaks in a ticker message become spaces. Same warning colours as the sticky banner.
+  Same audience as D061: everyday users only.
+- **Accessibility.** Moving text must be stoppable (WCAG 2.2.2): the line has a pause/play button
+  (`aria-pressed`, remembered for the browser tab in `sessionStorage`), and it also stops while
+  the pointer or keyboard focus is on it. With *reduce motion* switched on in the operating
+  system it does not move at all and shows the messages as wrapping text. Screen readers skip
+  the moving copy and read the messages once, as a list, in a labelled region.
+- **No library.** A CSS animation over two copies of the text (moving left by half the width
+  loops seamlessly); the script sets the duration from the text width so every ticker moves at
+  the same speed (about 60 px per second).

@@ -285,6 +285,9 @@ function renderAppNavbar(string $assetPrefix = ''): void
         </ul>
     </div>
 </nav>
+<!-- News ticker from the administrator (D074): a full-width line that scrolls under the top bar,
+     filled in by assets/js/app-shell.js. Several tickers running at once share this one line. -->
+<div id="broadcast-ticker" class="muninn-ticker d-none" role="region" aria-label="News from the administrator"></div>
 <!-- Messages from the administrator (D061): banners and votes, filled in by assets/js/app-shell.js. -->
 <div id="broadcast-area" class="container px-3 pt-3 d-none" role="region" aria-label="Messages from the administrator"></div>
 <!-- What the shield icon means (D066). Opened from the top bar; "Sign out" is wired in app-shell.js. -->

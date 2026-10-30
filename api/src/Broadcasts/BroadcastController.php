@@ -23,6 +23,7 @@ use Muninn\Api\Validation\TextRules;
  *   POST /api/v1/broadcasts/{id}/seen       a one-time banner has been shown
  *   POST /api/v1/broadcasts/{id}/dismiss    a sticky banner was closed with its X
  *   POST /api/v1/broadcasts/{id}/vote       {"option_ids": ["..."]}
+ * A news ticker (kind "ticker", D074) has no "done" call: it shows until its end.
  * System administrators:
  *   GET    /api/v1/admin/broadcasts         every broadcast, with vote results
  *   POST   /api/v1/admin/broadcasts         {"kind", "message", "starts_at", "ends_at",
@@ -117,7 +118,7 @@ final class BroadcastController
 
         $kind = InputReader::optionalString($requestBody, 'kind');
         if (!in_array($kind, BroadcastService::KINDS, true)) {
-            $fieldErrors['kind'] = 'Choose a one-time banner, a sticky banner or a vote.';
+            $fieldErrors['kind'] = 'Choose a one-time banner, a sticky banner, a vote or a news ticker.';
         }
         $message = $this->readMessage($requestBody, $fieldErrors);
         [$startsAtUtc, $endsAtUtc] = $this->readSchedule($requestBody, $fieldErrors, true);
